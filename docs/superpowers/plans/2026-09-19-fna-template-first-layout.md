@@ -284,7 +284,7 @@ Expected: no generated artifacts are tracked, no stale copied dependency trees r
 
 ### Task 8: Commit the migration
 
-- [ ] **Step 1: Commit in focused changes**
+- [x] **Step 1: Commit in focused changes**
 
 Use Conventional Commit messages for the migration, for example:
 
@@ -294,6 +294,14 @@ build: pin native dependencies as git submodules
 docs: document template-first Android workflow
 ```
 
-- [ ] **Step 2: Record final verification output**
+- [x] **Step 2: Record final verification output**
 
-Include the successful managed build, Android build, APK asset check, submodule hashes, and device launch result in the final handoff.
+Final verification:
+
+- dotnet build FnaTemplate.csproj -c Release: 0 warnings, 0 errors.
+- gradlew :app:assembleDebug: BUILD SUCCESSFUL.
+- APK asset check found libmain.so, libSDL2.so, dotnet.tar.xz,
+  manifest.json, and FnaTemplate.dll.
+- Submodules match the hashes recorded in THIRD_PARTY_NOTICES.md.
+- Device launch was not run because adb devices reported no connected
+  device.
