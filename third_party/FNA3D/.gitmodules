@@ -1,4 +1,0 @@
-[submodule "MojoShader"]
-	path = MojoShader
-	url = https://github.com/RotatingArtDev/mojoshader.git
-	branch = main

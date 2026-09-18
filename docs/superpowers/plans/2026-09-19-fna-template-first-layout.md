@@ -17,7 +17,7 @@
 - Read: `third_party/THIRD_PARTY_NOTICES.md`
 - Read: `app/build.gradle.kts`, `native/CMakeLists.txt`, `scripts/prepare-game.ps1`
 
-- [ ] **Step 1: Confirm the worktree is clean except the plan/spec commits**
+- [x] **Step 1: Confirm the worktree is clean except the plan/spec commits**
 
 Run:
 
@@ -28,12 +28,12 @@ git log -3 --oneline --decorate
 
 Expected: no uncommitted source changes before the migration starts.
 
-- [ ] **Step 2: Confirm each required remote revision exists**
+- [x] **Step 2: Confirm each required remote revision exists**
 
 Run:
 
 ```powershell
-git ls-remote https://github.com/FNA-XNA/FNA.git 2f5d094a173e9423448d472d5735d13997985f13
+git ls-remote https://github.com/FNA-XNA/FNA.git 45df1c8db64a92ec538cc9a8f64522044867d793
 git ls-remote https://github.com/RotatingArtDev/SDL.git a11d64ff44fdeb22af604d7bc1c77e941bfd0d67
 git ls-remote https://github.com/RotatingArtDev/FNA3D.git 2c2907aad90f66dba083ca3689343c1afcf7fb09
 git ls-remote https://github.com/RotatingArtDev/FAudio.git c370ada0eedcab8d9c270b5c5fc2274f4e7f3ec6
@@ -50,7 +50,7 @@ Expected: each command prints the requested commit hash.
 - Modify: `Program.cs`
 - Delete: `sample/README.md`
 
-- [ ] **Step 1: Move the game files and rename the managed identity**
+- [x] **Step 1: Move the game files and rename the managed identity**
 
 Use `Move-Item` for the file moves, then update the project properties to:
 
@@ -62,11 +62,11 @@ Use `Move-Item` for the file moves, then update the project properties to:
 
 Keep `TargetFramework` as `net10.0`, `RuntimeIdentifier` as `linux-arm64`, and `SelfContained` as `false`.
 
-- [ ] **Step 2: Rename the sample game type and namespace**
+- [x] **Step 2: Rename the sample game type and namespace**
 
 Change `namespace FnaSample;` to `namespace FnaTemplate;`, `SampleGame` to `FnaTemplateGame`, and the window title to `FNA Template`. Keep the existing minimal moving-rectangle behavior unchanged.
 
-- [ ] **Step 3: Confirm the root project compiles before moving Android**
+- [x] **Step 3: Confirm the root project compiles before moving Android**
 
 Run:
 
@@ -86,11 +86,11 @@ Expected: the project resolves `external/FNA` once the submodule migration is co
 - Move: `runtime/` -> `platforms/android/runtime/`
 - Move: `scripts/` -> `platforms/android/scripts/`
 
-- [ ] **Step 1: Create the platform directory and move tracked Android files**
+- [x] **Step 1: Create the platform directory and move tracked Android files**
 
 Use `Move-Item` to preserve file contents and directory history where possible. Do not move generated root `.gradle/`, `.kotlin/`, or `build/` directories.
 
-- [ ] **Step 2: Update the Android Gradle task paths**
+- [x] **Step 2: Update the Android Gradle task paths**
 
 In `platforms/android/app/build.gradle.kts`, keep `workingDir(rootDir)` and invoke the now-local script:
 
@@ -109,7 +109,7 @@ val prepareGameAssets by tasks.registering(Exec::class) {
 
 Keep `preBuild.dependsOn(prepareGameAssets)` and all existing Android plugin, ABI, SDK, and native build settings.
 
-- [ ] **Step 3: Make Android settings resolve from its new root**
+- [x] **Step 3: Make Android settings resolve from its new root**
 
 Set the Android settings project name to `FnaTemplateAndroidHost`; keep `include(":app")`. The existing `../native/CMakeLists.txt` path remains correct from `platforms/android/app`.
 
@@ -126,17 +126,17 @@ Set the Android settings project name to `FnaTemplateAndroidHost`; keep `include
 - Delete: `third_party/fna-unpacked/`
 - Delete: copied source trees under `third_party/FNA`, `third_party/SDL`, `third_party/FNA3D`, and `third_party/FAudio`
 
-- [ ] **Step 1: Preserve template-owned native code and notices**
+- [x] **Step 1: Preserve template-owned native code and notices**
 
 Move `third_party/dotnethost` and the notices file before removing the copied external trees. Remove `third_party/fna-unpacked` only after `rg` confirms it is not referenced by tracked build files.
 
-- [ ] **Step 2: Add each submodule at the pinned commit**
+- [x] **Step 2: Add each submodule at the pinned commit**
 
 Run:
 
 ```powershell
 git submodule add https://github.com/FNA-XNA/FNA.git external/FNA
-git -C external/FNA checkout 2f5d094a173e9423448d472d5735d13997985f13
+git -C external/FNA checkout 45df1c8db64a92ec538cc9a8f64522044867d793
 git submodule add https://github.com/RotatingArtDev/SDL.git external/SDL
 git -C external/SDL checkout a11d64ff44fdeb22af604d7bc1c77e941bfd0d67
 git submodule add https://github.com/RotatingArtDev/FNA3D.git external/FNA3D
@@ -147,7 +147,7 @@ git -C external/FAudio checkout c370ada0eedcab8d9c270b5c5fc2274f4e7f3ec6
 
 Expected: `.gitmodules` contains four `external/*` entries and `git submodule status` shows the four exact hashes.
 
-- [ ] **Step 3: Update the root license/revision notice**
+- [x] **Step 3: Update the root license/revision notice**
 
 Keep the existing revision hashes, replace `third_party` paths with `external`, and document that `dotnethost` is platform-owned code under `platforms/android/native/dotnethost`.
 
@@ -160,7 +160,7 @@ Keep the existing revision hashes, replace `third_party` paths with `external`, 
 - Modify: `platforms/android/native/cmake/Fna3dOptions.cmake`
 - Modify: `platforms/android/native/cmake/FaudioOptions.cmake`
 
-- [ ] **Step 1: Point CMake at the root external directory**
+- [x] **Step 1: Point CMake at the root external directory**
 
 In `platforms/android/native/CMakeLists.txt`, set:
 
@@ -177,11 +177,11 @@ add_subdirectory("${DOTNETHOST_DIR}" "${CMAKE_BINARY_DIR}/dotnethost")
 
 Use `${DOTNETHOST_DIR}/include` in `target_include_directories`; keep `${LIBS_DIR}/SDL`, `${LIBS_DIR}/FNA3D`, and `${LIBS_DIR}/FAudio` unchanged in the option files.
 
-- [ ] **Step 2: Update generated CMake output directories**
+- [x] **Step 2: Update generated CMake output directories**
 
 Change only the binary output labels from `third_party/...` to `external/...` in the three option files if needed. These are CMake build directories, not source paths; source paths must remain `${LIBS_DIR}/SDL`, `${LIBS_DIR}/FNA3D`, and `${LIBS_DIR}/FAudio`.
 
-- [ ] **Step 3: Check for stale old paths**
+- [x] **Step 3: Check for stale old paths**
 
 Run:
 
@@ -202,7 +202,7 @@ Expected: no active build script or source file contains an old path; historical
 - Modify: `CONTRIBUTING.md`
 - Modify: `.gitignore`
 
-- [ ] **Step 1: Make scripts resolve the repository root explicitly**
+- [x] **Step 1: Make scripts resolve the repository root explicitly**
 
 For scripts under `platforms/android/scripts`, use:
 
@@ -213,15 +213,15 @@ $androidRoot = Join-Path $repoRoot 'platforms/android'
 
 `prepare-game.ps1` must publish `FnaTemplate.csproj`, copy from `bin/Release/net10.0/linux-arm64/publish`, write `FnaTemplate.dll` into `platforms/android/app/src/main/assets/game`, and write the matching manifest assembly name.
 
-- [ ] **Step 2: Add non-mutating submodule validation**
+- [x] **Step 2: Add non-mutating submodule validation**
 
 `verify-submodules.ps1` must check each expected path exists, contains a Git checkout, and has the exact pinned `HEAD`; it must throw an actionable error telling the developer to run `git submodule update --init --recursive`. It must not fetch or change any repository state.
 
-- [ ] **Step 3: Update APK validation and ignore rules**
+- [x] **Step 3: Update APK validation and ignore rules**
 
 Change the required APK entry from `assets/game/FnaSample.dll` to `assets/game/FnaTemplate.dll`. Ignore generated paths under `platforms/android/app/build`, `platforms/android/app/src/main/assets/game`, `platforms/android/.cxx`, `bin/`, and `obj/`; stop using the old `sample/bin`, `sample/obj`, and root `app/build` entries.
 
-- [ ] **Step 4: Rewrite the README and contribution guide around the template workflow**
+- [x] **Step 4: Rewrite the README and contribution guide around the template workflow**
 
 Document the root game project, `platforms/android` backend, `external` submodules, fresh checkout with `--recurse-submodules`, existing checkout initialization, build commands, APK validation, arm64 device requirements, and the rule that game code is replaced at the root rather than under `sample/`.
 
@@ -233,7 +233,7 @@ Document the root game project, `platforms/android` backend, `external` submodul
 - Test: `platforms/android/scripts/check-apk-assets.ps1`
 - Test: Android arm64 APK on device `703a7b4e`
 
-- [ ] **Step 1: Verify submodule state and managed build**
+- [x] **Step 1: Verify submodule state and managed build**
 
 Run:
 
@@ -244,12 +244,14 @@ dotnet build FnaTemplate.csproj -c Release
 
 Expected: four exact pinned submodule hashes and zero C# build errors.
 
-- [ ] **Step 2: Build and inspect the APK**
+- [x] **Step 2: Build and inspect the APK**
 
 Run:
 
 ```powershell
-.\platforms\android\gradlew.bat clean :app:assembleDebug
+Push-Location platforms/android
+.\gradlew.bat clean :app:assembleDebug
+Pop-Location
 .\platforms\android\scripts\check-apk-assets.ps1 -ApkPath platforms/android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
 ```
 
@@ -268,7 +270,7 @@ adb logcat -s FnaAndroidCoreClr SDL
 
 Expected: CoreCLR initializes, FNA creates the SDL/FNA3D window, and the sample renders on the arm64 device.
 
-- [ ] **Step 4: Confirm repository hygiene**
+- [x] **Step 4: Confirm repository hygiene**
 
 Run:
 

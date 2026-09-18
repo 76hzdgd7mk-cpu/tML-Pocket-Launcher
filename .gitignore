@@ -2,13 +2,10 @@
 .idea/
 .worktrees/
 build/
-app/build/
 **/.cxx/
 **/.externalNativeBuild/
 **/bin/
 **/obj/
-sample/bin/
-sample/obj/
-app/src/main/assets/game/
+platforms/android/app/build/
+platforms/android/app/src/main/assets/game/
 fna.zip
-third_party/fna-unpacked/

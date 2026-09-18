@@ -1,21 +1,34 @@
 # Contributing
 
-## 开发流程
+## Workflow
 
-1. 从 `master` 创建功能分支，例如 `feat/update-runtime` 或 `fix/asset-bootstrap`。
-2. 保持 `app`、`native`、`sample` 和 `scripts` 的职责边界，不把构建产物加入源码目录。
-3. 修改第三方依赖时，同时更新 `third_party/THIRD_PARTY_NOTICES.md` 和对应许可证文件。
-4. 提交前运行 README 中的构建和 APK 资产检查命令。
-5. 提交信息使用简短的 Conventional Commits 风格，例如 `feat: update CoreCLR runtime`。
+1. Create a focused feature branch from `master`.
+2. Keep the root game project independent from the Android host.
+3. Keep Android-specific code under `platforms/android/`.
+4. Treat `external/` as pinned submodules. Update a dependency in its own
+   repository, then update the gitlink and `THIRD_PARTY_NOTICES.md` here.
+5. Use short Conventional Commit messages.
 
-## 变更检查
+## Required Checks
 
-- Android 工程能通过 `:app:assembleDebug`。
-- 示例能通过 `dotnet build sample/FnaSample.csproj -c Release`。
-- APK 至少包含 `libmain.so`、`libSDL2.so`、`assets/runtime/dotnet.tar.xz` 和入口程序集。
-- 涉及运行时启动、JNI 或原生库的变更，需要在 arm64 Android 设备上检查 logcat。
-- 不提交签名文件、密钥、机器相关路径或构建输出。
+Run from the repository root before submitting a change:
 
-## 分支合并
+```powershell
+dotnet build FnaTemplate.csproj -c Release
+Push-Location platforms/android
+.\gradlew.bat clean :app:assembleDebug
+Pop-Location
+.\platforms\android\scripts\check-apk-assets.ps1 `
+  -ApkPath platforms/android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
+```
 
-合并请求请说明变更范围、验证命令和设备验证结果。若无法进行真机验证，请明确写出未验证的部分。
+Changes to JNI, CoreCLR, SDL2, FNA3D, or FAudio must also be checked on an
+arm64 Android device with logcat. Clear the app data before testing a changed
+managed assembly.
+
+## Repository Hygiene
+
+Do not commit generated `bin/`, `obj/`, Gradle build, CMake build, extracted
+game assets, signing files, credentials, or machine-specific paths. Do not
+modify external source trees directly in the main repository; use a pinned
+submodule commit instead.
