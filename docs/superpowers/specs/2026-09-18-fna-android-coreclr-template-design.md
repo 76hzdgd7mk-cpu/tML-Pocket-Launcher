@@ -52,7 +52,7 @@ The Android process boundary is intentional. CoreCLR is initialized once in the 
 ## Repository Layout
 
 ```text
-FnaAndroidTemplate/
+FnaAndroidCoreClrTemplate/
   app/
     src/main/java/...          Android Activity and bootstrap code
     src/main/assets/game/      generated sample output

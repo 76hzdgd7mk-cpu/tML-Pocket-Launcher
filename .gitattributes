@@ -1,0 +1,12 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.apk binary
+*.bmp binary
+*.dll binary
+*.jar binary
+*.pdb binary
+*.so binary
+*.wav binary
+*.xz binary
+*.zip binary
