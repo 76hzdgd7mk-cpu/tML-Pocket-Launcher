@@ -34,9 +34,10 @@ function Remove-GeneratedDirectory([string]$path) {
         # Delete files through the extended path namespace before removing parent folders.
         $files = @(Get-ChildItem -LiteralPath $path -Recurse -Force -File -ErrorAction SilentlyContinue)
         foreach ($file in $files) {
-            if ([IO.File]::Exists($file.FullName)) {
-                [IO.File]::SetAttributes($file.FullName, [IO.FileAttributes]::Normal)
-                [IO.File]::Delete('\\?\' + $file.FullName)
+            $extendedFilePath = '\\?\' + $file.FullName
+            if ([IO.File]::Exists($extendedFilePath)) {
+                [IO.File]::SetAttributes($extendedFilePath, [IO.FileAttributes]::Normal)
+                [IO.File]::Delete($extendedFilePath)
             }
         }
 
