@@ -6,14 +6,14 @@ Create a separately managed `tModLoader-FNA-Android` project based on the existi
 
 ## Current Phase
 
-Design approved by the user; written spec is being prepared for review.
+Implementation plan complete; inline execution is starting in a new worktree.
 
 ## Phases
 
-1. [in_progress] Record and self-review the Android port design.
-2. [pending] User review of the written spec.
-3. [pending] Write the implementation plan.
-4. [pending] Create the isolated tModLoader project/worktree.
+1. [complete] Record and self-review the Android port design.
+2. [complete] User review of the written spec.
+3. [complete] Write and self-review the implementation plan.
+4. [in_progress] Create the isolated tModLoader project/worktree.
 5. [pending] Add upstream tModLoader source linkage and Android patch layer.
 6. [pending] Implement Android platform services and CoreCLR bootstrap.
 7. [pending] Implement Steam login, ownership validation, and resumable content download.
@@ -33,4 +33,3 @@ Design approved by the user; written spec is being prepared for review.
 | Error | Attempts | Resolution |
 |---|---:|---|
 | Confidence skill path mismatch | 1 | Located the actual directory as `C:/Users/Administrator/.codex/skills/confidence-check` and read it. |
-
