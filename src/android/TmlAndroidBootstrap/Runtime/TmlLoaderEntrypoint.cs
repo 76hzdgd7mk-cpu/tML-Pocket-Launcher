@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.Loader;
+using TmlAndroidBootstrap.Android;
 
 namespace TmlAndroidBootstrap.Runtime;
 
@@ -7,7 +8,11 @@ public sealed class TmlLoaderEntrypoint
 {
     private int _started;
 
-    public int Launch(string assemblyPath, string[] arguments, string workingDirectory)
+    public int Launch(
+        string assemblyPath,
+        string[] arguments,
+        string workingDirectory,
+        IAndroidBridge androidBridge)
     {
         if (Interlocked.Exchange(ref _started, 1) != 0)
             throw new InvalidOperationException("tModLoader can only be launched once per CoreCLR process.");
@@ -24,6 +29,7 @@ public sealed class TmlLoaderEntrypoint
         try
         {
             Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(assemblyPath));
+            using var platformServices = AndroidPlatformServiceProxy.TryConfigure(assembly, androidBridge);
             MethodInfo? entryPoint = assembly.EntryPoint;
             if (entryPoint is null)
                 throw new BootstrapStageException(BootstrapStage.Runtime, "tModLoader assembly has no entry point.");

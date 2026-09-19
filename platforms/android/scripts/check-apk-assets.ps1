@@ -26,8 +26,18 @@ foreach ($required in @(
     'lib/arm64-v8a/libSDL2.so',
     'assets/runtime/dotnet.tar.xz',
     'assets/game/manifest.json',
-    'assets/game/FnaTemplate.dll'
+    'assets/game/TmlAndroidHost.dll',
+    'assets/game/tModLoader.dll',
+    'assets/game/tModLoader.runtimeconfig.json'
 )) {
     if (-not ($entries -contains $required)) { throw "APK is missing $required" }
     Write-Output "Found $required"
 }
+
+$commercialEntries = @($entries | Where-Object {
+    $_ -like 'assets/game/Content/*' -or $_ -like 'assets/game/local-content/*'
+})
+if ($commercialEntries.Count -gt 0) {
+    throw 'APK contains Terraria content; content must be downloaded after ownership validation.'
+}
+Write-Output 'No commercial Terraria content is packaged in the APK'

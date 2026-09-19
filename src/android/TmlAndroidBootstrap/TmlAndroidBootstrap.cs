@@ -19,6 +19,10 @@ public sealed class TmlAndroidBootstrap
         if (string.IsNullOrWhiteSpace(assemblyPath))
             throw new ArgumentException("An assembly path is required.", nameof(assemblyPath));
 
-        return _entrypoint.Launch(assemblyPath, arguments, AndroidBridge.FilesDirectory);
+        return _entrypoint.Launch(
+            assemblyPath,
+            arguments,
+            AndroidBridge.FilesDirectory,
+            AndroidBridge);
     }
 }

@@ -1311,6 +1311,13 @@ public class SDLActivity extends FragmentActivity implements View.OnSystemUiVisi
         return mSingleton.commandHandler.post(new ShowTextInputTask(x, y, w, h));
     }
 
+    /**
+     * Called by the CoreCLR Android bridge to hide SDL's text editor.
+     */
+    public static boolean hideTextInput() {
+        return mSingleton != null && mSingleton.commandHandler.sendEmptyMessage(COMMAND_TEXTEDIT_HIDE);
+    }
+
     public static boolean isTextInputEvent(KeyEvent event) {
 
         // Key pressed with Ctrl should be sent as SDL_KEYDOWN/SDL_KEYUP and not SDL_TEXTINPUT
@@ -2156,6 +2163,7 @@ class SDLInputConnection extends BaseInputConnection {
                 offset += Character.charCount(codePoint);
             }
             SDLInputConnection.nativeCommitText(pendingText, 0);
+            com.example.fnatemplate.runtime.AndroidBridge.postText(pendingText);
         }
         mCommittedText = text;
     }

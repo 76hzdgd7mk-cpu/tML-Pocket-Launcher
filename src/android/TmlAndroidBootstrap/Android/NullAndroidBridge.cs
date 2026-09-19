@@ -32,4 +32,24 @@ public sealed class NullAndroidBridge : IAndroidBridge
     public void SetImeVisible(bool visible)
     {
     }
+
+    public void ShowToast(string message, bool longDuration = false)
+    {
+    }
+
+    public bool HasPermission(string permission) => false;
+
+    public void RequestPermission(string permission, int requestCode)
+    {
+    }
+
+    public ValueTask<string?> PromptTextAsync(
+        string title,
+        bool password,
+        CancellationToken cancellationToken = default) =>
+        ValueTask.FromResult<string?>(null);
+
+    public void PumpEvents()
+    {
+    }
 }

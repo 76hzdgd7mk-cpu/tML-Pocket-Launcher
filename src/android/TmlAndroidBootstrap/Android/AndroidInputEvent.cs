@@ -7,7 +7,8 @@ public enum AndroidInputEventKind
     Key,
     Touch,
     Focus,
-    Back
+    Back,
+    Permission
 }
 
 public readonly record struct AndroidInputEvent(
@@ -21,4 +22,6 @@ public readonly record struct AndroidInputEvent(
     float Y = 0,
     int Action = 0,
     bool Focused = false,
-    bool Paused = false);
+    bool Paused = false,
+    int RequestCode = 0,
+    bool Granted = false);

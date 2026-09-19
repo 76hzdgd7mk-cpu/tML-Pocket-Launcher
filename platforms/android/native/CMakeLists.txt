@@ -16,6 +16,7 @@ include(cmake/Fna3dOptions.cmake)
 add_subdirectory("${DOTNETHOST_DIR}" "${CMAKE_BINARY_DIR}/dotnethost")
 
 add_library(main SHARED
+    src/android_bridge.cpp
     src/jni_entry.cpp
     src/logger.cpp
     src/dotnet/dotnet_launcher.cpp

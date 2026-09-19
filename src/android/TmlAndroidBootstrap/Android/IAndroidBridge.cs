@@ -18,5 +18,18 @@ public interface IAndroidBridge
 
     void SetImeVisible(bool visible);
 
+    void ShowToast(string message, bool longDuration = false);
+
+    bool HasPermission(string permission);
+
+    void RequestPermission(string permission, int requestCode);
+
+    ValueTask<string?> PromptTextAsync(
+        string title,
+        bool password,
+        CancellationToken cancellationToken = default);
+
+    void PumpEvents();
+
     AndroidEventQueue Events { get; }
 }

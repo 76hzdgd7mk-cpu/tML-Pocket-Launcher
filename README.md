@@ -1,101 +1,93 @@
-# FNA CoreCLR Game Template
+# tModLoader-FNA-Android
 
-This repository is a single-game FNA template. The root is the C# game
-project; Android is a platform backend under `platforms/android/`. The game
-runs as a normal .NET 10 IL assembly hosted by CoreCLR and uses SDL2, FNA3D,
-and FAudio for Android windowing, input, graphics, and audio.
+Android CoreCLR host for a single tModLoader game process, based on the FNA
+Android template. tModLoader stays on `net8.0`; the APK supplies a .NET 10
+CoreCLR runtime and launches the managed game in the same process as Android.
+
+This repository contains Android patches and host code, not Terraria source or
+Terraria content. A user-owned Terraria installation is prepared locally from
+`D:\tModLoader\src` and, on the device, missing content is downloaded only
+after Steam login and ownership validation for App ID `105600`.
 
 ## Layout
 
 ```text
-FnaTemplate.csproj       root FNA game project
-Program.cs               game entry point and minimal sample
-Content/                 game content (add your own content here)
-platforms/android/      Android host, JNI bridge, Gradle, and runtime assets
-external/                pinned FNA, SDL, FNA3D, and FAudio submodules
-THIRD_PARTY_NOTICES.md   dependency revisions and license notes
-docs/                    design and implementation documents
+platforms/android/                 Gradle app, SDL, JNI, CoreCLR host
+src/android/TmlAndroidBootstrap/    CoreCLR bootstrap and Android bridge
+src/android/TmlAndroidContent/      SteamKit2 auth, ownership, CDN download
+src/android/TmlAndroidHost/         Android startup and content preparation
+patches/android/                    tModLoader Android source patches
+third_party/tModLoader/             pinned upstream source input
+external/                           FNA, SDL, FNA3D, and FAudio submodules
 ```
-
-The Android backend targets API 28+, `arm64-v8a`, .NET 10 CoreCLR, and OpenGL
-ES 3 through FNA3D.
 
 ## Requirements
 
-- .NET SDK 10.0.101 or a compatible .NET 10 SDK
+- .NET SDK 10.0.101 or compatible .NET 10 SDK
 - JDK 21
 - Android SDK Platform 37
 - Android NDK 30.0.14904198 rc1
 - CMake 3.22.1
 - Git and `adb`
-
-## Checkout
-
-Fresh checkout:
-
-```powershell
-git clone --recurse-submodules https://github.com/FireworkSky/FNA-ANDROID.git
-cd FNA-ANDROID
-```
-
-Existing checkout:
-
-```powershell
-git submodule update --init --recursive
-```
-
-The build does not fetch dependencies automatically. It verifies that the
-four submodules are initialized at the pinned commits before compiling.
+- A prepared `D:\tModLoader\src` containing `WorkspaceInfo.targets`
 
 ## Build
 
-Run these commands from the repository root:
+Run from the repository root:
 
 ```powershell
-dotnet build FnaTemplate.csproj -c Release
+$env:HTTP_PROXY = 'http://127.0.0.1:7890'
+$env:HTTPS_PROXY = 'http://127.0.0.1:7890'
 Push-Location platforms/android
-.\gradlew.bat clean :app:assembleDebug
+.\gradlew.bat :app:assembleDebug --no-daemon
 Pop-Location
 .\platforms\android\scripts\check-apk-assets.ps1 `
   -ApkPath platforms/android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
 ```
 
-The Gradle build publishes `FnaTemplate.csproj` and packages the resulting
-assembly, dependencies, manifest, and CoreCLR runtime into the APK.
+The APK is `arm64-v8a` and contains CoreCLR, SDL/FNA native libraries,
+`TmlAndroidHost.dll`, and generated tModLoader assemblies. It does not contain
+Terraria `Content`.
 
-## Run On Android
+## Android startup
+
+1. `GameActivity` loads SDL and the native JNI host.
+2. CoreCLR starts `TmlAndroidHost.dll` once.
+3. The host loads or creates an Android Keystore-backed Steam session.
+4. SteamKit2 verifies Terraria `105600` ownership and downloads content to
+   app-private storage when needed.
+5. `tModLoader.dll` is loaded and invoked in the same CoreCLR process.
+
+The bridge exposes Toast, clipboard, URL launch, orientation, SDL IME, runtime
+permissions, lifecycle/input events, Steam Guard prompts, and encrypted Steam
+credential storage. SDL remains responsible for its native rendering and input
+pipeline; the managed queue receives a bounded mirror for platform services.
+
+## Install and run
 
 ```powershell
-adb shell pm clear com.example.fnatemplate
 adb install -r platforms/android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
 adb shell am start -n com.example.fnatemplate/.MainActivity
 adb logcat -s FnaAndroidCoreClr SDL
 ```
 
-Clear app data when testing a changed assembly so Android does not reuse an
-older extracted game directory.
+The first launch prompts for Steam credentials and Steam Guard when Terraria
+content is absent. The password is used only for that login and is not stored.
+Clear app data to remove the Keystore session and downloaded content:
 
-## Start A New Game
+```powershell
+adb shell pm clear com.example.fnatemplate
+```
 
-Replace the root managed project and game source files while keeping:
+## Legal boundary
 
-- target framework `net10.0`;
-- runtime identifier `linux-arm64`;
-- a reference to `external/FNA/FNA.NetStandard.csproj`;
-- an executable managed entry assembly.
+Use this project only with a Steam account that owns Terraria. Do not commit,
+redistribute, or place Terraria source or content in the repository, APK, or
+release artifacts. See [`docs/steam-content.md`](docs/steam-content.md).
 
-Update the assembly name in `platforms/android/scripts/prepare-game.ps1` and
-`platforms/android/scripts/check-apk-assets.ps1` when renaming the root game
-project. Android host code and CoreCLR startup do not need to be changed for a
-normal FNA game.
+## Verification boundary
 
-## Third-Party Sources
-
-Dependency revisions, upstream URLs, and license guidance are recorded in
-[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). The `dotnethost` adapter is
-template-owned code under `platforms/android/native/dotnethost`.
-
-## Contributing
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for verification and repository
-hygiene rules.
+Managed builds, tModLoader source preparation, native CMake, Gradle packaging,
+APK asset checks, and offline tests are verified locally. Real CoreCLR startup,
+Steam login, content download, rendering, and touch/input behavior still require
+an arm64 Android device or emulator and fresh `adb` logs.
