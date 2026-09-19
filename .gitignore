@@ -9,3 +9,10 @@ build/
 platforms/android/app/build/
 platforms/android/app/src/main/assets/game/
 fna.zip
+build/tmodloader-src/
+build/tmodloader-output/
+build/steam-content/
+build/download-state/
+local-content/
+*.refresh-token
+*.steam-credentials.json

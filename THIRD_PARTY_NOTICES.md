@@ -12,4 +12,17 @@ files in each source directory when updating them.
 | dotnethost | `platforms/android/native/dotnethost`, template-owned hostfxr adapter |
 | .NET runtime | `10.0.4`, Android arm64 runtime archive from the reference project |
 
+The Android port also consumes tModLoader as a pinned source input:
+
+| Component | Revision/source |
+| --- | --- |
+| tModLoader | `third_party/tModLoader`, `d30c8441594cf857d5779aa551ec242efb1bb968`, `https://github.com/tModLoader/tModLoader` |
+| tModLoader FNA | nested submodule `FNA`, `2d16be6c66ffa9a157ff1bb50ffe215558b40394`, `https://github.com/tModLoader/FNA` |
+| tModLoader FAudio | nested FNA submodule `lib/FAudio`, `221bfe4383542f5e8ccc7bc97db968c7068f86e3`, `https://github.com/FNA-XNA/FAudio` |
+| tModLoader FNA3D | nested FNA submodule `lib/FNA3D`, `a5b6c07b89fd48cf64e310d86f0be3108e76f21b`, `https://github.com/FNA-XNA/FNA3D` |
+
+The nested source directories are initialized from local mirrors during this
+development checkout because outbound GitHub access may be unavailable. The
+recorded upstream URLs remain the reproducible source locations.
+
 FNA is built from `FNA.NetStandard.csproj` and the game is hosted as a normal IL assembly by CoreCLR. The runtime archive is redistributed only for this template's Android execution path; review upstream licenses before publishing an application built from this repository.
