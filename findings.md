@@ -9,7 +9,7 @@
 
 ## tModLoader constraints
 
-- The main projects are `src/tModLoader/Terraria/Terraria.csproj` and `src/tModLoader/ReLogic/ReLogic.csproj`.
+- The main projects are `src/TModLoader/Terraria/Terraria.csproj` and `src/TModLoader/ReLogic/ReLogic.csproj` in the current upstream checkout.
 - The game currently targets `net8.0` and references FNA, ReLogic, Steamworks.NET, registry support, desktop helpers, and native libraries.
 - Platform detection is in `src/TerrariaNetCore/ReLogic/OS/Platform.cs` and `PlatformType.cs`; unknown platforms currently fall back to Linux.
 - Launch and native path logic is in the Terraria launch code and must gain an explicit Android branch.
@@ -33,4 +33,3 @@
 - Android IME/text-input bridge.
 - Permission and event-queue integration through the existing SDL/FNA Android host where possible.
 - Android-safe file and URL launching behavior with explicit unsupported-operation results instead of desktop process launches.
-

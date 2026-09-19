@@ -1,0 +1,33 @@
+diff --git a/src/TerrariaNetCore/ReLogic/OS/PlatformType.cs b/src/TerrariaNetCore/ReLogic/OS/PlatformType.cs
+--- a/src/TerrariaNetCore/ReLogic/OS/PlatformType.cs
++++ b/src/TerrariaNetCore/ReLogic/OS/PlatformType.cs
+@@ -4,5 +4,6 @@
+ {
+ 	Windows,
+ 	OSX,
+-	Linux
++	Linux,
++	Android
+ }
+diff --git a/src/TerrariaNetCore/ReLogic/OS/Platform.cs b/src/TerrariaNetCore/ReLogic/OS/Platform.cs
+--- a/src/TerrariaNetCore/ReLogic/OS/Platform.cs
++++ b/src/TerrariaNetCore/ReLogic/OS/Platform.cs
+@@ -1,6 +1,7 @@
+ using System;
+ using System.Runtime.InteropServices;
++using ReLogic.OS.Android;
+ using ReLogic.OS.Linux;
+ using ReLogic.OS.OSX;
+ using ReLogic.OS.Windows;
+@@ -13,3 +14,4 @@
+ 		OperatingSystem.IsWindows() ? new WindowsPlatform() :
+ 		OperatingSystem.IsMacOS() ? new OsxPlatform()
++		: OperatingSystem.IsAndroid() ? new AndroidPlatform()
+ 		: new LinuxPlatform();
+@@ -24,4 +26,6 @@
+ 
+ 	public static bool IsLinux => Current.Type == PlatformType.Linux;
+ 
++	public static bool IsAndroid => Current.Type == PlatformType.Android;
++
+ 	protected Platform(PlatformType type)

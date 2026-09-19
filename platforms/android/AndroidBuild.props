@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup Condition="'$(TmlAndroid)' == 'true'">
+    <DefineConstants>$(DefineConstants);TML_ANDROID</DefineConstants>
+    <TmlAndroidOutputRoot Condition="'$(TmlAndroidOutputRoot)' == ''">$(MSBuildThisFileDirectory)build/tmodloader-output</TmlAndroidOutputRoot>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <GenerateBindingRedirectsOutputType>false</GenerateBindingRedirectsOutputType>
+    <OutputPath Condition="'$(MSBuildProjectName)' == 'Terraria'">$(TmlAndroidOutputRoot)\</OutputPath>
+    <TmlAndroidDisableSteamInstall>true</TmlAndroidDisableSteamInstall>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TmlAndroid)' == 'true'">
+    <Content Remove="Libraries/Native/**;release_extras/**" />
+    <None Remove="Libraries/Native/**;release_extras/**" />
+  </ItemGroup>
+</Project>
