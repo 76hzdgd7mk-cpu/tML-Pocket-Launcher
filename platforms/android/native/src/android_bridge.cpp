@@ -116,6 +116,35 @@ int call_string_two_int(
     return result;
 }
 
+int call_two_string_int(
+    const char* name,
+    const char* signature,
+    const char* first,
+    const char* second,
+    int number) {
+    JNIEnv* env = fna_template_get_env();
+    if (env == nullptr) return -1;
+
+    jstring java_first = make_string(env, first);
+    jstring java_second = make_string(env, second);
+    if (java_first == nullptr || java_second == nullptr) {
+        if (java_first != nullptr) env->DeleteLocalRef(java_first);
+        if (java_second != nullptr) env->DeleteLocalRef(java_second);
+        fna_template_detach_current_thread();
+        return -1;
+    }
+
+    jvalue arguments[3]{};
+    arguments[0].l = java_first;
+    arguments[1].l = java_second;
+    arguments[2].i = number;
+    const int result = call_int(env, name, signature, arguments);
+    env->DeleteLocalRef(java_first);
+    env->DeleteLocalRef(java_second);
+    fna_template_detach_current_thread();
+    return result;
+}
+
 const char* call_static_string(const char* name, const char* signature) {
     JNIEnv* env = fna_template_get_env();
     if (env == nullptr) return nullptr;
@@ -308,6 +337,26 @@ extern "C" int fna_android_bridge_set_ime_visible(int visible) {
 
 extern "C" int fna_android_bridge_show_toast(const char* message, int long_duration) {
     return call_string_int("showToast", "(Ljava/lang/String;I)I", message, long_duration);
+}
+
+extern "C" int fna_android_bridge_set_startup_status(
+    const char* title,
+    const char* detail,
+    int progress_percent) {
+    return call_two_string_int(
+        "setStartupStatus",
+        "(Ljava/lang/String;Ljava/lang/String;I)I",
+        title,
+        detail,
+        progress_percent);
+}
+
+extern "C" int fna_android_bridge_hide_startup_status() {
+    JNIEnv* env = fna_template_get_env();
+    if (env == nullptr) return -1;
+    const int result = call_int(env, "hideStartupStatus", "()I", nullptr);
+    fna_template_detach_current_thread();
+    return result;
 }
 
 extern "C" int fna_android_bridge_has_permission(const char* permission) {

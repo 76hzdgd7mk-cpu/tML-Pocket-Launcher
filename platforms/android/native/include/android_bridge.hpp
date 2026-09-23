@@ -26,6 +26,8 @@ int fna_android_bridge_set_clipboard_text(const char* text);
 int fna_android_bridge_set_orientation(int landscape);
 int fna_android_bridge_set_ime_visible(int visible);
 int fna_android_bridge_show_toast(const char* message, int long_duration);
+int fna_android_bridge_set_startup_status(const char* title, const char* detail, int progress_percent);
+int fna_android_bridge_hide_startup_status();
 int fna_android_bridge_has_permission(const char* permission);
 int fna_android_bridge_request_permission(const char* permission, int request_code);
 int fna_android_bridge_begin_text_prompt(const char* title, int password, int request_code);
