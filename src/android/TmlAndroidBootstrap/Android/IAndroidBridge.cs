@@ -20,6 +20,10 @@ public interface IAndroidBridge
 
     void ShowToast(string message, bool longDuration = false);
 
+    void SetStartupStatus(string title, string detail, int progressPercent = -1);
+
+    void HideStartupStatus();
+
     bool HasPermission(string permission);
 
     void RequestPermission(string permission, int requestCode);
@@ -27,6 +31,9 @@ public interface IAndroidBridge
     ValueTask<string?> PromptTextAsync(
         string title,
         bool password,
+        CancellationToken cancellationToken = default);
+
+    ValueTask<AndroidLauncherAction> WaitForLauncherActionAsync(
         CancellationToken cancellationToken = default);
 
     void PumpEvents();

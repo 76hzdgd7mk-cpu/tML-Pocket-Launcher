@@ -8,7 +8,8 @@ public enum AndroidInputEventKind
     Touch,
     Focus,
     Back,
-    Permission
+    Permission,
+    LauncherAction
 }
 
 public readonly record struct AndroidInputEvent(

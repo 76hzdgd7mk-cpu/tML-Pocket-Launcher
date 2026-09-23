@@ -71,6 +71,21 @@ public sealed class JniAndroidBridge : IAndroidBridge
         ThrowOnFailure(NativeMethods.ShowToast(message, longDuration ? 1 : 0), "show toast");
     }
 
+    public void SetStartupStatus(string title, string detail, int progressPercent = -1)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
+        ArgumentNullException.ThrowIfNull(detail);
+        if (progressPercent is < -1 or > 100)
+            throw new ArgumentOutOfRangeException(nameof(progressPercent));
+
+        ThrowOnFailure(
+            NativeMethods.SetStartupStatus(title, detail, progressPercent),
+            "update startup status");
+    }
+
+    public void HideStartupStatus() =>
+        ThrowOnFailure(NativeMethods.HideStartupStatus(), "hide startup status");
+
     public bool HasPermission(string permission)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(permission);
@@ -118,6 +133,10 @@ public sealed class JniAndroidBridge : IAndroidBridge
             await Task.Delay(16, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    public ValueTask<AndroidLauncherAction> WaitForLauncherActionAsync(
+        CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException("Launcher action transport is not implemented yet.");
 
     public void PumpEvents()
     {
@@ -189,6 +208,15 @@ public sealed class JniAndroidBridge : IAndroidBridge
 
         [DllImport("main", EntryPoint = "fna_android_bridge_show_toast")]
         public static extern int ShowToast([MarshalAs(UnmanagedType.LPUTF8Str)] string message, int longDuration);
+
+        [DllImport("main", EntryPoint = "fna_android_bridge_set_startup_status")]
+        public static extern int SetStartupStatus(
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string title,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string detail,
+            int progressPercent);
+
+        [DllImport("main", EntryPoint = "fna_android_bridge_hide_startup_status")]
+        public static extern int HideStartupStatus();
 
         [DllImport("main", EntryPoint = "fna_android_bridge_has_permission")]
         public static extern int HasPermission([MarshalAs(UnmanagedType.LPUTF8Str)] string permission);

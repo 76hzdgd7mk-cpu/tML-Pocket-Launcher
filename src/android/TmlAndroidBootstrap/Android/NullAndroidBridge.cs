@@ -37,6 +37,14 @@ public sealed class NullAndroidBridge : IAndroidBridge
     {
     }
 
+    public void SetStartupStatus(string title, string detail, int progressPercent = -1)
+    {
+    }
+
+    public void HideStartupStatus()
+    {
+    }
+
     public bool HasPermission(string permission) => false;
 
     public void RequestPermission(string permission, int requestCode)
@@ -48,6 +56,10 @@ public sealed class NullAndroidBridge : IAndroidBridge
         bool password,
         CancellationToken cancellationToken = default) =>
         ValueTask.FromResult<string?>(null);
+
+    public ValueTask<AndroidLauncherAction> WaitForLauncherActionAsync(
+        CancellationToken cancellationToken = default) =>
+        ValueTask.FromResult(AndroidLauncherAction.Cancel);
 
     public void PumpEvents()
     {
