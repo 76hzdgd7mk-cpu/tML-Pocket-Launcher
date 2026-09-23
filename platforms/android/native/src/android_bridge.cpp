@@ -11,6 +11,7 @@
 namespace {
 
 constexpr std::size_t kMaxEvents = 1024;
+static_assert(FNA_ANDROID_EVENT_LAUNCHER_ACTION == 7);
 
 struct QueuedAndroidEvent {
     FnaAndroidEvent event;

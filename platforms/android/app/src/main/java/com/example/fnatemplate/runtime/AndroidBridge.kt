@@ -37,6 +37,7 @@ object AndroidBridge {
     private const val EVENT_FOCUS = 4
     private const val EVENT_BACK = 5
     private const val EVENT_PERMISSION = 6
+    private const val EVENT_LAUNCHER_ACTION = 7
 
     @Volatile
     private var activityReference: WeakReference<Activity>? = null
@@ -262,6 +263,12 @@ object AndroidBridge {
         kind = EVENT_PERMISSION,
         requestCode = requestCode,
         granted = granted
+    )
+
+    @JvmStatic
+    fun postLauncherAction(action: Int) = post(
+        kind = EVENT_LAUNCHER_ACTION,
+        action = action
     )
 
     private fun postTextResult(requestCode: Int, text: String?) = post(

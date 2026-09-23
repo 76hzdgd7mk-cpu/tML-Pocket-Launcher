@@ -2,8 +2,20 @@
 
 #include <cstdint>
 
+enum FnaAndroidEventKind : std::int32_t {
+    FNA_ANDROID_EVENT_LIFECYCLE = 0,
+    FNA_ANDROID_EVENT_TEXT = 1,
+    FNA_ANDROID_EVENT_KEY = 2,
+    FNA_ANDROID_EVENT_TOUCH = 3,
+    FNA_ANDROID_EVENT_FOCUS = 4,
+    FNA_ANDROID_EVENT_BACK = 5,
+    FNA_ANDROID_EVENT_PERMISSION = 6,
+    FNA_ANDROID_EVENT_LAUNCHER_ACTION = 7
+};
+
 struct FnaAndroidEvent {
     std::int32_t kind;
+    // Key, touch, and launcher-action events share this existing action slot.
     std::int32_t action;
     std::int64_t timestamp_nanos;
     std::int32_t key_code;

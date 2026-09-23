@@ -57,6 +57,7 @@ public sealed class NullAndroidBridge : IAndroidBridge
         CancellationToken cancellationToken = default) =>
         ValueTask.FromResult<string?>(null);
 
+    // The non-Android fallback must not block launcher orchestration.
     public ValueTask<AndroidLauncherAction> WaitForLauncherActionAsync(
         CancellationToken cancellationToken = default) =>
         ValueTask.FromResult(AndroidLauncherAction.Cancel);

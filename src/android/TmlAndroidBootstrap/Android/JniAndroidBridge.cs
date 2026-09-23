@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Threading.Channels;
 
 namespace TmlAndroidBootstrap.Android;
 
@@ -9,6 +10,11 @@ namespace TmlAndroidBootstrap.Android;
 public sealed class JniAndroidBridge : IAndroidBridge
 {
     private readonly AndroidEventQueue _events;
+    private readonly Channel<AndroidLauncherAction> _launcherActions =
+        Channel.CreateBounded<AndroidLauncherAction>(new BoundedChannelOptions(8)
+        {
+            FullMode = BoundedChannelFullMode.DropOldest
+        });
 
     public JniAndroidBridge(
         string filesDirectory,
@@ -134,10 +140,61 @@ public sealed class JniAndroidBridge : IAndroidBridge
         }
     }
 
+    public async ValueTask<AndroidLauncherAction> WaitForLauncherActionAsync(
+        CancellationToken cancellationToken = default)
+    {
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            PumpEvents();
+            if (_launcherActions.Reader.TryRead(out var action))
+                return action;
+
+            await Task.Delay(50, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    public static bool TryMapLauncherAction(int value, out AndroidLauncherAction action)
+    {
+        switch (value)
+        {
+            case (int)AndroidLauncherAction.Pause:
+                action = AndroidLauncherAction.Pause;
+                return true;
+            case (int)AndroidLauncherAction.Resume:
+                action = AndroidLauncherAction.Resume;
+                return true;
+            case (int)AndroidLauncherAction.Retry:
+                action = AndroidLauncherAction.Retry;
+                return true;
+            case (int)AndroidLauncherAction.Cancel:
+                action = AndroidLauncherAction.Cancel;
+                return true;
+            case (int)AndroidLauncherAction.Launch:
+                action = AndroidLauncherAction.Launch;
+                return true;
+            case (int)AndroidLauncherAction.Recheck:
+                action = AndroidLauncherAction.Recheck;
+                return true;
+            default:
+                action = default;
+                return false;
+        }
+    }
+
     public void PumpEvents()
     {
         while (NativeMethods.TryDequeueEvent(out var nativeEvent) != 0)
         {
+            if (nativeEvent.Kind == (int)AndroidInputEventKind.LauncherAction)
+            {
+                if (!TryMapLauncherAction(nativeEvent.Action, out var launcherAction))
+                    Console.Error.WriteLine(nativeEvent.Action);
+                else
+                    _launcherActions.Writer.TryWrite(launcherAction);
+                continue;
+            }
+
             var text = nativeEvent.Text == IntPtr.Zero
                 ? null
                 : Marshal.PtrToStringUTF8(nativeEvent.Text);
