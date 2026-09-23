@@ -50,7 +50,7 @@
 
 - [ ] Step 3: Test the bridge mapping.
   Add a pure mapping test to tests/TmlAndroidContent.Tests that verifies all six action values round-trip and invalid values are ignored.
-  Run: dotnet test tests/TmlAndroidContent.Tests/TmlAndroidContent.Tests.csproj
+  Run: dotnet run --project tests/TmlAndroidContent.Tests/TmlAndroidContent.Tests.csproj
   Expected: all tests pass.
   Commit: git add platforms/android/app/src/main/java/com/example/fnatemplate/runtime platforms/android/native src/android/TmlAndroidBootstrap tests/TmlAndroidContent.Tests; git commit -m "feat: transport launcher actions through Android bridge"
 
@@ -111,7 +111,7 @@
   Enter the action loop only inside the OperatingSystem.IsAndroid branch. NullAndroidBridge returns Launch for non-Android host tests.
 
 - [ ] Step 4: Build and test.
-  Run: dotnet test tests/TmlAndroidContent.Tests/TmlAndroidContent.Tests.csproj
+  Run: dotnet run --project tests/TmlAndroidContent.Tests/TmlAndroidContent.Tests.csproj
   Run: dotnet build src/android/TmlAndroidHost/TmlAndroidHost.csproj -c Release
   Expected: tests pass and the host builds for net10.0/linux-arm64.
   Commit: git add src/android/TmlAndroidHost src/android/TmlAndroidBootstrap; git commit -m "feat: connect content preparation to launcher states"
