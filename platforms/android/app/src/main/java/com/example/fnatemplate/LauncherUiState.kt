@@ -78,13 +78,13 @@ private fun parseDownloadingState(
     detail: String,
     progressPercent: Int
 ): LauncherUiState.Downloading {
-    val fields = detail.split(Regex("\\s{2,}"))
-    val byteFields = fields.getOrNull(1)
+    val fields = detail.split("  ", limit = 4)
+    val byteFields = fields.getOrNull(2)
         ?.split('/', limit = 2)
         ?.takeIf { it.size == 2 }
         ?.map { it.trim() }
         ?.takeIf { it.all(String::isNotEmpty) }
-    val currentFile = fields.getOrNull(2)
+    val currentFile = fields.getOrNull(3)
         ?.trim()
         ?.takeIf(String::isNotEmpty)
 

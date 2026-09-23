@@ -34,7 +34,8 @@ public interface IAndroidBridge
         CancellationToken cancellationToken = default);
 
     ValueTask<AndroidLauncherAction> WaitForLauncherActionAsync(
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default) =>
+        ValueTask.FromResult(AndroidLauncherAction.Cancel);
 
     void PumpEvents();
 

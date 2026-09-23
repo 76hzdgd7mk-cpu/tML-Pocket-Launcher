@@ -134,10 +134,6 @@ public sealed class JniAndroidBridge : IAndroidBridge
         }
     }
 
-    public ValueTask<AndroidLauncherAction> WaitForLauncherActionAsync(
-        CancellationToken cancellationToken = default) =>
-        throw new NotSupportedException("Launcher action transport is not implemented yet.");
-
     public void PumpEvents()
     {
         while (NativeMethods.TryDequeueEvent(out var nativeEvent) != 0)
