@@ -20,9 +20,13 @@ public interface IAndroidBridge
 
     void ShowToast(string message, bool longDuration = false);
 
-    void SetStartupStatus(string title, string detail, int progressPercent = -1);
+    void SetStartupStatus(string title, string detail, int progressPercent = -1)
+    {
+    }
 
-    void HideStartupStatus();
+    void HideStartupStatus()
+    {
+    }
 
     bool HasPermission(string permission);
 

@@ -6,6 +6,8 @@ sealed interface LauncherUiState {
         val detail: String,
         val progressPercent: Int,
         val indeterminate: Boolean,
+        val completedFiles: Int?,
+        val totalFiles: Int?,
         val downloadedBytes: String?,
         val totalBytes: String?,
         val speed: String?,
@@ -61,7 +63,7 @@ fun parseLauncherState(
         normalizedTitle.contains("pause") ->
             LauncherUiState.Paused(title, detail)
         normalizedTitle.contains("ready") ->
-            LauncherUiState.Ready(title, detail)
+            LauncherUiState.Ready(BuildConfig.VERSION_NAME, detail)
         normalizedTitle.contains("download") ->
             parseDownloadingState(title, detail, progressPercent)
         normalizedTitle.contains("content") || normalizedTitle.contains("install") ->
@@ -79,6 +81,14 @@ private fun parseDownloadingState(
     progressPercent: Int
 ): LauncherUiState.Downloading {
     val fields = detail.split("  ", limit = 4)
+    val fileCountFields = fields.getOrNull(1)
+        ?.trim()
+        ?.takeIf { it.endsWith(" files") }
+        ?.removeSuffix(" files")
+        ?.split('/', limit = 2)
+        ?.takeIf { it.size == 2 }
+        ?.map { it.trim() }
+        ?.takeIf { it.all { value -> value.toIntOrNull() != null } }
     val byteFields = fields.getOrNull(2)
         ?.split('/', limit = 2)
         ?.takeIf { it.size == 2 }
@@ -93,6 +103,8 @@ private fun parseDownloadingState(
         detail = detail,
         progressPercent = progressPercent,
         indeterminate = progressPercent == -1,
+        completedFiles = fileCountFields?.get(0)?.toIntOrNull(),
+        totalFiles = fileCountFields?.get(1)?.toIntOrNull(),
         downloadedBytes = byteFields?.get(0),
         totalBytes = byteFields?.get(1),
         speed = null,
