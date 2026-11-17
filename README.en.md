@@ -2,7 +2,7 @@
 
 **An Android launcher for precompiled tModLoader releases.** Import legitimately obtained Terraria resources, select a tML release, manage mods and launch through SDL, FNA's native backends and Android CoreCLR.
 
-[简体中文](README.md) · [Documentation](docs/README.md) · [Development](docs/development.md) · [Issues](https://github.com/FireworkSky/tML-Pocket-Launcher-/issues)
+[简体中文](README.md) · [Documentation](docs/README.md) · [Development](docs/development.md) · [Issues](https://github.com/FireworkSky/tML-Pocket-Launcher/issues)
 
 ## Status
 
@@ -35,7 +35,7 @@ Only one active tML distribution is currently installed. Authenticated Workshop 
 The maintained scripts use Windows and PowerShell. Install .NET SDK 10, JDK 21 or a compatible Android Studio JBR, Android Platform 37, NDK `30.0.14904198 rc1`, CMake `3.22.1`, Git and Node.js 22+ with npm. Configure local SDK/JDK paths.
 
 ```powershell
-git clone --recurse-submodules https://github.com/FireworkSky/tML-Pocket-Launcher-.git tML-Pocket-Launcher
+git clone --recurse-submodules https://github.com/FireworkSky/tML-Pocket-Launcher.git tML-Pocket-Launcher
 Set-Location tML-Pocket-Launcher
 .\scripts\build\prepare-game-references.ps1 -TmlRoot '<precompiled tModLoader installation>'
 .\scripts\checks\verify.ps1 -Android -Assemble

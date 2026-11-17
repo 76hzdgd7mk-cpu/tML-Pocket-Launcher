@@ -48,7 +48,7 @@ MobileJoystick 为 Terraria / tModLoader 提供手机版操作：双摇杆、触
 
 HUD / 背包 / 制作面板的完整自由布局仍在开发。直接读取硬件鼠标状态、拥有独立右键事件或特殊输入逻辑的模组可能需要适配；多人入口的存在不代表所有联机流程已获验证。
 
-启动器集成问题请提交到 [tML Pocket Launcher Issues](https://github.com/FireworkSky/tML-Pocket-Launcher-/issues)；上游项目见 [MobileJoystick](https://github.com/FireworkSky/MobileJoystick)。请附模组和 tML 版本、设备、布局模式、其他启用模组、复现步骤及脱敏日志。
+启动器集成问题请提交到 [tML Pocket Launcher Issues](https://github.com/FireworkSky/tML-Pocket-Launcher/issues)；上游项目见 [MobileJoystick](https://github.com/FireworkSky/MobileJoystick)。请附模组和 tML 版本、设备、布局模式、其他启用模组、复现步骤及脱敏日志。
 
 ## 来源与权利
 

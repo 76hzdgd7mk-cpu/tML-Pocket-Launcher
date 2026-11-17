@@ -8,7 +8,7 @@
 
 面向 Android 的 tModLoader 启动与管理工具：导入正版 Terraria 资源，选择 tML 版本，管理模组，然后在手机上启动游戏。
 
-[English](README.en.md) · [安装使用](docs/getting-started.md) · [构建开发](docs/development.md) · [文档目录](docs/README.md) · [反馈问题](https://github.com/FireworkSky/tML-Pocket-Launcher-/issues)
+[English](README.en.md) · [安装使用](docs/getting-started.md) · [构建开发](docs/development.md) · [文档目录](docs/README.md) · [反馈问题](https://github.com/FireworkSky/tML-Pocket-Launcher/issues)
 
 ![Platform](https://img.shields.io/badge/Android-9%2B%20%7C%20arm64-3DDC84?logo=android&logoColor=white)
 ![Status](https://img.shields.io/badge/status-experimental-orange)
@@ -53,7 +53,7 @@ Steam 登录已获真机验证；**GOG 登录与完整付费资源传输尚未�
 
 Steam 资源在**每次启动前需要联网登录并验证 Terraria 所有权**；GOG 资源导入后启动无需登录。更详细的步骤、包结构和数据保护建议见 [安装使用指南](docs/getting-started.md)。
 
-APK 构建产物位于 `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk`。仓库保存源码和必要运行依赖，APK 不随源码提交；可检查 [Releases](https://github.com/FireworkSky/tML-Pocket-Launcher-/releases) 是否已有发布包，或按下文自行构建。
+APK 构建产物位于 `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk`。仓库保存源码和必要运行依赖，APK 不随源码提交；可检查 [Releases](https://github.com/FireworkSky/tML-Pocket-Launcher/releases) 是否已有发布包，或按下文自行构建。
 
 ## 已知边界
 
@@ -83,7 +83,7 @@ APK 构建产物位于 `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.
 | 编译参考    | 已安装的预编译 Terraria `1.4.4.9` / tML `2026.09.3.1` 发行目录 |
 
 ```powershell
-git clone --recurse-submodules https://github.com/FireworkSky/tML-Pocket-Launcher-.git tML-Pocket-Launcher
+git clone --recurse-submodules https://github.com/FireworkSky/tML-Pocket-Launcher.git tML-Pocket-Launcher
 Set-Location tML-Pocket-Launcher
 
 # 路径替换成自己的本地安装目录；只准备编译引用，不打包游戏本体。
