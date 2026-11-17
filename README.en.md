@@ -1,5 +1,7 @@
 # tML Pocket Launcher
 
+<img src="docs/branding/tml-pocket-launcher/current/pocket-launcher-192.png" width="112" alt="tML Pocket Launcher pixel gear and tree icon" />
+
 **An Android launcher for precompiled tModLoader releases.** Import legitimately obtained Terraria resources, select a tML release, manage mods and launch through SDL, FNA's native backends and Android CoreCLR.
 
 [简体中文](README.md) · [Documentation](docs/README.md) · [Development](docs/development.md) · [Issues](https://github.com/FireworkSky/tML-Pocket-Launcher/issues)

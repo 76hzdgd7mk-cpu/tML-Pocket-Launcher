@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/branding/tml-pocket-launcher/minimal-v2/pocket-handheld-192.png" width="112" alt="tML Pocket Launcher 简约掌机标志" />
+<img src="docs/branding/tml-pocket-launcher/current/pocket-launcher-192.png" width="112" alt="tML Pocket Launcher 像素齿轮与树木图标" />
 
 # tML Pocket Launcher
 
@@ -161,4 +161,4 @@ Android、C# 与 Web UI 源码分别归位；`build/`、`bin/`、`obj/` 和缓�
 
 各组件保留自己的授权；**不能将整个仓库视作统一 MIT 授权**。迁移补丁的 GPL-3.0、SteamKit2 的 LGPL-2.1、Animate UI 的 MIT + Commons Clause 等条款见 [第三方声明](THIRD_PARTY_NOTICES.md)。MobileJoystick 源码未附独立 LICENSE，不能由本项目替上游授予新的许可。Terraria 资源和官方标志归其权利人所有。
 
-README 展示的是简约图标设计稿；设备试装版所使用的图标及不同设计源文件保留在 [`docs/branding`](docs/branding/tml-pocket-launcher)。
+启动器和 README 使用用户选定的像素齿轮与树木图标。当前图标原图、各尺寸导出和 Android 裁切预览见 [`docs/branding/tml-pocket-launcher/current`](docs/branding/tml-pocket-launcher/current)；其他方案保留为历史设计。

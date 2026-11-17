@@ -1,4 +1,8 @@
-# tML Pocket Launcher · 像素图标提案
+# tML Pocket Launcher · 图标与设计记录
+
+当前使用用户选定的**像素齿轮与树木图标**，已同步 Android、启动器界面与中英文 README。原图、导出和 Android 裁切预览见 [current](current/README.md)。`selected/`、`minimal-v2/` 和下列提案作为历史设计保留。
+
+## 历史像素图标提案
 
 设计目标：名称指向 tModLoader 手机启动器；图形体现 Pocket 的随身口袋、Launcher 的启动动作及 Terraria 的像素世界。图标不放完整产品名，避免手机桌面缩小时文字不可读。
 
