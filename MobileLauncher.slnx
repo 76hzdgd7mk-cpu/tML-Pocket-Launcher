@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/managed/">
+    <Project Path="managed/MobileLauncher.Bootstrap/MobileLauncher.Bootstrap.csproj" />
+    <Project Path="managed/MobileLauncher.Host/MobileLauncher.Host.csproj" />
+    <Project Path="managed/MobileLauncher.Patches/MobileLauncher.Patches.csproj" />
+    <Project Path="managed/MobileLauncher.Stores/MobileLauncher.Stores.csproj" />
+  </Folder>
+  <Folder Name="/managed/tests/">
+    <Project Path="managed/tests/MobileLauncher.Bootstrap.Tests/MobileLauncher.Bootstrap.Tests.csproj" />
+    <Project Path="managed/tests/MobileLauncher.Stores.Tests/MobileLauncher.Stores.Tests.csproj" />
+  </Folder>
+</Solution>

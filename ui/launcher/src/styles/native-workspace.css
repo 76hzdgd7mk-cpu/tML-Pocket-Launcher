@@ -1,0 +1,205 @@
+.native-toolbar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.native-field {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.native-field input,
+.native-textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+.native-field input {
+  min-height: 48px;
+}
+.native-textarea {
+  min-height: 160px;
+  resize: vertical;
+  margin-bottom: 16px;
+}
+.native-log {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 55dvh;
+  overflow: auto;
+  font: 12px/1.6 monospace;
+  padding: 12px;
+  background: var(--panel);
+  border-radius: 12px;
+}
+.native-mod-row {
+  flex-wrap: wrap;
+}
+.native-mod-row .resource-copy {
+  min-width: 140px;
+  overflow-wrap: anywhere;
+}
+.native-log,
+.native-mod-row {
+  touch-action: pan-y;
+}
+.native-mod-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.native-mod-tools .search-field {
+  flex: 1 1 160px;
+  width: auto;
+  max-width: 280px;
+  padding-inline: 12px;
+}
+.native-mod-tools .search-field svg {
+  flex-shrink: 0;
+}
+.native-mod-tools .filter-group {
+  padding: 0;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.native-mod-tools .filter {
+  min-height: 44px;
+  padding-inline: 12px;
+}
+.native-mod-tools > .icon-button {
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+.native-mod-list .native-mod-row {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+.native-mod-list .resource-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+.native-mod-list .resource-icon svg {
+  width: 19px;
+  height: 19px;
+}
+.native-mod-list .resource-copy {
+  min-width: 0;
+  flex: 1;
+}
+.native-mod-list .resource-copy h3 {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.native-mod-list .resource-copy p {
+  margin: 3px 0 0;
+}
+.native-mod-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+}
+.native-mod-actions .button {
+  min-height: 44px;
+  padding-inline: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.native-mods-workspace .native-toolbar {
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.native-mods-workspace .native-field input {
+  min-height: 44px;
+  padding: 10px 12px;
+}
+.native-mods-workspace .empty-state {
+  padding: 28px 16px;
+}
+@container (max-width: 520px) {
+  .native-mod-tools .search-field {
+    flex-basis: calc(100% - 52px);
+    max-width: none;
+  }
+  .native-mod-tools > .icon-button {
+    order: 1;
+  }
+  .native-mod-tools .filter-group {
+    order: 2;
+    width: 100%;
+  }
+  .native-mod-tools .filter {
+    flex: 1;
+  }
+  .native-workshop-search .search-field {
+    flex-basis: 160px;
+  }
+  .native-mod-list .native-mod-row {
+    padding-inline: 10px;
+    gap: 8px;
+  }
+}
+.native-store-panel,
+.native-store-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.native-store-panel .resource-row {
+  padding-inline: 0;
+}
+.native-store-form .native-field {
+  flex: initial;
+}
+.native-field select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+.native-store-error {
+  color: var(--danger, #ef9a9a);
+  overflow-wrap: anywhere;
+}
+.native-store-progress progress {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.native-store-diagnostics {
+  color: var(--muted);
+  font-size: 12px;
+}
+.native-store-diagnostics summary {
+  min-height: 44px;
+  align-content: center;
+  cursor: pointer;
+}
+.native-store-diagnostics pre,
+.native-store-probe {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

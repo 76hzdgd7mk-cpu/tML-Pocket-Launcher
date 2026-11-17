@@ -1,28 +1,38 @@
-# Third-party sources
+# Third-party components
 
-The template uses the following pinned Git submodules. Preserve the license
-files in each source directory when updating them.
+Preserve upstream copyright, license and notice files when distributing this project.
 
-| Component | Revision/source |
-| --- | --- |
-| FNA | `external/FNA`, `45df1c8db64a92ec538cc9a8f64522044867d793`, `https://github.com/FNA-XNA/FNA` |
-| SDL2 | `external/SDL`, `a11d64ff44fdeb22af604d7bc1c77e941bfd0d67`, `https://github.com/RotatingArtDev/SDL` |
-| FNA3D | `external/FNA3D`, `2c2907aad90f66dba083ca3689343c1afcf7fb09`, `https://github.com/RotatingArtDev/FNA3D` |
-| FAudio | `external/FAudio`, `c370ada0eedcab8d9c270b5c5fc2274f4e7f3ec6`, `https://github.com/RotatingArtDev/FAudio` |
-| dotnethost | `platforms/android/native/dotnethost`, template-owned hostfxr adapter |
-| .NET runtime | `10.0.4`, Android arm64 runtime archive from the reference project |
+| Component | Location/source | Role |
+| --- | --- | --- |
+| SDL2 | `external/SDL`, RotatingArtDev/SDL | Android rendering/input host |
+| FNA3D | `external/FNA3D`, RotatingArtDev/FNA3D | Android graphics backend |
+| FAudio | `external/FAudio`, RotatingArtDev/FAudio | Android audio backend |
+| dotnethost | `android/native/dotnethost` | hostfxr adapter |
+| .NET runtime | `android/app/src/main/assets/runtime/dotnet.tar.xz`, version 10.0.4 | Android arm64 CoreCLR |
+| MonoMod and Mono.Cecil | `external/monomod` | Prebuilt Android runtime patch dependencies |
+| Apache Commons Compress | Gradle version catalog | Archive reading and validation |
+| XZ for Java | Gradle version catalog | Runtime archive extraction |
+| AndroidX WebKit | Gradle version catalog | Offline asset hosting and origin-scoped WebView messaging; Apache 2.0 |
+| SteamKit2 3.5.0 | [SteamRE/SteamKit](https://github.com/SteamRE/SteamKit/tree/3.5.0), NuGet | Managed Steam authentication and content transport; LGPL-2.1-only; unmodified dynamically loaded assembly |
+| System.IO.Hashing | NuGet, .NET runtime libraries | GOG resource ZIP CRC verification; MIT |
+| protobuf-net / ZstdSharp.Port | SteamKit2 NuGet dependencies | Steam protocol serialization / content decompression; upstream package licenses apply |
+| React / React DOM | `ui/launcher/package-lock.json` | Web UI rendering; MIT |
+| Motion | `ui/launcher/package-lock.json` | Web interaction and animation; MIT |
+| Radix UI | `ui/launcher/package-lock.json` | Accessible Web controls; MIT |
+| Animate UI 2.4.5 | [Animate UI](https://animate-ui.com/docs), `ui/launcher/public/animate-ui-license.txt` | Animated Web primitives; MIT + Commons Clause |
+| Inspira UI LiquidGlass | [Upstream source](https://github.com/unovue/inspira-ui/blob/main/app/components/inspira/ui/liquid-glass/LiquidGlass.vue), `ui/launcher/public/inspira-ui-license.txt` | React adaptation of resize-aware SVG backdrop refraction for small controls; MIT |
+| Lucide icons | [Lucide](https://lucide.dev), `ui/launcher/public/lucide-license.txt` | Menu, LayoutTemplate, Cog and Settings from Animate UI's official icon registry, Wallpaper from Lucide; ISC/MIT |
 
-The Android port also consumes tModLoader as a pinned source input:
+The Animate UI launcher workspace consumes the official `@animate-ui/react` package.
+Its copyright and full MIT + Commons Clause notice accompany the built Web assets
+as `animate-ui-license.txt`. The components are integrated into the launcher UI;
+they are not offered as a standalone component bundle. Gradle embeds these built
+assets and accompanying notices into the Android application under `assets/ui`.
 
-| Component | Revision/source |
-| --- | --- |
-| tModLoader | `third_party/tModLoader`, `d30c8441594cf857d5779aa551ec242efb1bb968`, `https://github.com/tModLoader/tModLoader` |
-| tModLoader FNA | nested submodule `FNA`, `2d16be6c66ffa9a157ff1bb50ffe215558b40394`, `https://github.com/tModLoader/FNA` |
-| tModLoader FAudio | nested FNA submodule `lib/FAudio`, `221bfe4383542f5e8ccc7bc97db968c7068f86e3`, `https://github.com/FNA-XNA/FAudio` |
-| tModLoader FNA3D | nested FNA submodule `lib/FNA3D`, `a5b6c07b89fd48cf64e310d86f0be3108e76f21b`, `https://github.com/FNA-XNA/FNA3D` |
+Android MonoMod binaries were already present in this checkout's previous launcher output and were preserved during restructuring. Their original source is RotatingArtLauncher's MonoMod archive (`sha256:690aa28beee8a877d40af5d344f13e8c5d3b1e3fe1737027418058db68018c7c`). The launcher prioritizes these Android detour libraries over desktop versions shipped in an imported game. Record any future replacement source and digest here.
 
-The nested source directories are initialized from local mirrors during this
-development checkout because outbound GitHub access may be unavailable. The
-recorded upstream URLs remain the reproducible source locations.
+tModLoader, managed FNA and Terraria Content are supplied by user-selected release/resource packages. They are not compiled or bundled by the launcher build.
 
-FNA is built from `FNA.NetStandard.csproj` and the game is hosted as a normal IL assembly by CoreCLR. The runtime archive is redistributed only for this template's Android execution path; review upstream licenses before publishing an application built from this repository.
+tML-specific patches from the user-supplied `D:\RotatingartLauncher\patches` are now adapted under `managed/MobileLauncher.Patches`: touch input, fullscreen presentation, render scale, frame pacing, FPS measurement, console compatibility and integrated hosting. The upstream GPL-3.0 text is retained as `managed/MobileLauncher.Patches/LICENSE` and distributed in the APK as `launcher/RotatingartLauncher-LICENSE.txt`. See that directory's README for versions, changes and exclusions. The source project remains unchanged.
+
+MobileJoystick 0.1.4, author **yu**, was supplied from the user's `Terraria/tModLoader/ModSources/MobileJoystick` directory. The curated source, localization and assets are under `managed/mods/MobileJoystick`; the build embeds only the client `.tmod`. Original asset notices, including `Assets/**/SOURCE.txt`, are retained. No mod license file was present in the supplied source; this notice does not assign it a new license. The Android build uses .NET 10 reference assemblies to match the launcher's existing Android runtime and MonoMod dependencies. See `managed/mods/MobileJoystick/UPSTREAM.md`.

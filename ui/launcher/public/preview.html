@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" href="/tmodloader.png" />
+    <title>手机启动器 · 布局预览</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #181d26;
+        color: #e0e6ef;
+        font:
+          14px/1.5 'Microsoft YaHei',
+          sans-serif;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 6px 20px;
+        background: #11151c;
+        border-bottom: 1px solid #ffffff13;
+      }
+      h1 {
+        font-size: 14px;
+        margin: 0;
+        font-weight: 600;
+      }
+      p {
+        display: none;
+      }
+      nav {
+        display: flex;
+        gap: 6px;
+        padding: 2px;
+        border-radius: 24px;
+        background: #ffffff08;
+        flex-shrink: 0;
+      }
+      button {
+        font: inherit;
+        cursor: pointer;
+        min-height: 44px;
+        padding: 0 17px;
+        border: 1px solid transparent;
+        border-radius: 22px;
+        background: transparent;
+        color: #9ba6b7;
+      }
+      button[aria-pressed='true'] {
+        background: #29384f;
+        color: #d2e2ff;
+        border-color: #ffffff1c;
+        box-shadow: inset 0 1px 0 #ffffff15;
+      }
+      button:focus-visible {
+        outline: 3px solid #aecbff;
+        outline-offset: 2px;
+      }
+      main {
+        height: calc(100dvh - 61px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 22px;
+        overflow: hidden;
+      }
+      .device {
+        position: relative;
+        flex-shrink: 0;
+        border: 6px solid #06090e;
+        border-radius: 26px;
+        overflow: hidden;
+        background: #0c0f14;
+        box-shadow:
+          0 0 0 1px #ffffff15,
+          0 18px 70px #0005;
+        transform-origin: center;
+        display: flex;
+      }
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+        background: #0c0f14;
+      }
+      @media (max-width: 600px) {
+        header {
+          padding: 6px 15px;
+          gap: 10px;
+        }
+        h1 {
+          font-size: 13px;
+        }
+        button {
+          font-size: 12px;
+          padding: 0 12px;
+        }
+        main {
+          padding: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>tModLoader · 手机启动器框架</h1>
+        <p>统一页头 / 内容优先 / 固定启动操作 · 可切换五个页面查看</p>
+      </div>
+      <nav aria-label="预览手机方向">
+        <button aria-pressed="true" data-orientation="landscape">横屏手机</button
+        ><button aria-pressed="false" data-orientation="portrait">竖屏手机</button>
+      </nav>
+    </header>
+    <main>
+      <div class="device">
+        <iframe src="index.html#home" title="tML Pocket Launcher 手机交互原型"></iframe>
+      </div>
+    </main>
+    <script>
+      const parameters = new URLSearchParams(location.search);
+      let orientation = parameters.get('orientation') === 'portrait' ? 'portrait' : 'landscape';
+      const explicitOrientation = ['landscape', 'portrait'].includes(parameters.get('orientation'));
+      let orientationReady = false;
+      const frame = document.querySelector('iframe');
+      const page = parameters.get('page');
+      if (['home', 'games', 'mods', 'patches', 'settings'].includes(page))
+        document.querySelector('iframe').src =
+          'index.html' +
+          (new URLSearchParams(location.search).get('tab') === 'browse' ? '?tab=browse' : '') +
+          '#' +
+          page;
+      const device = document.querySelector('.device');
+      function resize() {
+        const [width, height] = orientation === 'landscape' ? [932, 430] : [390, 844];
+        device.style.width = width + 12 + 'px';
+        device.style.height = height + 12 + 'px';
+        const area = document.querySelector('main');
+        const padding = innerWidth <= 600 ? 24 : 44;
+        const scale = Math.min(
+          1,
+          (area.clientWidth - padding) / (width + 12),
+          (area.clientHeight - padding) / (height + 12),
+        );
+        device.style.transform = `scale(${scale})`;
+      }
+      function applyOrientation(next) {
+        orientation = next;
+        const url = new URL(location.href);
+        url.searchParams.set('orientation', orientation);
+        history.replaceState(null, '', url);
+        document.querySelectorAll('[data-orientation]').forEach((button) => {
+          button.setAttribute('aria-pressed', button.dataset.orientation === orientation);
+        });
+        resize();
+      }
+      function sendOrientation() {
+        frame.contentWindow.postMessage(
+          { type: 'launcher:set-orientation', orientation },
+          location.origin,
+        );
+      }
+      addEventListener('message', (event) => {
+        if (event.origin !== location.origin || event.source !== frame.contentWindow) return;
+        const data = event.data;
+        if (
+          data?.type !== 'launcher:orientation' ||
+          !['landscape', 'portrait'].includes(data.orientation)
+        )
+          return;
+        if (!orientationReady && explicitOrientation) {
+          orientationReady = true;
+          sendOrientation();
+          return;
+        }
+        orientationReady = true;
+        applyOrientation(data.orientation);
+      });
+      document.querySelectorAll('[data-orientation]').forEach((button) => {
+        button.setAttribute('aria-pressed', button.dataset.orientation === orientation);
+        button.addEventListener('click', () => {
+          orientationReady = true;
+          applyOrientation(button.dataset.orientation);
+          sendOrientation();
+        });
+      });
+      addEventListener('resize', resize);
+      resize();
+    </script>
+  </body>
+</html>

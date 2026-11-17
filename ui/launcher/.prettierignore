@@ -1,0 +1,6 @@
+dist/
+node_modules/
+test-results/
+package-lock.json
+public/icons.svg
+public/animate-ui-license.txt

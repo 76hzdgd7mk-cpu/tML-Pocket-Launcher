@@ -1,0 +1,297 @@
+.game-launch-screen {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  grid-template-areas: 'top' 'center' 'status' 'actions' 'bottom';
+  grid-template-rows: auto minmax(min-content, 1fr) auto auto auto;
+  gap: clamp(8px, 2vh, 12px);
+  padding: max(12px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
+  color: #e4e8ed;
+  background:
+    radial-gradient(ellipse at 50% 38%, #a5c89608, transparent 53%),
+    linear-gradient(135deg, #131c23fa, #0c1419fc 65%, #121c1bfc);
+  overflow-y: auto;
+  outline: none;
+  isolation: isolate;
+}
+.game-launch-top {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: #aab5be;
+}
+.game-launch-top small {
+  margin-left: 5px;
+  color: #64757c;
+  font-size: 10px;
+}
+.game-launch-version {
+  border: 1px solid #c8dfd015;
+  border-radius: 20px;
+  padding: 4px 9px;
+  color: #8fa09e;
+  font-size: 10px;
+}
+.game-launch-center {
+  grid-area: center;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 4px 0;
+}
+.game-launch-emblem {
+  position: relative;
+  width: clamp(64px, 25vh, 145px);
+  height: clamp(64px, 25vh, 145px);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.game-launch-orbit {
+  position: absolute;
+  inset: 0;
+  border: 1px solid #bfdbc413;
+  border-radius: 50%;
+}
+.game-launch-orbit::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border: 1.5px solid transparent;
+  border-top-color: #bddba2a8;
+  border-left-color: #bcd5a438;
+  border-radius: inherit;
+}
+.game-launch-orbit.inner {
+  inset: 7px;
+  border-style: dashed;
+  border-color: #c7dec511;
+}
+.game-launch-orbit.inner::before {
+  border-width: 1px;
+  border-color: transparent transparent #d4e9d250;
+}
+.game-launch-disc {
+  width: 72%;
+  height: 72%;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e6f5e51e;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #e8f7e40c, #d8f0db03 55%, #aac8b208);
+  box-shadow:
+    inset 0 1px 0 #efffee13,
+    0 12px 30px #0002;
+}
+.game-launch-disc img {
+  width: 69%;
+  height: 69%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.game-launch-pixel {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #bfda9b;
+  opacity: 0.4;
+  border-radius: 0.5px;
+}
+.game-launch-pixel.one {
+  top: 15%;
+  left: 10%;
+}
+.game-launch-pixel.two {
+  top: 37%;
+  right: -4%;
+  opacity: 0.25;
+}
+.game-launch-center h2 {
+  margin: clamp(8px, 2.3vh, 18px) 0 4px;
+  color: #e6ecdf;
+  font-size: clamp(18px, 4.8vh, 25px);
+  font-weight: 550;
+  letter-spacing: 0.6px;
+}
+.game-launch-center p {
+  margin: 0;
+  color: #7c8e8e;
+  font-size: 12px;
+}
+.game-launch-status {
+  grid-area: status;
+  min-width: 0;
+  padding: 4px 0;
+  text-align: center;
+}
+.game-launch-steps {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 11px;
+}
+.game-launch-steps i {
+  width: 28px;
+  height: 3px;
+  background: #d2e8cd12;
+  border-radius: 2px;
+}
+.game-launch-steps i.complete {
+  background: #bad7a0b8;
+}
+.game-launch-steps i.current {
+  background: #bad7a0;
+}
+.game-launch-status > span {
+  display: block;
+  max-width: 620px;
+  margin-inline: auto;
+  color: #b9c6c0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.game-launch-status > small {
+  display: block;
+  margin-top: 6px;
+  color: #6c8385;
+  font-size: 10px;
+}
+.game-launch-actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.game-launch-actions .button {
+  min-height: 40px;
+  padding: 0 20px;
+  border-radius: 22px;
+  background: #d9e5dc08;
+  border-color: #dae8dd22;
+  color: #d4ddd6;
+}
+.game-launch-actions .button.primary {
+  background: #b9d7a4;
+  color: #213627;
+  border-color: transparent;
+}
+.game-launch-bottom {
+  grid-area: bottom;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #688181;
+  font-size: 11px;
+}
+.game-launch-bottom > span i {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  margin-right: 7px;
+  background: #99bc8a;
+}
+.game-launch-bottom button,
+.game-launch-log button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 8px;
+  background: transparent;
+  border: 0;
+  color: #91a6a5;
+  font-size: 11px;
+  cursor: pointer;
+}
+.game-launch-bottom svg {
+  width: 15px;
+  height: 15px;
+}
+.game-launch-log {
+  position: absolute;
+  z-index: 2;
+  inset: auto max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  max-height: 75%;
+  overflow: auto;
+  padding: 10px 16px 16px;
+  background: #162225fa;
+  border: 1px solid #bcd9c32b;
+  border-radius: 16px;
+  box-shadow: 0 12px 60px #0006;
+}
+.game-launch-log > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.game-launch-log strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.game-launch-log pre {
+  max-height: 48vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #a9bdb4;
+  font:
+    11px/1.8 Consolas,
+    monospace;
+  margin: 4px 0 0;
+}
+.game-launch-screen[data-motion='full']:not([data-phase='failed']) .outer {
+  animation: game-launch-turn 4.5s linear infinite;
+}
+.game-launch-screen[data-motion='full']:not([data-phase='failed']) .inner {
+  animation: game-launch-turn 8.5s linear infinite reverse;
+}
+@keyframes game-launch-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-height: 450px) {
+  .game-launch-screen {
+    gap: 8px;
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  .game-launch-emblem {
+    width: 64px;
+    height: 64px;
+  }
+  .game-launch-center h2 {
+    font-size: 19px;
+    margin-top: 8px;
+  }
+  .game-launch-center p {
+    font-size: 10px;
+  }
+  .game-launch-status > span {
+    font-size: 12px;
+  }
+  .game-launch-status > small {
+    margin-top: 4px;
+  }
+  .game-launch-actions .button {
+    min-height: 36px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-launch-screen .game-launch-orbit {
+    animation: none !important;
+  }
+}

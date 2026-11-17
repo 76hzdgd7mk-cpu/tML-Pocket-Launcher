@@ -1,0 +1,199 @@
+/* The official primitives own motion and focus; these rules provide the launcher skin. */
+.launch-button {
+  --ripple-button-ripple-color: #fff;
+  isolation: isolate;
+}
+.launch-button > :not(.launch-ripple) {
+  position: relative;
+  z-index: 1;
+}
+.launch-ripple {
+  z-index: 0;
+}
+.primitive-popup {
+  z-index: 85;
+  color: var(--text);
+  background: var(--elevated);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 6px;
+  box-shadow:
+    0 16px 48px #0005,
+    inset 0 1px 0 #ffffff0d;
+}
+.select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  max-width: 100%;
+  min-width: 120px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--subtle);
+  color: var(--text);
+  text-align: left;
+  font-size: 13px;
+}
+.select-trigger[data-state='open'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.select-trigger > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-chevron {
+  display: flex;
+  color: var(--muted);
+}
+.select-chevron svg {
+  width: 16px;
+  height: 16px;
+  rotate: 90deg;
+}
+.select-content {
+  min-width: var(--radix-select-trigger-width);
+  max-width: calc(100vw - 24px);
+  max-height: min(320px, var(--radix-select-content-available-height));
+  overflow: hidden;
+}
+.select-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: 10px;
+  outline: none;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+}
+.select-item {
+  justify-content: space-between;
+}
+.select-item[data-highlighted] {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.select-item[data-state='checked'] {
+  color: var(--accent-ink);
+}
+.select-check {
+  display: flex;
+  width: 18px;
+  margin-left: 12px;
+}
+.select-check svg {
+  width: 18px;
+  height: 18px;
+}
+.select-scroll {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  color: var(--muted);
+}
+.select-scroll svg {
+  width: 14px;
+  height: 14px;
+  rotate: 90deg;
+}
+.select-scroll-up svg {
+  rotate: -90deg;
+}
+.mod-select-row .select-trigger {
+  width: 100%;
+}
+.range-control {
+  width: min(210px, 100%);
+  gap: 14px;
+  flex-shrink: 0;
+}
+.range-control output {
+  min-width: 38px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.slider-control {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 0 10px;
+  touch-action: none;
+  user-select: none;
+}
+.slider-track {
+  position: relative;
+  height: 5px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--line);
+}
+.slider-range {
+  position: absolute;
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}
+.slider-thumb {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--surface);
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 2px 6px #0003;
+  outline: none;
+  cursor: grab;
+}
+.slider-thumb:after {
+  content: '';
+  position: absolute;
+  inset: -14px;
+}
+.slider-thumb:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+[data-radix-popper-content-wrapper]:has(.launcher-tooltip) {
+  pointer-events: none;
+}
+.launcher-tooltip {
+  pointer-events: none;
+  z-index: 95;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--elevated);
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: 12px;
+  box-shadow: 0 6px 24px #0003;
+  max-width: calc(100vw - 24px);
+}
+.tooltip-arrow {
+  fill: var(--elevated);
+  stroke: none;
+}
+@media (max-width: 480px) {
+  .setting-row > .select-trigger {
+    max-width: 160px;
+  }
+  .setting-row > .range-control {
+    width: 145px;
+  }
+}

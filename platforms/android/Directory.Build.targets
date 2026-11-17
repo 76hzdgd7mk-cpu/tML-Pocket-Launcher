@@ -1,3 +1,0 @@
-<Project>
-  <Import Project="$(MSBuildThisFileDirectory)AndroidBuild.props" Condition="'$(TmlAndroid)' == 'true' and Exists('$(MSBuildThisFileDirectory)AndroidBuild.props')" />
-</Project>

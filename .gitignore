@@ -1,18 +1,42 @@
+# Generated output and local IDE state
 .gradle/
 .idea/
 .worktrees/
-build/
+/.superpowers/
+/build/
+**/build/
+!/scripts/build/
+!/scripts/build/**
 **/.cxx/
 **/.externalNativeBuild/
 **/bin/
 **/obj/
-platforms/android/app/build/
-platforms/android/app/src/main/assets/game/
-fna.zip
-build/tmodloader-src/
-build/tmodloader-output/
-build/steam-content/
-build/download-state/
+android/app/src/main/assets/game/
+android/app/src/main/assets/launcher/
+android/app/src/main/assets/ui/
+
+# Imported packages and private local data
 local-content/
 *.refresh-token
 *.steam-credentials.json
+
+# Local tooling, generated diagnostics and imported games
+local.properties
+**/.kotlin/
+hs_err_*.log
+replay_*.log
+*.7z
+*.apk
+
+# Python tooling and local credentials
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.credentials.json

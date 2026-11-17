@@ -1,6 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <TmlAndroid Condition="'$(TmlAndroid)' == ''">false</TmlAndroid>
-    <TmlAndroidOutputRoot Condition="'$(TmlAndroidOutputRoot)' == ''">$(MSBuildThisFileDirectory)build/tmodloader-output</TmlAndroidOutputRoot>
-  </PropertyGroup>
-</Project>

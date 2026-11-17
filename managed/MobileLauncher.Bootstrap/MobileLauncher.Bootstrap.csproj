@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>MobileLauncher.Bootstrap</AssemblyName>
+    <RootNamespace>MobileLauncher.Bootstrap</RootNamespace>
+    <MonoMod_ReallySkipCheckTargetRuntime>true</MonoMod_ReallySkipCheckTargetRuntime>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="../../external/monomod/*.dll" Private="false" />
+    <None Include="../../external/monomod/*.dll"
+          Link="MonoMod.Android/%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>MobileLauncher.Patches</AssemblyName>
+    <RootNamespace>MobileLauncher.Patches</RootNamespace>
+    <MonoMod_ReallySkipCheckTargetRuntime>true</MonoMod_ReallySkipCheckTargetRuntime>
+    <Nullable>annotations</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MobileLauncher.Bootstrap/MobileLauncher.Bootstrap.csproj" />
+    <Reference Include="../../build/game-references/*.dll" Private="false" />
+    <Reference Include="../../external/monomod/*.dll" Private="false" />
+  </ItemGroup>
+  <Target Name="CheckGameReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('../../build/game-references/tModLoader.dll')" Text="Run scripts/build/prepare-game-references.ps1 with a precompiled tModLoader release first." />
+  </Target>
+</Project>

@@ -1,0 +1,101 @@
+# Architecture
+
+tML Pocket Launcher installs precompiled game packages and hosts them on Android. Building this repository does not compile tModLoader or managed FNA.
+
+## Repository map
+
+```text
+android/                         Android Gradle project
+  app/src/main/java/
+    dev/tml/mobilelauncher/
+      feature/launcher/          Offline WebView host, restricted bridge and operation state
+      feature/installation/      ZIP validation, transactional installation
+      feature/files/             Restricted external file browser, export and image decoding
+      feature/releases/          Official release metadata and downloads
+      feature/mods/              TMOD metadata, enabled.json, packs and public Workshop
+      feature/patches/           Built-in adapter catalog and declarative launch patches
+      feature/stores/            Store runtime, Keystore tokens and official GOG login
+      feature/game/              SDL activity and startup presentation
+      core/platform/             Android services exposed through JNI
+      core/runtime/              CoreCLR preparation and launch
+    org/libsdl/app/               SDL Java bindings
+    net/dot/android/crypto/       CoreCLR Android crypto bindings
+  native/                        JNI bridge and hostfxr integration
+managed/
+  Directory.Build.props         Shared C# build settings
+  MobileLauncher.Host/           Managed process entry point
+  MobileLauncher.Bootstrap/      Assembly loading and Android compatibility
+  MobileLauncher.Stores/         SteamKit2/GOG authentication and resource transport
+  MobileLauncher.Patches/        Bundled tML touch/rendering/optional hosting adapters
+  mods/MobileJoystick/           Curated client touch-mod sources and assets
+  tests/
+    MobileLauncher.Bootstrap.Tests/ Managed compatibility tests
+    MobileLauncher.Stores.Tests/   Store archive, path and integrity tests
+scripts/
+  build/                         Launcher publish and APK preparation
+  checks/                        Repository and package verification
+external/
+  SDL/                           Native SDL2 source
+  FNA3D/                         Native graphics backend source
+  FAudio/                        Native audio backend source
+  monomod/                       Prebuilt Android MonoMod dependencies
+docs/                            Current architecture and contributor reference
+ui/launcher/                     Offline React/TypeScript launcher UI (Animate UI)
+  src/native/                    Typed Android request/response transport and models
+  src/components/                Shared animated controls and modal adapter
+  src/features/                  Launcher pages and workflows
+  src/domain/                    Typed mod metadata, dependencies and pack validation
+  src/state/                     Session state and versioned visual preferences
+  tests/                         Browser workflow and accessibility verification
+build/                           Ignored generated artifacts and diagnostics
+```
+
+## Dependency direction
+
+Android source sets stay under `android/app/src/main` and `android/app/src/test`. C# projects, tests and shared build settings live exclusively under `managed/`. The root solution provides a single entry point for managed builds.
+
+The UI sources live under `ui/launcher`; its Web `src/` directory remains separate
+from Android source sets and C# projects. Gradle builds and bundles the approved
+React/Animate UI interface as offline assets, hosted by the launcher WebView.
+`src/native` owns the typed bridge; production panels use real device snapshots.
+The normal browser mode keeps its sample catalog/workflows for design testing.
+External pages cannot access the origin-scoped native bridge.
+
+`feature/launcher` coordinates `feature/installation` and `feature/releases`. These two features use JVM file and network APIs and do not depend on Activities, JNI, or each other. `feature/game` invokes `core/runtime`, which reads verified installation state, prepares launcher/runtime files, and enters the native host. The native host starts `MobileLauncher.Host`; `MobileLauncher.Bootstrap` loads the imported game and applies Android adapters.
+
+UI classes render state and forward actions. Controllers own background operation lifetime. Archive parsing, HTTP, manifest validation, and filesystem transactions belong outside UI classes. Introduce an interface only when there are multiple implementations or a useful testing boundary.
+
+## On-device data
+
+| Location under app files | Owner | Updated by |
+| --- | --- | --- |
+| `launcher/` | Managed host and compatibility libraries | APK asset preparation |
+| `runtime/` | Android CoreCLR | APK runtime extraction |
+| `games/tmodloader/` | Imported tML release and its Content | Import/download installer |
+| `games/terraria/` | Imported Terraria resources | Import installer |
+| `userdata/` | Saves, mods, game configuration | Game process |
+| `installed-packages.json` | Validated package layout/version | Package installer |
+
+Launcher updates must never merge packaged game binaries over imported packages. Installation uses staging, a durable transaction journal and recovery so cancellation or process interruption cannot silently replace the last valid installation. User data stays outside replaceable package directories.
+
+## Native and managed boundaries
+
+SDL2 owns rendering and native input. The JNI bridge provides Android clipboard, IME, display, lifecycle and input events. `NativeCoreClr` package names, JNI entry symbols and native class lookups must change together. Numeric input event IDs and C ABI struct layout are versioned contracts; do not reorder enum members.
+
+The Android application ID remains the existing installation identity; the source namespace is `dev.tml.mobilelauncher`. Manifest activity names use complete source class names. This allows structural refactoring without treating an app update as a different installed app.
+
+FNA.dll comes from the selected tML release. SDL2/FNA3D/FAudio are Android native libraries built by the launcher. Windows/Linux native libraries included in release ZIPs cannot replace the APK's Android libraries.
+
+## Repository scope
+
+Keep only the current launcher implementation and its dependencies in the working tree. Retired source-port code, design drafts, screenshots and investigation files belong in an external backup. Generated launcher output goes under the ignored `build/` directory; Gradle and .NET keep their conventional local output directories. External source trees retain their upstream layout and licenses.
+
+## Touch system and bundled patches
+
+SDL forwards raw contacts directly to FNA. `MobileLauncher.Patches` adapts FNA polling and the Terraria menu pointer; the embedded MobileJoystick client mod owns in-game dual joysticks, menus, inventory and the layout editor. There is no Android joystick or second key overlay. JNI lifecycle/IME events continue to be drained by the bootstrap adapter. Contact edges are retained by MobileJoystick across touch polling and its hooks unload with the mod.
+
+`BundledModInstaller` validates the embedded TMOD before replacing anything, backs up differing files under `userdata/Mods/.launcher-backup/*.tmod.bak`, atomically installs the shipped copy, and merges `MobileJoystick` into `enabled.json`. It retains other mod selections, packs and mod configuration; packs and bulk disable operations cannot disable the built-in control system. Imported files cannot overwrite its reserved internal name. Repeated installation is idempotent.
+
+Only the fixed APK-owned `MobileLauncher.Patches.dll` can execute patches. Required adapters are installed once per game process; optional FPS display, 120 FPS and integrated hosting default off. Optional flags and render scale are read when the game process starts. Hosting retains its upstream exact assembly MVID guard and requires tML 2026.09.3.1. An unsupported host version rolls back hooks. No room starts until requested in game. The existing resource/social/logging/URL adapters cover the upstream base patch without installing a competing base DLL. The successful final buffer swap owns the startup overlay's first-frame signal.
+
+Compile-only references are staged under ignored `build/game-references` from a precompiled release. No tML, FNA or Terraria resource files are included in the APK or rebuilt. The build invokes tML's packager with a separate `build/mod-packaging-userdata` directory; it never uses the developer's normal mod/save directory.

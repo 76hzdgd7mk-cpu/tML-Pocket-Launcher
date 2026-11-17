@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>MobileLauncher.Host</AssemblyName>
+    <RootNamespace>MobileLauncher.Host</RootNamespace>
+    <SelfContained>false</SelfContained>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <MonoMod_ReallySkipCheckTargetRuntime>true</MonoMod_ReallySkipCheckTargetRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MobileLauncher.Bootstrap/MobileLauncher.Bootstrap.csproj" />
+  </ItemGroup>
+</Project>

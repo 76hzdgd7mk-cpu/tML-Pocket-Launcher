@@ -1,0 +1,14 @@
+[versions]
+agp = "9.0.1"
+kotlin = "2.3.21"
+commonsCompress = "1.28.0"
+xz = "1.10"
+webkit = "1.14.0"
+
+[libraries]
+commons-compress = { group = "org.apache.commons", name = "commons-compress", version.ref = "commonsCompress" }
+xz = { group = "org.tukaani", name = "xz", version.ref = "xz" }
+webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }

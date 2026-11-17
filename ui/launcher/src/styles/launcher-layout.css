@@ -1,0 +1,940 @@
+/* Phone launcher layout: persistent navigation and launch controls, scrolling content. */
+:root {
+  --rail-width: 100px;
+  --control-radius: 12px;
+}
+.app-shell {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.sidebar {
+  width: var(--rail-width);
+  flex-basis: var(--rail-width);
+  height: 100%;
+  position: relative;
+  top: auto;
+  padding: 18px 10px 12px;
+  overflow-y: auto;
+}
+.brand {
+  justify-content: center;
+  margin: 0 0 25px;
+}
+.brand img {
+  width: 42px;
+  height: 42px;
+}
+.brand > span,
+.nav-label,
+.sidebar-bottom {
+  display: none;
+}
+.main-nav {
+  gap: 8px;
+}
+.nav-item {
+  min-height: 64px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 4px;
+  border-radius: 12px;
+}
+.nav-item > span:not(.nav-count):not(.active-mark) {
+  display: block;
+  font-size: 11px;
+  font-weight: 550;
+}
+.nav-item svg {
+  width: 21px;
+  height: 21px;
+}
+.nav-count,
+.nav-item .active-mark {
+  display: none !important;
+}
+.main {
+  display: grid;
+  grid-template-rows: 64px minmax(0, 1fr) auto;
+  min-width: 0;
+  height: 100%;
+  padding-bottom: 0;
+}
+.topbar {
+  height: auto;
+  margin: 0 28px;
+  gap: 12px;
+}
+.breadcrumb {
+  min-width: 0;
+  font-size: 12px;
+}
+.breadcrumb > span {
+  font-family: 'Segoe UI', var(--font);
+  font-weight: 650;
+  letter-spacing: -0.2px;
+  color: var(--strong);
+}
+.topbar-actions {
+  gap: 10px;
+}
+.account-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  min-height: 48px;
+  color: var(--muted);
+  font-size: 11px;
+  border-radius: 10px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .account-control:hover {
+    background: var(--faint);
+  }
+}
+.account-control svg {
+  height: 18px;
+  width: 18px;
+}
+.page-content {
+  width: 100%;
+  max-width: 1280px;
+  padding: 28px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding: 20px;
+  min-height: 0;
+}
+.page-heading {
+  margin-bottom: 22px;
+}
+.page-heading h1 {
+  font-size: 25px;
+}
+.page-heading p {
+  font-size: 12px;
+}
+.eyebrow {
+  font-size: 9px;
+  margin-bottom: 6px;
+}
+.panel {
+  border-radius: 14px;
+}
+.game-heading {
+  display: flex;
+  align-items: center;
+  gap: 19px;
+  margin: 4px 0 25px;
+}
+.game-heading > img {
+  width: 80px;
+  height: 80px;
+  image-rendering: pixelated;
+  padding: 5px;
+  background: var(--accent-soft);
+  border-radius: 18px;
+  border: 1px solid var(--line);
+}
+.game-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+.game-heading h1 {
+  font-family: 'Segoe UI', var(--font);
+  font-size: 32px;
+  letter-spacing: -0.9px;
+  line-height: 1.2;
+  margin: 4px 0 7px;
+}
+.game-heading p {
+  font-size: 12px;
+  color: var(--muted);
+}
+.game-edition {
+  font-size: 9px;
+  letter-spacing: 1.8px;
+  font-weight: 600;
+  color: var(--accent-ink);
+}
+.game-heading > .icon-button {
+  align-self: center;
+  color: var(--muted);
+}
+.launch-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 22px;
+}
+.game-overview .panel-header {
+  padding: 15px 20px;
+}
+.game-overview .panel-header h2,
+.home-section-heading h2 {
+  font-size: 14px;
+}
+.game-overview .badge {
+  font-size: 10px;
+}
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  padding: 10px 18px;
+  width: 100%;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.check-row:last-child {
+  border-bottom: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  .check-row:hover {
+    background: var(--subtle);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .check-row:last-child:hover {
+    border-radius: 0 0 14px 14px;
+  }
+}
+.check-symbol {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--faint);
+  color: var(--muted);
+}
+.check-symbol.done {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.check-symbol svg {
+  width: 18px;
+  height: 18px;
+}
+.check-row > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.check-row strong {
+  font-size: 12px;
+  font-weight: 600;
+  display: block;
+}
+.check-row small {
+  font-size: 10px;
+  color: var(--muted);
+  display: block;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.check-row > .chevron {
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+}
+.home-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 43px;
+  padding: 0 2px 9px;
+}
+.home-section-heading > span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.action-grid > button {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  justify-content: center;
+  gap: 9px;
+  padding: 17px;
+  min-height: 101px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  text-align: left;
+}
+@media (hover: hover) and (pointer: fine) {
+  .action-grid > button:hover {
+    border-color: var(--accent);
+    background: var(--subtle);
+  }
+}
+.action-grid svg {
+  width: 20px;
+  height: 20px;
+  color: var(--accent-ink);
+}
+.action-grid span {
+  font-size: 12px;
+  font-weight: 600;
+}
+.action-grid small {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: -4px;
+}
+.home-activity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.home-activity > svg {
+  height: 16px;
+  width: 16px;
+}
+.home-activity > span {
+  flex: 1;
+}
+.home-activity .button {
+  font-size: 11px;
+}
+.launch-bar {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(140px, 0.9fr) minmax(160px, 230px);
+  gap: 18px;
+  align-items: center;
+  padding: 17px 28px max(17px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--nav);
+  backdrop-filter: blur(16px);
+  z-index: 21;
+  box-shadow: 0 -8px 30px #203b2904;
+}
+.instance-picker {
+  min-width: 0;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  background: var(--surface);
+}
+@media (hover: hover) and (pointer: fine) {
+  .instance-picker:hover {
+    border-color: var(--accent);
+  }
+}
+.instance-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.instance-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.instance-picker > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.instance-picker strong,
+.instance-picker small {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.instance-picker small {
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.instance-picker strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.picker-chevron {
+  width: 15px;
+  height: 15px;
+  transform: rotate(-90deg);
+  color: var(--muted);
+}
+.launch-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+  color: var(--muted);
+  padding: 5px 0;
+  min-width: 0;
+  font-size: 11px;
+}
+.launch-status > svg {
+  height: 17px;
+  width: 17px;
+}
+.launch-status small {
+  font-size: 10px;
+  display: block;
+  margin-top: 3px;
+}
+.launch-status.ready > svg {
+  color: var(--accent);
+}
+.launch-button {
+  min-height: 56px;
+  padding: 10px 22px;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  border-radius: var(--control-radius);
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: 0.8px;
+  box-shadow: 0 4px 12px #2e674d15;
+}
+@media (hover: hover) and (pointer: fine) {
+  .launch-button:hover {
+    background: var(--accent-hover);
+  }
+}
+.launch-button svg {
+  height: 20px;
+  width: 20px;
+}
+[data-theme='dark'] .launch-button {
+  color: #20321d;
+}
+.instance-list {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.instance-option {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  text-align: left;
+  min-height: 82px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 15px;
+  background: var(--surface);
+}
+.instance-option.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.instance-option > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.instance-option strong {
+  display: block;
+  font-size: 13px;
+}
+.instance-option small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.instance-option > svg {
+  height: 18px;
+  width: 18px;
+  color: var(--accent-ink);
+}
+.toast {
+  bottom: 116px;
+  left: calc(50% + var(--rail-width) / 2);
+}
+.button,
+.resource-actions .button,
+.theme-choice,
+.filter,
+.settings-nav button {
+  min-height: 48px;
+}
+.source-card {
+  min-height: 180px;
+}
+.source-card h2 {
+  margin-top: 18px;
+  font-size: 18px;
+}
+.source-card p {
+  font-size: 11px;
+}
+.settings-layout {
+  grid-template-columns: 142px minmax(0, 1fr);
+  gap: 22px;
+}
+@media (min-width: 1200px) and (min-height: 650px) {
+  .page-content {
+    padding: 34px 40px;
+  }
+  .topbar {
+    margin: 0 40px;
+  }
+  .launch-bar {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+  .game-heading {
+    margin: 10px 0 34px;
+  }
+  .game-heading > img {
+    width: 94px;
+    height: 94px;
+  }
+  .game-heading h1 {
+    font-size: 38px;
+  }
+  .launch-workspace {
+    gap: 28px;
+  }
+  .check-row {
+    min-height: 82px;
+    padding-left: 22px;
+  }
+  .action-grid > button {
+    min-height: 119px;
+  }
+}
+@media (max-width: 760px) {
+  :root {
+    --rail-width: 80px;
+  }
+  .sidebar {
+    padding: 16px 8px 12px;
+  }
+  .main {
+    grid-template-rows: 58px minmax(0, 1fr) auto;
+  }
+  .brand {
+    margin-bottom: 22px;
+  }
+  .nav-item {
+    min-height: 60px;
+  }
+  .topbar {
+    margin: 0 20px;
+  }
+  .page-content {
+    padding: 22px 20px;
+  }
+  .launch-workspace {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .game-heading {
+    gap: 13px;
+    margin: 0 0 22px;
+  }
+  .game-heading > img {
+    width: 68px;
+    height: 68px;
+  }
+  .game-heading h1 {
+    font-size: 27px;
+  }
+  .game-heading p {
+    font-size: 11px;
+  }
+  .launch-bar {
+    grid-template-columns: minmax(0, 1fr) minmax(130px, 0.65fr);
+    gap: 12px;
+    padding: 14px 20px;
+  }
+  .launch-status {
+    display: none;
+  }
+  .launch-button {
+    font-size: 15px;
+  }
+  .settings-layout {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .home-activity {
+    align-items: flex-start;
+    line-height: 1.7;
+  }
+  .home-activity > svg {
+    margin-top: 3px;
+  }
+  .home-activity .button {
+    display: none;
+  }
+  .toast {
+    left: calc(50% + var(--rail-width) / 2);
+    bottom: 110px;
+  }
+}
+@media (max-height: 550px) and (min-width: 600px) {
+  :root {
+    --rail-width: 82px;
+  }
+  .sidebar {
+    padding: 10px 8px 8px;
+  }
+  .brand {
+    display: none;
+  }
+  .main-nav {
+    gap: 3px;
+    height: 100%;
+    justify-content: space-around;
+  }
+  .nav-item {
+    min-height: 52px;
+    padding: 4px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .nav-item svg {
+    width: 20px;
+    height: 20px;
+  }
+  .nav-item > span:not(.nav-count):not(.active-mark) {
+    font-size: 10px;
+  }
+  .main {
+    grid-template-rows: 48px minmax(0, 1fr) auto;
+  }
+  .topbar {
+    margin: 0 20px;
+  }
+  .account-control {
+    min-height: 44px;
+  }
+  .topbar-actions > .icon-button {
+    height: 44px;
+    min-height: 44px;
+  }
+  .page-content {
+    padding: 15px 20px;
+  }
+  .game-heading {
+    margin: 0 0 14px;
+    gap: 13px;
+  }
+  .game-heading > img {
+    width: 49px;
+    height: 49px;
+    border-radius: 12px;
+    padding: 2px;
+  }
+  .game-heading h1 {
+    font-size: 25px;
+    margin: 1px 0 0;
+  }
+  .game-heading p {
+    display: none;
+  }
+  .game-edition {
+    font-size: 8px;
+    letter-spacing: 1.4px;
+  }
+  .game-heading > .icon-button {
+    height: 48px;
+    min-height: 48px;
+  }
+  .launch-workspace {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 16px;
+  }
+  .game-overview .panel-header {
+    padding: 9px 14px;
+  }
+  .game-overview .panel-header h2,
+  .home-section-heading h2 {
+    font-size: 12px;
+  }
+  .game-overview .badge {
+    font-size: 9px;
+  }
+  .check-row {
+    min-height: 49px;
+    padding: 6px 12px;
+    gap: 10px;
+  }
+  .check-symbol {
+    height: 28px;
+    width: 28px;
+    flex-basis: 28px;
+  }
+  .check-symbol svg {
+    width: 16px;
+    height: 16px;
+  }
+  .check-row strong {
+    font-size: 11px;
+  }
+  .check-row small {
+    font-size: 9px;
+    margin-top: 1px;
+  }
+  .home-section-heading {
+    min-height: 33px;
+    padding-bottom: 8px;
+  }
+  .action-grid {
+    gap: 8px;
+  }
+  .action-grid > button {
+    min-height: 74px;
+    padding: 10px 13px;
+    gap: 7px;
+    position: relative;
+  }
+  .action-grid svg {
+    height: 18px;
+    width: 18px;
+  }
+  .action-grid span {
+    font-size: 11px;
+  }
+  .action-grid small {
+    position: absolute;
+    top: 13px;
+    right: 11px;
+    font-size: 8px;
+    margin: 0;
+  }
+  .home-activity {
+    margin-top: 10px;
+    font-size: 10px;
+  }
+  .home-activity .button {
+    min-height: 48px;
+  }
+  .launch-bar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr) 180px;
+    padding: 10px 20px max(10px, env(safe-area-inset-bottom));
+    gap: 16px;
+  }
+  .launch-status {
+    display: flex;
+  }
+  .launch-button,
+  .instance-picker {
+    min-height: 52px;
+  }
+  .launch-button {
+    font-size: 16px;
+  }
+  .instance-picker {
+    padding: 5px 11px;
+  }
+  .toast {
+    bottom: 86px;
+  }
+  .page-heading {
+    margin-bottom: 15px;
+  }
+  .page-heading h1 {
+    font-size: 23px;
+  }
+  .eyebrow {
+    display: none;
+  }
+  .source-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .source-card {
+    min-height: 170px;
+    padding: 17px;
+    position: static;
+  }
+  .source-card h2 {
+    font-size: 15px;
+    margin-top: 16px;
+  }
+  .source-card p {
+    font-size: 10px;
+    margin: 7px 0 12px;
+  }
+  .source-card small {
+    position: static;
+    font-size: 10px;
+  }
+}
+@media (max-width: 480px) {
+  :root {
+    --rail-width: 0px;
+  }
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    height: calc(71px + env(safe-area-inset-bottom));
+    padding: 4px 8px env(safe-area-inset-bottom);
+    overflow: visible;
+    z-index: 22;
+  }
+  .main {
+    height: calc(100% - 71px - env(safe-area-inset-bottom));
+    grid-template-rows: 56px minmax(0, 1fr) auto;
+  }
+  .main-nav {
+    flex-direction: row;
+    gap: 3px;
+  }
+  .nav-item {
+    min-height: 62px;
+    flex: 1;
+  }
+  .topbar {
+    margin: 0 18px;
+    gap: 8px;
+  }
+  .breadcrumb {
+    gap: 9px;
+    font-size: 11px;
+  }
+  .topbar-actions {
+    gap: 1px;
+  }
+  .account-control {
+    padding: 0 7px;
+    font-size: 10px;
+    gap: 5px;
+  }
+  .account-control svg {
+    width: 16px;
+    height: 16px;
+  }
+  .page-content {
+    padding: 20px 18px 26px;
+  }
+  .settings-nav {
+    margin-right: 0;
+    padding-right: 0;
+    min-width: 0;
+  }
+  .page-heading h1 {
+    font-size: 24px;
+  }
+  .game-heading > img {
+    width: 64px;
+    height: 64px;
+  }
+  .game-heading h1 {
+    font-size: 27px;
+  }
+  .game-heading > div > p {
+    font-size: 10px;
+  }
+  .game-heading > .icon-button {
+    display: none;
+  }
+  .game-edition {
+    font-size: 8px;
+    letter-spacing: 1.3px;
+  }
+  .launch-workspace {
+    gap: 18px;
+  }
+  .game-overview .panel-header {
+    padding: 13px 16px;
+  }
+  .check-row {
+    padding: 10px 14px;
+    min-height: 67px;
+  }
+  .home-section-heading {
+    min-height: 32px;
+  }
+  .action-grid {
+    gap: 10px;
+  }
+  .action-grid > button {
+    min-height: 100px;
+    padding: 16px;
+  }
+  .launch-bar {
+    grid-template-columns: minmax(0, 1fr) 132px;
+    gap: 10px;
+    padding: 12px 14px;
+    box-shadow: 0 -5px 20px #203b2906;
+  }
+  .instance-picker {
+    min-height: 56px;
+    gap: 8px;
+    padding: 6px 9px;
+  }
+  .instance-picker .instance-icon {
+    display: none;
+  }
+  .instance-picker small {
+    font-size: 9px;
+  }
+  .instance-picker strong {
+    font-size: 12px;
+  }
+  .launch-button {
+    min-height: 56px;
+    padding: 8px 12px;
+    font-size: 15px;
+    gap: 8px;
+  }
+  .launch-button svg {
+    height: 18px;
+    width: 18px;
+  }
+  .launch-status {
+    display: none;
+  }
+  .toast {
+    left: 50%;
+    bottom: 169px;
+  }
+  .drawer {
+    height: 94dvh;
+  }
+}
+@media (max-width: 359px) {
+  .breadcrumb > span {
+    display: none;
+  }
+  .breadcrumb > svg {
+    display: none;
+  }
+  .launch-bar {
+    grid-template-columns: minmax(0, 1fr) 116px;
+  }
+  .launch-button {
+    font-size: 14px;
+    gap: 5px;
+  }
+}

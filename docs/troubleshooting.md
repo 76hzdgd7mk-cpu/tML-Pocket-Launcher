@@ -1,35 +1,23 @@
 # Troubleshooting
 
-## The build cannot find generated tModLoader source
+## Gradle dependency downloads fail
 
-Ensure `D:\tModLoader\src\WorkspaceInfo.targets` exists, or pass an explicit
-source root to `platforms/android/scripts/prepare-game.ps1` with
-`-GeneratedSourceRoot`.
+Check the first failing repository URL and the JDK trust store or local proxy configuration. Configure Gradle proxy properties locally when needed; never commit proxy credentials. Retry after connectivity is restored. Use `--offline` only when all required artifacts are already cached.
 
-## Gradle is slow or dependency downloads time out
+For the Windows `PipeImpl` / `UnixDomainSockets.connect` failure before Gradle configuration, see [development](development.md#windows-java-socket-issue).
 
-The build honors `HTTP_PROXY` and `HTTPS_PROXY`. For the local proxy used in
-this workspace:
+## A resource package is rejected
 
-```powershell
-$env:HTTP_PROXY = 'http://127.0.0.1:7890'
-$env:HTTPS_PROXY = 'http://127.0.0.1:7890'
-```
+Import a ZIP containing Terraria's `Content` directory, or the resource tree with its `Images` directory at the root. The launcher also accepts a nested installation directory. Keep the original directory structure. Saves and mods are not resource packages.
 
-## The app asks for Steam login again
+For tML, use the official `tModLoader.zip` release asset or the in-app version downloader. The package must contain its DLL, dependency manifest, runtime configuration, FNA and Content. A source archive or a single DLL is insufficient. An unsuccessful or cancelled replacement preserves the previous validated package.
 
-The refresh token may have expired or been revoked, or the Android Keystore
-entry may have been invalidated. Complete login again. `adb shell pm clear`
-also deliberately removes the encrypted session and downloaded content.
+## Official versions cannot be downloaded
 
-## Content download fails
+Check access to GitHub Releases and its asset download hosts. GitHub may temporarily rate-limit release listing. Retry later or import the same official release ZIP through the launcher's built-in file browser. A download size or checksum error requires a fresh download.
 
-Confirm network access, Steam Guard completion, and Terraria ownership for App
-ID `105600`. Check `adb logcat -s FnaAndroidCoreClr SDL`. Do not copy a desktop
-Steam directory into the APK or commit Terraria files as a workaround.
+## The game fails after launch
 
-## The app starts but rendering or input fails
+Capture fresh logs with `adb logcat -s FnaAndroidCoreClr SDL MobileLauncherIme`. Check the selected tML version, imported Terraria resources and available storage. Saves and mods are stored separately under `userdata`; app data clearing removes them and should not be a routine troubleshooting step.
 
-Use an arm64-v8a API 28+ device or emulator. Capture fresh logs and verify the
-native libraries are present with `check-apk-assets.ps1`. A successful Gradle
-build does not prove device CoreCLR startup or GPU compatibility.
+Use an arm64-v8a API 28+ device. Run `scripts/checks/check-apk.ps1` against the newly built APK to inspect launcher/runtime assets and native libraries. A successful build does not establish CoreCLR, GPU or gameplay compatibility with every device and tML release.

@@ -1,0 +1,345 @@
+.mods-tabs {
+  gap: 22px;
+}
+.mods-tabs .tab {
+  min-width: 48px;
+}
+.mod-search-tools {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.mod-search-tools .search-field {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+.mod-search-tools input {
+  min-width: 0;
+  width: 100%;
+}
+.mod-search-tools > .icon-button {
+  flex: 0 0 48px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.mod-filter-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  margin-bottom: 8px;
+}
+.mod-filter-line .filter-group {
+  width: auto;
+  min-width: 0;
+}
+.mod-filter-line .filter {
+  font-size: 11px;
+  padding: 0 12px;
+}
+.mod-text-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--accent-ink);
+  padding: 0 8px;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  .mod-text-action:hover {
+    background: var(--faint);
+  }
+}
+.mod-text-action svg {
+  width: 16px;
+  height: 16px;
+}
+.catalog-summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+  padding: 0 3px 6px;
+}
+.mod-list {
+  overflow: hidden;
+}
+.mod-list .mod-row {
+  gap: 12px;
+  min-height: 82px;
+  padding: 12px 15px;
+}
+.mod-list .mod-row > .icon-button {
+  width: 48px;
+  min-width: 48px;
+}
+.mod-list .row-main h3 {
+  line-height: 1.5;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.mod-list .row-main h3 .badge {
+  font-size: 9px;
+  margin: 0;
+}
+.mod-list .row-main small {
+  color: var(--muted);
+  font-size: 10px;
+  display: block;
+  margin-top: 2px;
+}
+.mod-list .mod-art,
+.catalog-row .mod-art {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  font-size: 19px;
+  border-radius: 13px;
+}
+.catalog-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 15px;
+  min-width: 0;
+}
+.catalog-row + .catalog-row {
+  border-top: 1px solid var(--line);
+}
+.catalog-copy {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  padding: 4px 0;
+  border-radius: 8px;
+}
+.catalog-copy strong,
+.catalog-copy span,
+.catalog-copy small {
+  display: block;
+}
+.catalog-copy strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.catalog-copy span {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.catalog-copy small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+  margin-top: 2px;
+}
+.catalog-install {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 76px;
+  min-height: 48px;
+  border-radius: 16px;
+  color: var(--accent-ink);
+  font-size: 11px;
+  padding: 0 11px;
+  background: var(--accent-soft);
+  flex-shrink: 0;
+}
+.catalog-install svg {
+  width: 16px;
+  height: 16px;
+}
+.catalog-install.incompatible {
+  color: var(--muted);
+  background: var(--faint);
+}
+.mod-select-list {
+  margin-top: 18px;
+}
+.mod-select-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 65px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.mod-select-row select {
+  width: min(58%, 220px);
+  min-height: 48px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 10px;
+}
+.mod-plan {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.mod-plan > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  font-size: 11px;
+}
+.mod-plan > div + div {
+  border-top: 1px solid var(--line);
+}
+.mod-plan strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.mod-plan small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 4px;
+}
+.mod-plan > div > span:last-child {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.mod-transfer-items {
+  margin-top: 15px;
+}
+.pack-toolbar {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 12px;
+  flex-wrap: wrap;
+}
+.pack-toolbar .button {
+  font-size: 11px;
+}
+.pack-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  min-height: 80px;
+  padding: 14px 16px;
+}
+.pack-row + .pack-row {
+  border-top: 1px solid var(--line);
+}
+.pack-row > span {
+  flex: 1;
+  min-width: 0;
+}
+.pack-row strong {
+  display: block;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.pack-row small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.pack-row > svg {
+  color: var(--accent-ink);
+  flex-shrink: 0;
+}
+.pack-row > svg:last-child {
+  width: 14px;
+  color: var(--muted);
+}
+.pack-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 20px;
+}
+.pack-options .button {
+  font-size: 11px;
+  padding: 8px;
+  height: auto;
+}
+.pack-name-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12px;
+  margin-top: 20px;
+}
+.pack-name-field input,
+.pack-name-field textarea {
+  width: 100%;
+  min-height: 48px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--glass-edge);
+  border-radius: 12px;
+  padding: 12px;
+  font: inherit;
+}
+.pack-name-field textarea {
+  min-height: 180px;
+  resize: vertical;
+  font-family: Consolas, monospace;
+}
+@container (max-width:420px) {
+  .mods-tabs {
+    gap: 18px;
+  }
+  .mod-list .mod-row {
+    gap: 8px;
+    padding: 12px 10px;
+  }
+  .mod-list .mod-art,
+  .catalog-row .mod-art {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+    font-size: 16px;
+    border-radius: 10px;
+  }
+  .mod-list .mod-row > .switch {
+    flex-shrink: 0;
+  }
+  .catalog-row {
+    padding: 10px;
+    gap: 9px;
+  }
+  .catalog-copy strong {
+    font-size: 12px;
+  }
+  .catalog-copy span {
+    font-size: 10px;
+  }
+  .catalog-copy small {
+    font-size: 9px;
+  }
+  .catalog-install {
+    min-width: 48px;
+    padding: 0 9px;
+  }
+  .catalog-install span {
+    display: none;
+  }
+  .mod-filter-line {
+    flex-wrap: wrap;
+    gap: 0;
+  }
+}

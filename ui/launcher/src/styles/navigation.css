@@ -1,0 +1,117 @@
+/* Animate UI owns the shared selection spring; labels stay visible in both layouts. */
+.launcher-navigation {
+  --navigation-selection: #272727;
+  min-height: 0;
+  flex: 1;
+}
+[data-theme='light'] .launcher-navigation {
+  --navigation-selection: #e5e7e7;
+}
+.main-nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.main-nav > li {
+  min-width: 0;
+}
+.nav-highlight-container > [data-slot='motion-highlight-container'] {
+  height: 100%;
+}
+.launcher-navigation .nav-lens {
+  border: 0;
+  border-radius: 999px;
+  background: var(--navigation-selection);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.launcher-navigation .nav-item {
+  flex-direction: column;
+  gap: 0;
+  border: 0;
+  border-radius: 999px;
+  color: var(--muted);
+  background: transparent;
+}
+.launcher-navigation .nav-item.active {
+  color: var(--strong);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.launcher-navigation .nav-item.active:before {
+  display: none;
+}
+.launcher-navigation .navigation-label {
+  display: block;
+  padding-top: 5px;
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 16px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .launcher-navigation .nav-item:not(.active):hover {
+    color: var(--strong);
+    background: var(--faint);
+  }
+}
+@media (max-width: 480px) {
+  .sidebar {
+    height: calc(68px + env(safe-area-inset-bottom));
+    padding: 0 8px calc(8px + env(safe-area-inset-bottom));
+    border: 0;
+    background: transparent;
+    backdrop-filter: none;
+    box-shadow: none;
+    pointer-events: none;
+  }
+  .launcher-navigation {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 420px;
+    height: 60px;
+    margin: 0 auto;
+    padding: 2px 0;
+    border: 0;
+    background: transparent;
+    pointer-events: auto;
+  }
+  .launcher-navigation .main-nav {
+    width: 100%;
+    height: 56px;
+    gap: 4px;
+  }
+  .launcher-navigation .main-nav > li {
+    flex: 1;
+  }
+  .launcher-navigation .nav-item {
+    width: 100%;
+    min-width: 48px;
+    height: 56px;
+    min-height: 56px;
+    padding: 4px 0;
+    white-space: nowrap;
+  }
+  .launcher-navigation .nav-item svg {
+    width: 21px;
+    height: 21px;
+  }
+  .launcher-navigation .navigation-label {
+    padding-top: 4px;
+  }
+  .main {
+    height: calc(100% - 128px - env(safe-area-inset-bottom));
+  }
+  .game-dock {
+    bottom: calc(68px + env(safe-area-inset-bottom));
+    height: 60px;
+    border: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+  .launch-bar {
+    height: 60px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+}
