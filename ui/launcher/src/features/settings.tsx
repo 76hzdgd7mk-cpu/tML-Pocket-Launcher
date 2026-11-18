@@ -1,13 +1,21 @@
-import { addTransitionType, startTransition, useLayoutEffect, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
-import { Highlight, HighlightItem } from '@animate-ui/react/primitives/effects/highlight';
-import { Badge, Button, ContextNote, Icon, SettingRow, Switch } from '../components/ui';
+﻿import { useRef, useState } from 'react';
+import {
+  Badge,
+  Button,
+  ContextNote,
+  Icon,
+  SettingRow,
+  Switch,
+  WorkspaceTabs,
+} from '../components/ui';
+import type { TabItem } from '../components/ui';
 import { Select, Slider } from '../components/form-controls';
 import { DemoControl } from '../components/demo-control';
 import { useWorkspaceActions } from './home';
 import type { SettingsTab } from '../domain/types';
 import { prepareBackground } from '../native/background';
 import { nativeRequest } from '../native/bridge';
+import { hexToRgb, rgbToHex, tintGradient, tintInk, type TintRGB } from '../domain/background-tint';
 import { useNativeFileBrowser } from './native/files';
 import {
   NativeRuntimeSettings,
@@ -15,126 +23,61 @@ import {
   NativeStorageSettings,
 } from './native/settings';
 
-const settingsTabs: [SettingsTab, string, string][] = [
-  ['appearance', '外观', '界面外观'],
-  ['runtime', '游戏与运行', '游戏与运行'],
-  ['controls', '触控与输入', '触控与输入'],
-  ['storage', '存储与下载', '存储与下载'],
-  ['about', '关于', '关于启动器'],
+const settingsTabs: TabItem<SettingsTab>[] = [
+  {
+    value: 'appearance',
+    label: '外观',
+    id: 'settings-tab-appearance',
+    content: <Appearance />,
+  },
+  {
+    value: 'runtime',
+    label: '游戏与运行',
+    id: 'settings-tab-runtime',
+    content: <Runtime />,
+  },
+  {
+    value: 'controls',
+    label: '触控与输入',
+    id: 'settings-tab-controls',
+    content: <Controls />,
+  },
+  {
+    value: 'storage',
+    label: '存储与下载',
+    id: 'settings-tab-storage',
+    content: <Storage />,
+  },
+  {
+    value: 'about',
+    label: '关于',
+    id: 'settings-tab-about',
+    content: <About />,
+  },
 ];
 
-export function SettingsNavigation() {
-  const { state, update, motionEnabled } = useWorkspaceActions();
-  const nav = useRef<HTMLElement>(null);
-  useLayoutEffect(() => {
-    nav.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({
-      block: 'nearest',
-      inline: 'nearest',
-    });
-  }, [state.settingsTab]);
-  const select = (tab: SettingsTab) => {
-    if (tab === state.settingsTab) return;
-    const commit = () => update((current) => ({ ...current, settingsTab: tab }));
-    if (
-      !motionEnabled ||
-      document.documentElement.dataset.input === 'keyboard' ||
-      typeof document.startViewTransition !== 'function'
-    ) {
-      commit();
-      return;
-    }
-    const from = settingsTabs.findIndex(([id]) => id === state.settingsTab);
-    const to = settingsTabs.findIndex(([id]) => id === tab);
-    startTransition(() => {
-      addTransitionType(to < from ? 'nav-back' : 'nav-forward');
-      addTransitionType('push');
-      commit();
-    });
-  };
-  const keyboard = (event: KeyboardEvent, index: number) => {
-    const next =
-      event.key === 'ArrowRight'
-        ? (index + 1) % settingsTabs.length
-        : event.key === 'ArrowLeft'
-          ? (index + settingsTabs.length - 1) % settingsTabs.length
-          : event.key === 'Home'
-            ? 0
-            : event.key === 'End'
-              ? settingsTabs.length - 1
-              : -1;
-    if (next < 0) return;
-    event.preventDefault();
-    const [tab] = settingsTabs[next];
-    select(tab);
-    nav.current?.querySelector<HTMLButtonElement>(`[data-settings-tab="${tab}"]`)?.focus();
-  };
-  return (
-    <div className="settings-tabs-viewport">
-      <Highlight
-        mode="parent"
-        controlledItems
-        value={state.settingsTab}
-        hover={false}
-        className="settings-highlight"
-        containerClassName="settings-nav-container"
-        transition={{ duration: motionEnabled ? 0.18 : 0 }}
-      >
-        <nav
-          className="settings-nav"
-          aria-label="设置分类"
-          role="tablist"
-          aria-orientation="horizontal"
-          ref={nav}
-        >
-          {settingsTabs.map(([id, label, title], index) => (
-            <HighlightItem key={id} value={id} asChild>
-              <Button
-                className={state.settingsTab === id ? 'active' : ''}
-                id={`settings-tab-${id}`}
-                role="tab"
-                aria-selected={state.settingsTab === id}
-                aria-controls="settings-panel"
-                tabIndex={state.settingsTab === id ? 0 : -1}
-                title={title}
-                data-settings-tab={id}
-                onClick={() => select(id)}
-                onKeyDown={(event) => keyboard(event, index)}
-              >
-                {label}
-              </Button>
-            </HighlightItem>
-          ))}
-        </nav>
-      </Highlight>
-    </div>
-  );
-}
-
 export function SettingsPage() {
-  const { state } = useWorkspaceActions();
+  const { state, update } = useWorkspaceActions();
   return (
-    <div
-      className="settings-content"
-      id="settings-panel"
-      role="tabpanel"
-      aria-labelledby={`settings-tab-${state.settingsTab}`}
-    >
-      {state.settingsTab === 'appearance' ? (
-        <Appearance />
-      ) : state.settingsTab === 'runtime' ? (
-        <Runtime />
-      ) : state.settingsTab === 'controls' ? (
-        <Controls />
-      ) : state.settingsTab === 'storage' ? (
-        <Storage />
-      ) : (
-        <About />
-      )}
-    </div>
+    <WorkspaceTabs
+      value={state.settingsTab}
+      onChange={(settingsTab) => update((current) => ({ ...current, settingsTab }))}
+      label="设置分类"
+      items={settingsTabs}
+    />
   );
 }
 function Appearance() {
-  const { state, setPreferences, customize, activity, notify, nativeMode } = useWorkspaceActions();
+  const {
+    state,
+    setPreferences,
+    customize,
+    activity,
+    notify,
+    nativeMode,
+    openDialog,
+    closeDialog,
+  } = useWorkspaceActions();
   const prefs = state.preferences;
   const file = useRef<HTMLInputElement>(null);
   const { browse } = useNativeFileBrowser();
@@ -155,6 +98,21 @@ function Appearance() {
       },
     });
   };
+  const openTint = () =>
+    openDialog({
+      title: '自定义色调',
+      description: '调整红、绿、蓝通道，确认后应用到启动器背景。',
+      body: (
+        <TintPalette
+          value={prefs.backgroundTint}
+          onCancel={closeDialog}
+          onApply={(tint) => {
+            setPreferences({ background: 'diy', backgroundTint: tint });
+            closeDialog();
+          }}
+        />
+      ),
+    });
   return (
     <>
       <section className="settings-section">
@@ -209,7 +167,7 @@ function Appearance() {
       <section className="settings-section">
         <h2>自定义背景</h2>
         <div className="panel">
-          <SettingRow title="背景样式" description="默认使用纯色，图片由你决定。">
+          <SettingRow title="背景样式" description="纯色、自定义色调或本地图片。">
             {prefs.background === 'custom' ? (
               <Button
                 variant="ghost"
@@ -226,14 +184,22 @@ function Appearance() {
             {(
               [
                 ['none', '纯色'],
-                ['soft', '柔和色调'],
+                ['diy', '自定色'],
               ] as const
             ).map(([background, label]) => (
               <Button
                 key={background}
-                className={`background-option ${background === 'soft' ? 'soft-bg' : ''} ${prefs.background === background ? 'active' : ''}`}
+                className={`background-option ${background === 'diy' ? 'diy-bg' : ''} ${prefs.background === background ? 'active' : ''}`}
                 data-background={background}
-                onClick={() => setPreferences({ background })}
+                style={
+                  background === 'diy'
+                    ? {
+                        background: tintGradient(prefs.backgroundTint),
+                        color: tintInk(prefs.backgroundTint),
+                      }
+                    : undefined
+                }
+                onClick={() => (background === 'diy' ? openTint() : setPreferences({ background }))}
               >
                 {label}
                 {prefs.background === background && (
@@ -244,12 +210,12 @@ function Appearance() {
               </Button>
             ))}
             <Button
-              className={`background-option upload ${prefs.background === 'custom' ? 'active' : ''}`}
+              className={`background-option ${prefs.background === 'custom' ? 'active' : ''}`}
               data-action="upload-background"
               onClick={selectImage}
             >
-              <Icon name="plus" />
-              选择图片
+              <Icon name="plus" className="background-add" />
+              图片背景
             </Button>
           </div>
           <SettingRow title="面板不透明度" description="保持文字与按钮清晰可读。">
@@ -338,6 +304,53 @@ function Appearance() {
         />
       )}
     </>
+  );
+}
+function TintPalette({
+  value,
+  onApply,
+  onCancel,
+}: {
+  value: string;
+  onApply: (tint: string) => void;
+  onCancel: () => void;
+}) {
+  const [rgb, setRgb] = useState<TintRGB>(() => hexToRgb(value));
+  const tint = rgbToHex(rgb);
+  return (
+    <div className="tint-palette">
+      <div className="tint-preview" style={{ background: tintGradient(tint) }} />
+      <div className="tint-value">{tint.toUpperCase()}</div>
+      {(['R', 'G', 'B'] as const).map((channel, index) => (
+        <div className="tint-channel" key={channel}>
+          <span>{channel}</span>
+          <Slider
+            id={`tint-${channel.toLowerCase()}`}
+            label={`${channel} 通道`}
+            value={rgb[index]}
+            min={0}
+            max={255}
+            unit=""
+            onChange={(next) =>
+              setRgb(
+                (current) =>
+                  current.map((component, position) =>
+                    position === index ? next : component,
+                  ) as TintRGB,
+              )
+            }
+          />
+        </div>
+      ))}
+      <div className="dialog-actions">
+        <Button variant="ghost" data-action="cancel-tint" onClick={onCancel}>
+          取消
+        </Button>
+        <Button data-action="apply-tint" onClick={() => onApply(tint)}>
+          确定
+        </Button>
+      </div>
+    </div>
   );
 }
 function LocalSwitch({

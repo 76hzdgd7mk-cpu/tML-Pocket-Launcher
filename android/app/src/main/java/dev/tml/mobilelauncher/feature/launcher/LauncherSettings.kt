@@ -27,7 +27,9 @@ class LauncherSettings(context: Context) {
                 "glass" -> require(value is Number && value.toInt() in 75..100)
                 "touchOpacity" -> require(value is Number && value.toInt() in 20..100)
                 "renderScale" -> require(value in listOf(50, 75, 100))
-                "background" -> require(value in listOf("none", "soft", "custom"))
+                "background" -> require(value in listOf("none", "diy", "custom"))
+                "backgroundTint" ->
+                    require(value is String && Regex("^#[0-9a-fA-F]{6}$").matches(value))
                 "quickTools" ->
                     require(
                         value is JSONArray &&

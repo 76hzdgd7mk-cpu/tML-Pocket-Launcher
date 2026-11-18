@@ -59,6 +59,7 @@ export function Slider({
   max,
   onChange,
   id,
+  unit = '%',
 }: {
   label: string;
   value: number;
@@ -66,6 +67,7 @@ export function Slider({
   max: number;
   onChange: (value: number) => void;
   id?: string;
+  unit?: string;
 }) {
   return (
     <div className="range-control">
@@ -86,10 +88,13 @@ export function Slider({
           className="slider-thumb"
           id={id}
           aria-label={label}
-          aria-valuetext={`${value}%`}
+          aria-valuetext={`${value}${unit}`}
         />
       </SliderPrimitive.Root>
-      <output aria-live="off">{value}%</output>
+      <output aria-live="off">
+        {value}
+        {unit}
+      </output>
     </div>
   );
 }

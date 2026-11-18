@@ -11,7 +11,6 @@ import './styles/launcher-polish.css';
 import './styles/animate-ui.css';
 import './styles/primitive-controls.css';
 import './styles/navigation.css';
-import './styles/settings-navigation.css';
 import './styles/native-workspace.css';
 import './styles/steam-workspace.css';
 import './styles/file-browser.css';

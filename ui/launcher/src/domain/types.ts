@@ -21,7 +21,8 @@ export interface Preferences {
   motion: boolean;
   glassEffects: boolean;
   glass: number;
-  background: 'none' | 'soft' | 'custom';
+  background: 'none' | 'diy' | 'custom';
+  backgroundTint: string;
   customImage?: string;
   quickTools: Tool[];
 }

@@ -1,4 +1,5 @@
 import type { Preferences, Tool } from '../domain/types';
+import { defaultBackgroundTint } from '../domain/background-tint';
 import { nativeMode } from '../native/bridge';
 
 export const preferenceKey = 'tml-launcher-ui-v1';
@@ -21,6 +22,7 @@ export const defaultPreferences: Preferences = {
   glassEffects: true,
   glass: 85,
   background: 'none',
+  backgroundTint: defaultBackgroundTint,
   quickTools: ['mods', 'patches', 'controls', 'storage'],
 };
 export function readPreferences(): Preferences {
@@ -44,8 +46,12 @@ export function readPreferences(): Preferences {
       saved.glass <= 100
     )
       result.glass = saved.glass;
-    if (saved.background === 'none' || saved.background === 'soft')
+    // 旧版本使用 soft 表示自定义色调。
+    if (saved.background === 'soft') result.background = 'diy';
+    if (saved.background === 'none' || saved.background === 'diy')
       result.background = saved.background;
+    if (typeof saved.backgroundTint === 'string' && /^#[0-9a-f]{6}$/i.test(saved.backgroundTint))
+      result.backgroundTint = saved.backgroundTint;
     if (
       nativeMode &&
       saved.background === 'custom' &&
@@ -67,6 +73,12 @@ export function readPreferences(): Preferences {
     /* The defaults remain usable when storage is corrupt or blocked. */
   }
   return result;
+}
+/** 兼容旧版本偏好：soft 已更名为 diy。 */
+export function normalizePreferences(patch: Partial<Preferences>): Partial<Preferences> {
+  return (patch.background as string | undefined) === 'soft'
+    ? { ...patch, background: 'diy' }
+    : patch;
 }
 export function savePreferences(preferences: Preferences) {
   const { customImage, ...safe } = preferences;

@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+﻿const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
@@ -13,10 +13,16 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('console', (message) => {
-      if (['warning', 'error'].includes(message.type())) errors.push(message.text());
+      if (
+        ['warning', 'error'].includes(message.type()) &&
+        !message.text().startsWith('You have Reduced Motion enabled')
+      )
+        errors.push(message.text());
     });
     const nav = (id) => page.locator(`.main-nav [data-page="${id}"]`);
-    const tab = (id) => page.locator(`[data-settings-tab="${id}"]`);
+    const tab = (id) => page.locator(`#settings-tab-${id}`);
+    const labels = ['外观', '游戏与运行', '触控与输入', '存储与下载', '关于'];
+    const ids = ['appearance', 'runtime', 'controls', 'storage', 'about'];
     const settle = () =>
       page.evaluate(async () => {
         await document.activeViewTransition?.finished.catch(() => {});
@@ -42,64 +48,133 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
         await page.locator('.topbar').evaluate((el) => el.getBoundingClientRect().height),
         48,
       );
-      assert.equal(await page.locator('.topbar [role="tablist"]').count(), 0);
-      assert.equal(
-        await page.locator('main > .settings-tabs-viewport [role="tablist"]').count(),
-        1,
-      );
-      const headerBox = await page.locator('.topbar').boundingBox();
-      const categoryBox = await page.locator('.settings-tabs-viewport').boundingBox();
-      const contentBox = await page.locator('#page-content').boundingBox();
-      assert.equal(categoryBox.height, 56);
-      assert.ok(categoryBox.y >= headerBox.y + headerBox.height);
-      assert.ok(contentBox.y >= categoryBox.y + categoryBox.height);
-      assert.equal(await page.locator('#page-content .settings-nav').count(), 0);
+      assert.equal(await page.locator('#page-tabs .tabbar [role="tab"]').count(), 5);
       assert.deepEqual(
-        (await page.locator('.settings-nav [role="tab"]').allTextContents()).map((label) =>
+        (await page.locator('#page-tabs .tabbar [role="tab"]').allTextContents()).map((label) =>
           label.trim(),
         ),
-        ['外观', '游戏与运行', '触控与输入', '存储与下载', '关于'],
+        labels,
       );
-      const row = await page.locator('.settings-nav [role="tab"]').evaluateAll((tabs) =>
+      const row = await page.locator('#page-tabs .tabbar [role="tab"]').evaluateAll((tabs) =>
         tabs.map((el) => {
           const rect = el.getBoundingClientRect();
           return { y: rect.y, width: rect.width, height: rect.height };
         }),
       );
-      assert.ok(row.every((item) => item.y === row[0].y && item.width >= 64 && item.height >= 48));
+      assert.ok(row.every((item) => item.y === row[0].y && item.width > 0 && item.height >= 40));
       assert.equal(
-        await page.locator('.settings-nav').evaluate((el) => getComputedStyle(el).gap),
-        '8px',
+        await page.locator('#page-tabs .tabbar').evaluate((el) => getComputedStyle(el).gap),
+        '20px',
       );
-      for (const id of ['appearance', 'runtime', 'controls', 'storage', 'about']) {
+      const underline = await page
+        .locator('#page-tabs .tabbar [role="tab"][aria-selected="true"]')
+        .evaluate((tab) => {
+          const indicator = tab.closest('.tabbar').querySelector('[data-slot="tabs-indicator"]');
+          const box = tab.getBoundingClientRect();
+          const rule = getComputedStyle(indicator, '::after');
+          return {
+            spansTab: Math.abs(indicator.getBoundingClientRect().width - box.width) <= 1,
+            inset: rule.left,
+            height: rule.height,
+            radius: rule.borderRadius,
+            narrower: parseFloat(rule.width) <= box.width - 4,
+          };
+        });
+      assert.deepEqual(underline, {
+        spansTab: true,
+        inset: '2px',
+        height: '2px',
+        radius: '1.5px 1.5px 0px 0px',
+        narrower: true,
+      });
+      for (const id of ids) {
         await tab(id).click();
         await page.waitForFunction(
           (id) =>
-            document.querySelector('#settings-panel')?.getAttribute('aria-labelledby') ===
-            `settings-tab-${id}`,
+            document.querySelector(`#settings-tab-${id}`)?.getAttribute('aria-selected') === 'true',
           id,
         );
         const visible = await tab(id).evaluate((el) => {
           const rect = el.getBoundingClientRect();
-          const viewport = el.closest('.settings-tabs-viewport').getBoundingClientRect();
+          const viewport = el.closest('.tabbar').getBoundingClientRect();
           return rect.left >= viewport.left - 1 && rect.right <= viewport.right + 1;
         });
-        assert.equal(visible, true, 'active category scrolls into its dedicated row');
+        assert.equal(visible, true, 'active tab scrolls into its category row');
       }
       await page.screenshot({
-        path: path.join(__dirname, `../test-results/settings-horizontal-${viewport.width}.png`),
+        path: path.join(__dirname, `../test-results/settings-tabs-${viewport.width}.png`),
         animations: 'disabled',
       });
     }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await tab('appearance').click();
+    const indicator = await page.locator('#page-tabs [data-slot="tabs-indicator"]').count();
+    assert.equal(indicator, 1, 'selected tab is marked by the sliding underline');
+    assert.equal(
+      await page
+        .locator('#page-tabs [data-slot="tabs-indicator"]')
+        .evaluate((el) => getComputedStyle(el, '::after').height),
+      '2px',
+    );
+    const scroller = page.locator('#page-content .page-scroll');
+    const measure = () =>
+      page.evaluate(() => ({
+        tab: document.querySelector('#page-tabs').getBoundingClientRect().top,
+        scrollTop: document.querySelector('#page-content .page-scroll').scrollTop,
+        maxScroll:
+          document.querySelector('#page-content .page-scroll').scrollHeight -
+          document.querySelector('#page-content .page-scroll').clientHeight,
+      }));
+    await scroller.evaluate((el) => {
+      el.scrollTop = 200;
+    });
+    const half = await measure();
+    await scroller.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+    const bottom = await measure();
+    assert.ok(
+      bottom.scrollTop > half.scrollTop && bottom.maxScroll > 200,
+      'settings content scrolls',
+    );
+    assert.equal(
+      await page.evaluate(
+        () =>
+          !document
+            .querySelector('#page-content .page-scroll')
+            .contains(document.querySelector('#page-tabs')),
+      ),
+      true,
+      'tab row sits outside the scrolling area',
+    );
+    assert.ok(
+      Math.abs(half.tab - bottom.tab) <= 1,
+      `tab row stays fixed while content scrolls (${half.tab} -> ${bottom.tab})`,
+    );
+    await page.screenshot({
+      path: path.join(__dirname, '../test-results/settings-tabs-fixed.png'),
+      animations: 'disabled',
+    });
+    await scroller.evaluate((el) => {
+      el.scrollTop = 0;
+    });
     await tab('about').focus();
+    const selected = async (id) =>
+      page.waitForFunction(
+        (id) =>
+          document.querySelector(`#settings-tab-${id}`)?.getAttribute('aria-selected') === 'true',
+        id,
+      );
     await page.keyboard.press('Home');
-    assert.equal(await tab('appearance').getAttribute('aria-selected'), 'true');
+    await selected('appearance');
+    assert.equal(await tab('appearance').evaluate((el) => el === document.activeElement), true);
     await page.keyboard.press('ArrowRight');
-    assert.equal(await tab('runtime').getAttribute('aria-selected'), 'true');
+    await selected('runtime');
     assert.equal(await tab('runtime').evaluate((el) => el === document.activeElement), true);
     await page.keyboard.press('End');
-    assert.equal(await tab('about').getAttribute('aria-selected'), 'true');
+    await selected('about');
     await page.keyboard.press('Home');
+    await selected('appearance');
     await settle();
 
     await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -109,33 +184,15 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await settle();
     const header = await page.locator('.topbar').boundingBox();
     const dock = await page.locator('.launch-bar').boundingBox();
-    const expectPush = async (from) => {
-      await page.waitForFunction(
-        (from) =>
-          document
-            .getAnimations()
-            .some(
-              (animation) =>
-                animation.playState === 'running' &&
-                animation.effect?.pseudoElement?.startsWith('::view-transition-new') &&
-                animation.effect
-                  .getKeyframes()
-                  .some((frame) => frame.transform === `translateX(${from}%)`),
-            ),
-        from,
-      );
-      assert.deepEqual(await page.locator('.topbar').boundingBox(), header);
-      assert.deepEqual(await page.locator('.launch-bar').boundingBox(), dock);
-      await settle();
-    };
     await tab('runtime').click();
-    await expectPush(100);
     await tab('appearance').click();
-    await expectPush(-100);
+    await settle();
+    assert.deepEqual(await page.locator('.topbar').boundingBox(), header);
+    assert.deepEqual(await page.locator('.launch-bar').boundingBox(), dock);
     await nav('games').click();
     await nav('mods').click();
     await nav('settings').click();
-    await page.locator('#settings-panel').waitFor();
+    await page.locator('#page-tabs .tabbar').waitFor();
     await settle();
     assert.equal(await nav('settings').getAttribute('aria-current'), 'page');
     assert.equal(await page.locator('[data-slot="page-transition"]').count(), 1);
@@ -161,11 +218,12 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     );
     await fallback.goto(base);
     await fallback.locator('.main-nav [data-page="settings"]').click();
-    await fallback.locator('[data-settings-tab="about"]').click();
+    await fallback.locator('#settings-tab-about').click();
     assert.equal(
-      await fallback.locator('#settings-panel').getAttribute('aria-labelledby'),
-      'settings-tab-about',
+      await fallback.locator('#settings-tab-about').getAttribute('aria-selected'),
+      'true',
     );
+    await fallback.getByText('开源与许可', { exact: true }).waitFor();
 
     const phone = await browser.newPage({
       viewport: { width: 1280, height: 1000 },
@@ -228,7 +286,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     );
     assert.deepEqual(errors, []);
     console.log(
-      'PASS: dedicated 56px settings category row below the 48px header at six phone sizes; full labels, spacing, keyboard tabs and horizontal reveal; real directional PageTransition push snapshots; header/dock stay still; rapid navigation; reduced motion and unsupported-browser fallback; default landscape, live portrait setting, session retention, persistence, preview toolbar sync, explicit orientation URLs and invalid preference recovery.',
+      'PASS: shared workspace tabs drive settings at six phone sizes; labels, spacing, keyboard navigation, horizontal reveal, stable header/dock, reduced motion, unsupported-view-transition fallback and preview orientation behavior.',
     );
   } finally {
     await browser.close();

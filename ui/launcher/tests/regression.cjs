@@ -1,4 +1,4 @@
-const { toggleDemo } = require('./demo.cjs');
+﻿const { toggleDemo } = require('./demo.cjs');
 const { chromium } = require('playwright');
 const path = require('path');
 const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
@@ -91,7 +91,10 @@ const assert = require('assert/strict');
   await capture('settings-dark-desktop.png');
   await page.locator('[data-theme-choice="light"]').click();
   assert.equal(await page.locator('html').getAttribute('data-theme'), 'light');
-  await page.locator('[data-background="soft"]').click();
+  await page.locator('[data-background="diy"]').click();
+  await page.getByRole('dialog').waitFor();
+  assert.ok((await page.getByRole('dialog').innerText()).includes('自定义色调'));
+  await page.locator('[data-action="apply-tint"]').click();
   assert.ok((await page.locator('body').getAttribute('class')).includes('has-background'));
   assert.equal(
     await page.locator('.game-dock').evaluate((el) => getComputedStyle(el).backdropFilter),
@@ -282,7 +285,9 @@ const assert = require('assert/strict');
         `${name} ${viewport.width}x${viewport.height}`,
       );
       const original = await page.locator('.launch-bar').boundingBox();
-      await page.locator('#page-content').evaluate((el) => (el.scrollTop = el.scrollHeight));
+      await page
+        .locator('#page-content .page-scroll')
+        .evaluate((el) => (el.scrollTop = el.scrollHeight));
       assert.deepEqual(
         await page.locator('.launch-bar').boundingBox(),
         original,

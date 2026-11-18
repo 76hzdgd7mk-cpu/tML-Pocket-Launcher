@@ -147,14 +147,12 @@ const EFFECTS: Record<Effect, (back: boolean, enter: Frame, exit: Frame) => Effe
     const from = back ? -SLIDE : SLIDE;
     return {
       enter: {
-        opacity: [0, 1],
         transform: [`translateX(${from}px)`, 'none'],
         transition: { duration: 0.24, ease: ease.out },
       },
       exit: {
-        opacity: [1, 0],
         transform: ['none', `translateX(${-from}px)`],
-        transition: { duration: 0.2, ease: ease.leave },
+        transition: { duration: 0.24, ease: ease.leave },
       },
     };
   },

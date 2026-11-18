@@ -54,26 +54,85 @@
   outline: none;
   min-width: 0;
 }
-.tabbar {
-  gap: 4px;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--subtle);
+.page-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
-.tabbar .tab {
-  padding: 0 12px;
-  border-radius: 10px;
-  flex-shrink: 0;
+.page-tabs {
+  flex: none;
 }
-.tabbar [data-state='active'] {
-  background: var(--accent-soft);
-}
-.tabbar .tab.active:after {
+.page-tabs:empty {
   display: none;
 }
-.tabbar [data-active] {
-  color: var(--accent-ink);
+.page-scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding: 20px;
+}
+/* Material3 TabLayout: indicator hugs the label, top corners rounded, 2dp tall. */
+.tabbar {
+  --tab-gap: 20px;
+  --tab-accent: #2563eb;
+  gap: var(--tab-gap);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  justify-content: safe center;
+}
+.tabbar .tab {
+  min-width: 0;
+  min-height: 40px;
+  margin: 0;
+  padding: 0;
+  border-radius: 12px;
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.tabbar .tab:before {
+  content: '';
+  position: absolute;
+  inset: 0 0;
+}
+.tabbar .tab[role='tab']:not(:first-of-type):before {
+  left: calc(var(--tab-gap) / -2);
+}
+.tabbar .tab[role='tab']:not(:last-of-type):before {
+  right: calc(var(--tab-gap) / -2);
+}
+.tabbar .tab[aria-selected='true'] {
+  color: var(--tab-accent);
+}
+.tabbar .tab:active,
+[data-input='pointer'] .tabbar .tab:not(:disabled):active {
+  background: transparent;
+  opacity: 1;
+}
+.tabbar .tab.active:not([data-slot='tabs-indicator']):after {
+  display: none;
+}
+.tabbar [data-slot='tabs-indicator'] {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.tabbar [data-slot='tabs-indicator']:after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 1.5px 1.5px 0 0;
+  background: var(--tab-accent);
 }
 .animate-switch:after {
   display: none;

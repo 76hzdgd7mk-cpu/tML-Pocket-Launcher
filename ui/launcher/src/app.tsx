@@ -17,7 +17,7 @@ import { HomePage } from './features/home';
 import { GamesPage } from './features/games';
 import { ModsPage } from './features/mods';
 import { PatchesPage } from './features/patches';
-import { SettingsNavigation, SettingsPage } from './features/settings';
+import { SettingsPage } from './features/settings';
 import { useGameActions } from './features/game-actions';
 import { pageNames, profileTitle, useLauncher, workspaceNames } from './state/launcher';
 import type { Page } from './domain/types';
@@ -42,20 +42,16 @@ const help: Record<Page, string> = {
   mods: '已安装模组支持搜索、启停、依赖联动、删除和批量操作。下载模组支持浏览、筛选、更新及连同依赖下载；模组包保存启用清单。管理时只读取文件元信息，无需加载模组。在线目录与下载在此原型中为示例。',
   patches:
     '内置适配随启动器提供，属于必需的运行环境，无法关闭。可选补丁按游戏版本管理，导入后校验依赖和兼容性。',
-  settings:
-    '调整主题、玻璃材质、自定义背景、运行选项、触控和存储。背景默认纯色；图片可以在外观设置中选择。',
+  settings: '更改启动器外观主题、界面UI、自定义背景、运行选项、触控和存储。',
 };
 export function App() {
-  const { state, toast, motionEnabled, nativeWorkspace } = useLauncher();
+  const { toast, motionEnabled, nativeWorkspace } = useLauncher();
   return (
     <>
       <div className={`app-shell ${nativeWorkspace ? 'has-native-workspace' : ''}`}>
         <Navigation />
-        <main
-          className={`main ${!nativeWorkspace && state.page === 'settings' ? 'settings-workspace' : ''} ${nativeWorkspace ? 'native-workspace' : ''}`}
-        >
+        <main className={`main ${nativeWorkspace ? 'native-workspace' : ''}`}>
           <Header />
-          {!nativeWorkspace && state.page === 'settings' && <SettingsNavigation />}
           <PageContent />
         </main>
         {!nativeWorkspace && <LaunchDock />}
@@ -253,6 +249,7 @@ function Header() {
 function PageContent() {
   const { state, motionEnabled, navigationPending, nativeMode, nativeWorkspace } = useLauncher();
   const content = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
   const positions = useRef(new Map<string, number>());
   const key =
     nativeWorkspace ||
@@ -271,14 +268,14 @@ function PageContent() {
   const committed = useRef(key);
   const mounted = useRef(false);
   useLayoutEffect(() => {
-    const element = content.current;
+    const element = scroller.current;
     if (!element) return;
     const changed = committed.current !== key;
     // Input modality changes motion settings, but must not restore stale scroll
     // positions between pointerdown and click.
     if (changed || !mounted.current) element.scrollTop = positions.current.get(key) || 0;
     if (changed && (nativeWorkspace || committed.current.split(':')[0] !== state.page))
-      element.focus({ preventScroll: true });
+      content.current?.focus({ preventScroll: true });
     committed.current = key;
     mounted.current = true;
   }, [key, motionEnabled, state.page, nativeWorkspace]);
@@ -297,23 +294,31 @@ function PageContent() {
       aria-labelledby="screen-title"
       inert={navigationPending}
       ref={content}
-      onScroll={(event) => positions.current.set(committed.current, event.currentTarget.scrollTop)}
     >
-      <PageTransition
-        pageKey={nativeWorkspace || (state.page === 'settings' ? key : state.page)}
-        effect="slide"
-        className="page-frame"
+      <div className="page-tabs" id="page-tabs" />
+      <div
+        className="page-scroll"
+        ref={scroller}
+        onScroll={(event) =>
+          positions.current.set(committed.current, event.currentTarget.scrollTop)
+        }
       >
-        {nativeWorkspace === 'steam-login' ? (
-          <SteamLoginPage />
-        ) : nativeWorkspace === 'steam-library' ? (
-          <SteamLibraryPage />
-        ) : nativeWorkspace === 'downloads' ? (
-          <NativeDownloadsPage />
-        ) : (
-          pages[state.page]
-        )}
-      </PageTransition>
+        <PageTransition
+          pageKey={nativeWorkspace || state.page}
+          effect="push"
+          className="page-frame"
+        >
+          {nativeWorkspace === 'steam-login' ? (
+            <SteamLoginPage />
+          ) : nativeWorkspace === 'steam-library' ? (
+            <SteamLibraryPage />
+          ) : nativeWorkspace === 'downloads' ? (
+            <NativeDownloadsPage />
+          ) : (
+            pages[state.page]
+          )}
+        </PageTransition>
+      </div>
     </div>
   );
 }

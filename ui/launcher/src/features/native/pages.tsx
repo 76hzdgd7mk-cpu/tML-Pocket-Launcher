@@ -174,7 +174,7 @@ export function NativeGamesPage() {
         <div className="account-row" key={store}>
           <span className={`brand-word ${store}`}>{store === 'steam' ? 'STEAM' : 'gog.com'}</span>
           <div className="account-copy">
-            <strong>官方游戏库</strong>
+            <strong>{store === 'steam' ? 'Steam游戏库' : 'GOG游戏库'}</strong>
             <small>
               {store === 'steam'
                 ? 'SteamKit 登录 · Steam Guard · 已购资源下载'

@@ -27,6 +27,7 @@ hs_err_*.log
 replay_*.log
 *.7z
 *.apk
+android/app/release/
 
 # Python tooling and local credentials
 __pycache__/

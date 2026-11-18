@@ -285,16 +285,28 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
             launch:
               document.querySelector('.launch-button').getBoundingClientRect().bottom <=
               innerHeight,
-            targets: [
-              ...root.querySelectorAll(
-                '.catalog-install,.pack-row,.mod-row>.icon-button,[role="tab"]',
-              ),
-            ].every((el) => {
-              const box = el.getBoundingClientRect();
-              return (
-                box.width >= 48 && box.height >= 48 && box.right <= r.right && box.left >= r.left
-              );
-            }),
+            targets:
+              [...root.querySelectorAll('.catalog-install,.pack-row,.mod-row>.icon-button')].every(
+                (el) =>
+                  el.getBoundingClientRect().width >= 48 && el.getBoundingClientRect().height >= 48,
+              ) &&
+              [...root.querySelectorAll('[role="tab"]')].every((el) => {
+                const box = el.getBoundingClientRect();
+                const gap = parseFloat(getComputedStyle(el.closest('.tabbar')).gap) || 0;
+                const midY = box.top + box.height / 2;
+                const reach = (x) =>
+                  document.elementFromPoint(x, midY)?.closest('[role="tab"]') === el;
+                const prev = el.previousElementSibling?.getAttribute('role') === 'tab';
+                const next = el.nextElementSibling?.getAttribute('role') === 'tab';
+                return (
+                  box.height >= 40 &&
+                  box.width + gap >= 48 &&
+                  box.right <= r.right &&
+                  box.left >= r.left &&
+                  (!prev || reach(box.left - 6)) &&
+                  (!next || reach(box.right + 6))
+                );
+              }),
           };
         });
         assert.deepEqual(

@@ -1,3 +1,5 @@
+import { useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { ComponentProps, ReactNode } from 'react';
 import { Button as AnimateButton } from '@animate-ui/react/primitives/buttons/button';
 import * as SwitchPrimitive from '@animate-ui/react/primitives/radix-ui/switch';
@@ -134,30 +136,57 @@ export function WorkspaceTabs<T extends string>({
   label: string;
   className?: string;
 }) {
+  const list = useRef<HTMLDivElement>(null);
+  // Resolve the shell slot before the browser paints: an effect-only lookup
+  // leaves #page-tabs empty for a frame on every page switch.
+  const [slot, setSlot] = useState<HTMLElement | null>(() =>
+    typeof document === 'undefined' ? null : document.getElementById('page-tabs'),
+  );
+  useLayoutEffect(() => {
+    const target = document.getElementById('page-tabs');
+    if (target && target !== slot) setSlot(target);
+  }, [slot]);
+  useLayoutEffect(() => {
+    list.current
+      ?.querySelector('[role="tab"][aria-selected="true"]')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [value, slot]);
   return (
     <TabsPrimitive.Root
       className="workspace-tabs"
       value={value}
       onValueChange={(next) => onChange(next as T)}
     >
-      <TabsPrimitive.List
-        className={`tabbar ${className}`}
-        aria-label={label}
-        transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-      >
-        {items.map((item) => (
-          <TabsPrimitive.Trigger
-            key={item.value}
-            value={item.value}
-            id={item.id}
-            className={`tab ${value === item.value ? 'active' : ''}`}
-            {...item.data}
+      {slot &&
+        createPortal(
+          <TabsPrimitive.List
+            ref={list}
+            className={`tabbar ${className}`}
+            aria-label={label}
+            transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+            onKeyDown={(event) => {
+              if (event.key !== 'Home' && event.key !== 'End') return;
+              event.preventDefault();
+              const index = event.key === 'Home' ? 0 : items.length - 1;
+              onChange(items[index].value);
+              event.currentTarget.querySelectorAll<HTMLElement>('[role="tab"]')[index]?.focus();
+            }}
           >
-            {item.label}
-            {item.count !== undefined && <span className="tab-count">{item.count}</span>}
-          </TabsPrimitive.Trigger>
-        ))}
-      </TabsPrimitive.List>
+            {items.map((item) => (
+              <TabsPrimitive.Trigger
+                key={item.value}
+                value={item.value}
+                id={item.id}
+                className={`tab ${value === item.value ? 'active' : ''}`}
+                {...item.data}
+              >
+                {item.label}
+                {item.count !== undefined && <span className="tab-count">{item.count}</span>}
+              </TabsPrimitive.Trigger>
+            ))}
+          </TabsPrimitive.List>,
+          slot,
+        )}
       {items.map((item) => (
         <TabsPrimitive.Content
           key={item.value}

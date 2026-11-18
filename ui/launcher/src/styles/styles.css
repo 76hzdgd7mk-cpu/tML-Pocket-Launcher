@@ -6,7 +6,7 @@
 [hidden] {
   display: none !important;
 }
-.background-option.soft-bg {
+.background-option.diy-bg {
   color: #24362e;
 }
 :root {
@@ -886,6 +886,17 @@ h3 {
     background: var(--subtle);
   }
 }
+.source-card .steam-brand {
+  gap: 8px;
+}
+.source-card .steam-brand > img {
+  width: 22px;
+  height: 22px;
+}
+.source-card .steam-brand > span {
+  font-size: 16px;
+  letter-spacing: 1px;
+}
 .source-card h2 {
   font-size: 19px;
   margin-top: 24px;
@@ -912,11 +923,8 @@ h3 {
   font-size: 16px;
   letter-spacing: -0.5px;
 }
+.brand-word.gog,
 .brand-word.steam {
-  letter-spacing: 1px;
-  color: var(--blue);
-}
-.brand-word.gog {
   font-weight: 800;
   letter-spacing: -1px;
 }
@@ -932,6 +940,18 @@ h3 {
 .account-row .brand-word {
   min-width: 60px;
   font-size: 13px;
+}
+.account-row .steam-brand {
+  min-width: 60px;
+  gap: 8px;
+}
+.account-row .steam-brand > img {
+  width: 20px;
+  height: 20px;
+}
+.account-row .steam-brand > span {
+  font-size: 13px;
+  letter-spacing: 1px;
 }
 .account-copy {
   flex: 1;
@@ -968,6 +988,18 @@ h3 {
 .account-detail .brand-word {
   min-width: 90px;
   font-size: 22px;
+}
+.account-detail .steam-brand {
+  min-width: 90px;
+  gap: 10px;
+}
+.account-detail .steam-brand > img {
+  width: 28px;
+  height: 28px;
+}
+.account-detail .steam-brand > span {
+  font-size: 22px;
+  letter-spacing: 1.5px;
 }
 .account-detail .account-copy strong {
   font-size: 14px;
@@ -1331,7 +1363,7 @@ select {
   height: 15px;
   margin-right: 6px;
 }
-.background-option.soft-bg {
+.background-option.diy-bg {
   background: linear-gradient(135deg, #e4e8df, #cad7c3);
 }
 .background-option .chosen-dot {
@@ -1352,15 +1384,12 @@ select {
   height: 10px;
   margin: 0;
 }
-.background-option.upload {
-  border-style: dashed;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 7px;
-}
-.background-option.upload svg {
-  margin: 0;
+.background-option .background-add {
+  position: absolute;
+  inset: 0;
+  width: 20px;
+  height: 20px;
+  margin: auto;
 }
 .range-control {
   display: flex;
@@ -1489,6 +1518,7 @@ select {
   margin: 0;
 }
 .dialog .source-card > .brand-word,
+.dialog .source-card > .steam-brand,
 .dialog .source-card > svg {
   grid-row: 1/3;
 }
@@ -1617,6 +1647,40 @@ body.has-background .panel {
 }
 [data-theme='dark'] body.has-background {
   background-image: linear-gradient(#151c19aa, #151c19aa), var(--custom-background);
+}
+.tint-palette {
+  display: grid;
+  gap: 12px;
+}
+.tint-preview {
+  height: 76px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+.tint-value {
+  text-align: center;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.tint-channel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tint-channel > span {
+  width: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.tint-channel .range-control {
+  flex: 1;
+  max-width: none;
+}
+.tint-palette .dialog-actions {
+  margin-top: 6px;
 }
 .split-rule {
   margin: 23px 0;
@@ -1863,6 +1927,13 @@ body.has-background .panel {
     right: 23px;
   }
   .source-card > .brand-word {
+    font-size: 14px;
+  }
+  .source-card > .steam-brand > img {
+    width: 19px;
+    height: 19px;
+  }
+  .source-card > .steam-brand > span {
     font-size: 14px;
   }
   .source-card > svg {
@@ -2176,6 +2247,18 @@ body.has-background .panel {
   .account-detail .brand-word {
     min-width: 55px;
     font-size: 16px;
+  }
+  .account-detail .steam-brand {
+    min-width: 55px;
+    gap: 8px;
+  }
+  .account-detail .steam-brand > img {
+    width: 20px;
+    height: 20px;
+  }
+  .account-detail .steam-brand > span {
+    font-size: 16px;
+    letter-spacing: 1px;
   }
   .account-detail .account-copy strong {
     font-size: 12px;

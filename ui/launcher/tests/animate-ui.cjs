@@ -1,4 +1,4 @@
-const { toggleDemo } = require('./demo.cjs');
+﻿const { toggleDemo } = require('./demo.cjs');
 const { chromium } = require('playwright');
 const assert = require('assert/strict');
 const path = require('path');
@@ -18,7 +18,11 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     });
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('console', (message) => {
-      if (message.type() === 'error' || message.type() === 'warning') errors.push(message.text());
+      if (
+        (message.type() === 'error' || message.type() === 'warning') &&
+        !message.text().startsWith('You have Reduced Motion enabled')
+      )
+        errors.push(message.text());
     });
     const action = (id) => page.locator(`[data-action="${id}"]`);
     const nav = (id) => page.locator(`.main-nav [data-page="${id}"]`);
@@ -50,6 +54,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.goto(base);
     await page.locator('.workspace-tools').waitFor();
     assert.equal(await page.locator('.workspace-tools button').count(), 4);
+    await page.locator('[data-slot="motion-highlight"]').waitFor();
     assert.equal(
       await page.locator('[data-slot="motion-highlight"]').count(),
       1,
@@ -240,16 +245,24 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.setViewportSize({ width: 390, height: 844 });
     await nav('settings').click();
     await settled();
-    await page.locator('#page-content').evaluate((el) => (el.scrollTop = 220));
-    const scroll = await page.locator('#page-content').evaluate((el) => el.scrollTop);
+    await page.locator('#page-content .page-scroll').evaluate((el) => (el.scrollTop = 220));
+    const scroll = await page.locator('#page-content .page-scroll').evaluate((el) => el.scrollTop);
     await nav('home').click();
     await nav('settings').click();
     await settled();
-    assert.equal(await page.locator('#page-content').evaluate((el) => el.scrollTop), scroll);
+    assert.equal(
+      await page.locator('#page-content .page-scroll').evaluate((el) => el.scrollTop),
+      scroll,
+    );
     await action('glass-effects').scrollIntoViewIfNeeded();
-    const switchScroll = await page.locator('#page-content').evaluate((el) => el.scrollTop);
+    const switchScroll = await page
+      .locator('#page-content .page-scroll')
+      .evaluate((el) => el.scrollTop);
     await action('glass-effects').click();
-    assert.equal(await page.locator('#page-content').evaluate((el) => el.scrollTop), switchScroll);
+    assert.equal(
+      await page.locator('#page-content .page-scroll').evaluate((el) => el.scrollTop),
+      switchScroll,
+    );
     assert.equal(
       await action('glass-effects').evaluate((el) => el === document.activeElement),
       true,
@@ -257,7 +270,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     );
     await action('glass-effects').click();
     await nav('home').click();
-    await page.locator('#page-content').evaluate((el) => (el.scrollTop = 0));
+    await page.locator('#page-content .page-scroll').evaluate((el) => (el.scrollTop = 0));
     await screenshot('animate-home-portrait.png');
     await action('extra-shortcuts').click();
     await screenshot('animate-shortcuts-portrait.png');
@@ -298,7 +311,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
       );
       await page.keyboard.press('Escape');
     }
-    await page.locator('#page-content').evaluate((el) => (el.scrollTop = 0));
+    await page.locator('#page-content .page-scroll').evaluate((el) => (el.scrollTop = 0));
     await screenshot('animate-home-landscape.png');
     await page.evaluate(() => localStorage.setItem('tml-launcher-ui-v1', '{broken'));
     await page.reload();

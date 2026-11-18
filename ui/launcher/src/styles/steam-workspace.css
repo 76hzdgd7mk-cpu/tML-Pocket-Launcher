@@ -65,7 +65,7 @@
   color: #e6edf5;
   width: max-content;
 }
-.steam-brand > svg {
+.steam-brand > img {
   width: 30px;
   height: 30px;
 }
@@ -971,7 +971,7 @@
     font-size: 15px;
     letter-spacing: 1.5px;
   }
-  .steam-brand > svg {
+  .steam-brand > img {
     width: 25px;
     height: 25px;
   }

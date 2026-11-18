@@ -8,6 +8,7 @@ import android.app.ActivityOptions
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.graphics.Color
 import android.net.Uri
 import android.os.Build
@@ -80,11 +81,33 @@ class MainActivity : Activity() {
         }
         if (::web.isInitialized)
             web.evaluateJavascript("window.dispatchEvent(new Event('launcher:files-resume'))", null)
+        if (::web.isInitialized)
+            web.evaluateJavascript(
+                "window.dispatchEvent(new CustomEvent('launcher:system-theme',{detail:{dark:${systemDark()}}}))",
+                null,
+            )
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) enterImmersiveMode()
+    }
+
+    /** 系统深色状态；WebView 的 prefers-color-scheme 不总是跟随，需要主动告知页面。 */
+    private fun systemDark() =
+        (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (!::web.isInitialized) return
+        val dark =
+            (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
+        web.evaluateJavascript(
+            "window.dispatchEvent(new CustomEvent('launcher:system-theme',{detail:{dark:$dark}}))",
+            null,
+        )
     }
 
     private fun launchOptions(params: JSONObject): Bundle? {
@@ -236,7 +259,7 @@ class MainActivity : Activity() {
             }
         }
         setContentView(web)
-        web.loadUrl("$ORIGIN/index.html")
+        web.loadUrl("$ORIGIN/index.html?system-theme=" + if (systemDark()) "dark" else "light")
     }
 
     private fun dispatch(id: String, method: String, params: JSONObject) {
@@ -270,6 +293,8 @@ class MainActivity : Activity() {
                     )
                 }
             }
+            "appearance.system" ->
+                respond(id, Result.success(JSONObject().put("dark", systemDark())))
             "files.permission" -> {
                 if (!FileBrowserAccess(this).granted()) {
                     if (Build.VERSION.SDK_INT >= 30) {

@@ -15,7 +15,13 @@ import { AnimateUIProvider } from '@animate-ui/react/provider';
 import { MotionConfig } from 'motion/react';
 import type { ActivityKind, LauncherState, Page, Preferences } from '../domain/types';
 import { defaultFilters, demoMods } from '../domain/mods';
-import { defaultPreferences, readPreferences, savePreferences } from './preferences';
+import {
+  defaultPreferences,
+  normalizePreferences,
+  readPreferences,
+  savePreferences,
+} from './preferences';
+import { tintGradient } from '../domain/background-tint';
 import { useLauncherOrientation } from './use-launcher-orientation';
 import { nativeMode, nativeRequest, onNativeSnapshot } from '../native/bridge';
 import type { NativeSnapshot } from '../native/models';
@@ -34,6 +40,11 @@ export interface DialogState extends DialogSpec {
   open: boolean;
 }
 type Update = (updater: (current: LauncherState) => LauncherState) => void;
+/** 原生外壳通过 URL 参数传入系统明暗，WebView 的媒体查询不总是可靠。 */
+function preferredSystemDark() {
+  const preset = new URLSearchParams(location.search).get('system-theme');
+  return preset ? preset === 'dark' : matchMedia('(prefers-color-scheme:dark)').matches;
+}
 export type NativeWorkspace = 'steam-login' | 'steam-library' | 'downloads';
 export const workspaceNames: Record<NativeWorkspace, string> = {
   'steam-login': 'Steam',
@@ -111,6 +122,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   const [systemReduced, setSystemReduced] = useState(
     () => matchMedia('(prefers-reduced-motion:reduce)').matches,
   );
+  const [systemDark, setSystemDark] = useState(preferredSystemDark);
   const motionEnabled = pointer && state.preferences.motion && !systemReduced;
   const returnFocus = useRef<HTMLElement | null>(null);
   const dialogOpen = useRef(false);
@@ -235,9 +247,11 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
           ...current,
           preferences: {
             ...current.preferences,
-            ...Object.fromEntries(
-              Object.entries(snapshot.preferences).filter(([key]) =>
-                Object.hasOwn(defaultPreferences, key),
+            ...normalizePreferences(
+              Object.fromEntries(
+                Object.entries(snapshot.preferences).filter(([key]) =>
+                  Object.hasOwn(defaultPreferences, key),
+                ),
               ),
             ),
           },
@@ -323,33 +337,47 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   }, []);
   useLayoutEffect(() => {
     const preferences = state.preferences;
-    const applyTheme = () => {
-      const dark =
-        preferences.theme === 'system'
-          ? matchMedia('(prefers-color-scheme:dark)').matches
-          : preferences.theme === 'dark';
-      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-      document
-        .querySelector('meta[name="theme-color"]')
-        ?.setAttribute('content', dark ? '#0c0f14' : '#f5f6f3');
-    };
-    applyTheme();
-    const media = matchMedia('(prefers-color-scheme:dark)');
-    media.addEventListener('change', applyTheme);
+    const dark = preferences.theme === 'system' ? systemDark : preferences.theme === 'dark';
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', dark ? '#0c0f14' : '#f5f6f3');
     document.documentElement.dataset.motion = preferences.motion ? 'full' : 'reduced';
     document.documentElement.dataset.glass = preferences.glassEffects ? 'on' : 'off';
     document.documentElement.style.setProperty('--glass', preferences.glass + '%');
     document.body.classList.toggle('has-background', preferences.background !== 'none');
-    if (preferences.background === 'soft')
+    if (preferences.background === 'diy')
       document.body.style.setProperty(
         '--custom-background',
-        'linear-gradient(130deg,#e0e8d8,#a8bea6)',
+        tintGradient(preferences.backgroundTint),
       );
     else if (preferences.background === 'custom' && preferences.customImage)
       document.body.style.setProperty('--custom-background', `url("${preferences.customImage}")`);
     else document.body.style.removeProperty('--custom-background');
     savePreferences(preferences);
-    return () => media.removeEventListener('change', applyTheme);
+  }, [state.preferences, systemDark]);
+  useEffect(() => {
+    const media = matchMedia('(prefers-color-scheme:dark)');
+    const mediaChange = () => {
+      if (!nativeMode) setSystemDark(media.matches);
+    };
+    const nativeChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ dark?: boolean }>).detail;
+      if (typeof detail?.dark === 'boolean') setSystemDark(detail.dark);
+    };
+    media.addEventListener('change', mediaChange);
+    window.addEventListener('launcher:system-theme', nativeChange);
+    return () => {
+      media.removeEventListener('change', mediaChange);
+      window.removeEventListener('launcher:system-theme', nativeChange);
+    };
+  }, []);
+  useEffect(() => {
+    if (!nativeMode || state.preferences.theme !== 'system') return;
+    // 每次选择（或再次点击）“跟随系统”都向原生重新查询，避免缓存值过期。
+    void nativeRequest<{ dark?: boolean }>('appearance.system')
+      .then((result) => setSystemDark(Boolean(result?.dark)))
+      .catch(() => {});
   }, [state.preferences]);
   const value = useMemo(
     () => ({

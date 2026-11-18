@@ -108,11 +108,12 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.locator('#catalog-search').waitFor();
     const indicator = page.locator('[data-slot="tabs-indicator"]');
     await indicator.waitFor();
-    assert.equal(
-      await indicator.evaluate((el) => getComputedStyle(el).backgroundColor !== 'rgba(0, 0, 0, 0)'),
-      true,
-      'active category has a visible sliding surface',
-    );
+    const underline = await indicator.evaluate((el) => {
+      const style = getComputedStyle(el, '::after');
+      return { color: style.backgroundColor, height: style.height };
+    });
+    assert.notEqual(underline.color, 'rgba(0, 0, 0, 0)', 'active category has a visible underline');
+    assert.equal(underline.height, '2px', 'underline matches the reference tab indicator');
     await action('mw-filters').click();
     const side = page.getByRole('combobox', { name: '运行侧', exact: true });
     await side.click();
@@ -154,7 +155,12 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
               el.querySelector('.switch-thumb').getBoundingClientRect().left -
                 el.getBoundingClientRect().left,
             );
-            if (values.length < 25) requestAnimationFrame(sample);
+            const previous = values.at(-2);
+            const settled =
+              values.length > 10 &&
+              previous !== undefined &&
+              Math.abs(values.at(-1) - previous) < 0.05;
+            if (values.length < 90 && !settled) requestAnimationFrame(sample);
             else resolve(values);
           };
           requestAnimationFrame(sample);

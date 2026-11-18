@@ -1,5 +1,6 @@
 import { Badge, Button, ContextNote, Icon, WorkspaceTabs } from '../components/ui';
 import { useGameActions } from './game-actions';
+import { SteamBrand } from './native/steam/brand';
 import { profileTitle } from '../state/launcher';
 
 export function AccountRows({ detailed = false }: { detailed?: boolean }) {
@@ -8,9 +9,7 @@ export function AccountRows({ detailed = false }: { detailed?: boolean }) {
     <>
       {(['steam', 'gog'] as const).map((platform) => (
         <div className="account-row" key={platform}>
-          <span className={`brand-word ${platform}`}>
-            {platform === 'steam' ? 'STEAM' : 'gog.com'}
-          </span>
+          {platform === 'steam' ? <SteamBrand /> : <span className="brand-word gog">gog.com</span>}
           <div className="account-copy">
             <strong>
               尚未连接
@@ -60,10 +59,10 @@ function Sources() {
           >
             {source.id === 'local' ? (
               <Icon name="folder" />
+            ) : source.id === 'steam' ? (
+              <SteamBrand />
             ) : (
-              <span className={`brand-word ${source.id}`}>
-                {source.id === 'steam' ? 'STEAM' : 'gog.com'}
-              </span>
+              <span className="brand-word gog">gog.com</span>
             )}
             <h2>{source.title}</h2>
             <p>{source.detail}</p>
