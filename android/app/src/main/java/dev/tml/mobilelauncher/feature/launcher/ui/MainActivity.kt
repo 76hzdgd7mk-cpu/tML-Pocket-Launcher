@@ -72,6 +72,7 @@ class MainActivity : Activity() {
         super.onResume()
         enterImmersiveMode()
         controller.resumeStores()
+        controller.refreshRendererCatalog()
         if (returningFromGame) {
             returningFromGame = false
             web.evaluateJavascript(

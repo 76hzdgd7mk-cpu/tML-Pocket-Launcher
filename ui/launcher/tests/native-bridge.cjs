@@ -79,6 +79,26 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
           },
         ],
         preferences: { orientation: 'landscape', theme: 'dark', renderScale: 100 },
+        renderers: [
+          {
+            identity: 'native',
+            packageName: '',
+            packageVersion: '',
+            rendererId: 'native',
+            displayName: '系统原生 OpenGL ES 3',
+            description: '',
+            backend: 'native',
+          },
+          {
+            identity: 'dev.example.renderer:gl4es',
+            packageName: 'dev.example.renderer',
+            packageVersion: '1.2',
+            rendererId: 'gl4es',
+            displayName: 'GL4ES',
+            description: '',
+            backend: 'gl4es',
+          },
+        ],
         appVersion: '0.1.0',
       };
       state.mods.push({
@@ -708,6 +728,21 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.getByText('内置触控系统', { exact: true }).waitFor();
     assert.equal(await page.getByRole('slider', { name: '按键不透明度', exact: true }).count(), 0);
     await page.locator('#settings-tab-runtime').click();
+    await page.getByRole('combobox', { name: '渲染器', exact: true }).click();
+    await page.getByRole('option', { name: /GL4ES.*dev\.example\.renderer 1\.2/ }).click();
+    await page.waitForFunction(
+      () => window.nativeFixture.preferences.rendererPlugin === 'dev.example.renderer:gl4es',
+    );
+    assert.ok(
+      await page.evaluate(() =>
+        window.nativeCalls.some(
+          (call) =>
+            call.method === 'settings.save' &&
+            call.params.preferences.rendererPlugin === 'dev.example.renderer:gl4es',
+        ),
+      ),
+      'renderer selection is saved through the native settings bridge',
+    );
     await page.getByRole('combobox', { name: '分辨率比例', exact: true }).click();
     await page.getByRole('option', { name: '75%', exact: true }).click();
     await page.waitForFunction(() => window.nativeFixture.preferences.renderScale === 75);

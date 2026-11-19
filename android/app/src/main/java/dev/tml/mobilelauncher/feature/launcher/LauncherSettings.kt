@@ -3,6 +3,7 @@ package dev.tml.mobilelauncher.feature.launcher
 import android.content.Context
 import dev.tml.mobilelauncher.feature.mods.ModRepository.Companion.strings
 import dev.tml.mobilelauncher.feature.patches.PatchRepository
+import dev.tml.mobilelauncher.feature.renderers.RendererSelection
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -27,6 +28,7 @@ class LauncherSettings(context: Context) {
                 "glass" -> require(value is Number && value.toInt() in 75..100)
                 "touchOpacity" -> require(value is Number && value.toInt() in 20..100)
                 "renderScale" -> require(value in listOf(50, 75, 100))
+                "rendererPlugin" -> require(value is String && RendererSelection.isValidIdentity(value))
                 "background" -> require(value in listOf("none", "diy", "custom"))
                 "backgroundTint" ->
                     require(value is String && Regex("^#[0-9a-fA-F]{6}$").matches(value))

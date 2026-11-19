@@ -6,6 +6,11 @@ import dev.tml.mobilelauncher.core.platform.AndroidBridge
 import dev.tml.mobilelauncher.core.platform.NativeCoreClr
 import dev.tml.mobilelauncher.feature.launcher.LauncherSettings
 import dev.tml.mobilelauncher.feature.patches.PatchRepository
+import dev.tml.mobilelauncher.feature.renderers.AndroidRendererPluginPackageSource
+import dev.tml.mobilelauncher.feature.renderers.RendererLaunchEnvironment
+import dev.tml.mobilelauncher.feature.renderers.RendererPluginAssetStager
+import dev.tml.mobilelauncher.feature.renderers.RendererPluginRepository
+import dev.tml.mobilelauncher.feature.renderers.RendererSelection
 import java.io.File
 
 object GameRuntime {
@@ -47,6 +52,7 @@ object GameRuntime {
         setEnvironment("FNA3D_OPENGL_FORCE_ES3", "1")
         setEnvironment("FNA3D_FORCE_DRIVER", "OpenGL")
         setEnvironment("FNA3D_MOJOSHADER_PROFILE", "glsles3")
+        applyRendererSelection(context)
         setEnvironment("SDL_TOUCH_MOUSE_EVENTS", "0")
         setEnvironment("SDL_MOUSE_TOUCH_EVENTS", "0")
         setEnvironment("SDL_AUDIODRIVER", "aaudio")
@@ -83,5 +89,45 @@ object GameRuntime {
 
     private fun setEnvironment(name: String, value: String) {
         check(NativeCoreClr.nativeSetEnv(name, value) == 0) { "runtime: failed to set $name" }
+    }
+
+    private fun applyRendererSelection(context: Context) {
+        val identity = LauncherSettings(context).read().optString("rendererPlugin", "native")
+        if (identity == "native") return
+        if (identity == RendererSelection.VULKAN) {
+            if (context.packageManager.hasSystemFeature("android.hardware.vulkan.level", 1)) {
+                setEnvironment("FNA3D_FORCE_DRIVER", "Vulkan")
+                setEnvironment("SDL_GPU_DRIVER", "vulkan")
+                Log.i(TAG, "Using SDL_GPU with the Vulkan backend")
+            } else {
+                Log.w(TAG, "Vulkan is unavailable on this device; using native OpenGL ES 3")
+                AndroidBridge.setStartupStatus(
+                    "使用系统渲染器",
+                    "此设备未报告 Vulkan 支持，已回退到 OpenGL ES 3",
+                    -1,
+                )
+            }
+            return
+        }
+        try {
+            val repository = RendererPluginRepository(
+                AndroidRendererPluginPackageSource(context),
+                RendererPluginAssetStager(File(context.filesDir, "renderers")),
+                android.os.Build.VERSION.SDK_INT,
+                android.os.Build.SUPPORTED_ABIS.toList(),
+            )
+            val staged = repository.stage(identity)
+            RendererLaunchEnvironment.forRenderer(staged).forEach { (name, value) ->
+                setEnvironment(name, value)
+            }
+            Log.i(TAG, "Using renderer plugin $identity from ${staged.libraryDirectory.absolutePath}")
+        } catch (failure: Throwable) {
+            Log.e(TAG, "Renderer plugin $identity unavailable; using native OpenGL ES 3", failure)
+            AndroidBridge.setStartupStatus(
+                "使用系统渲染器",
+                "所选渲染器不可用，已回退到 OpenGL ES 3：${failure.message ?: "未知错误"}",
+                -1,
+            )
+        }
     }
 }

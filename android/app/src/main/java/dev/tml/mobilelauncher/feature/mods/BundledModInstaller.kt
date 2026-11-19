@@ -80,5 +80,6 @@ class BundledModInstaller(private val userData: File) {
 
     companion object {
         const val MOD_ID = "MobileJoystick"
+        val BUILTIN_IDS = setOf(MOD_ID)
     }
 }

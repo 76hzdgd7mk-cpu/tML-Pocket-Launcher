@@ -24,7 +24,7 @@ class ModRepository(private val userData: File) {
                     result.put(
                         meta
                             .json(meta.name in enabled)
-                            .put("builtin", meta.name == BundledModInstaller.MOD_ID)
+                            .put("builtin", meta.name in BundledModInstaller.BUILTIN_IDS)
                     )
                 } catch (failure: Exception) {
                     result.put(
@@ -42,7 +42,7 @@ class ModRepository(private val userData: File) {
 
     fun importFile(file: File) {
         val meta = TmodReader.read(file, verifyHash = true)
-        require(meta.name != BundledModInstaller.MOD_ID) { "MobileJoystick 由启动器内嵌维护，请通过启动器更新" }
+        require(meta.name !in BundledModInstaller.BUILTIN_IDS) { "${meta.name} 由启动器内嵌维护，请通过启动器更新" }
         check(root.isDirectory || root.mkdirs()) { "无法创建模组目录" }
         val destination = File(root, "${meta.name}.tmod")
         require(!Files.isSymbolicLink(destination.toPath())) { "模组目标不能是符号链接" }
@@ -93,7 +93,7 @@ class ModRepository(private val userData: File) {
     }
 
     fun delete(id: String) {
-        require(id != BundledModInstaller.MOD_ID) { "内置触控系统不能删除" }
+        require(id !in BundledModInstaller.BUILTIN_IDS) { "启动器内置模组不能删除" }
         require(id.matches(Regex("[A-Za-z_][A-Za-z0-9_]{0,127}"))) { "无效模组名称" }
         if (id in metadata()) setEnabled(setOf(id), false)
         // Metadata name, rather than a user-supplied path, selects the file.

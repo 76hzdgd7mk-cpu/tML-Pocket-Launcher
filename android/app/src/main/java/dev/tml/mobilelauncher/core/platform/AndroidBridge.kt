@@ -201,9 +201,13 @@ object AndroidBridge {
         android.util.Log.i("TmlAndroidIme", "setImeVisible($visible)")
         val result =
             if (visible != 0) {
-                if (SDLActivity.showTextInput(0, 0, 1, 1)) 0 else -1
+                if (SDLActivity.showTextInput(0, 0, 1, 1, 1)) 0 else -1
             } else {
-                if (SDLActivity.hideTextInput()) 0 else -1
+                val activity = currentActivity() ?: return -1
+                val manager =
+                    activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
+                        as? android.view.inputmethod.InputMethodManager ?: return -1
+                if (manager.hideSoftInputFromWindow(activity.window.decorView.windowToken, 0)) 0 else -1
             }
         android.util.Log.i("TmlAndroidIme", "setImeVisible($visible) queued result=$result")
         return result

@@ -5,6 +5,34 @@ import { nativeRequest } from '../../native/bridge';
 
 export function NativeRuntimeSettings() {
   const { showInfo, nativeState, notify } = useGameActions();
+  const rendererOptions = nativeState?.renderers?.length
+    ? nativeState.renderers
+    : [
+        {
+          identity: 'native',
+          packageName: '',
+          packageVersion: '',
+          rendererId: 'native',
+          displayName: '系统原生 OpenGL ES 3',
+          description: '',
+          backend: 'native',
+        },
+        {
+          identity: 'vulkan',
+          packageName: '',
+          packageVersion: '',
+          rendererId: 'vulkan',
+          displayName: 'SDL GPU · Vulkan',
+          description: 'SDL2-compat + SDL3 GPU',
+          backend: 'vulkan',
+        },
+      ];
+  const selectedRenderer = nativeState?.preferences.rendererPlugin ?? 'native';
+  const rendererSelection = rendererOptions.some(
+    (renderer) => renderer.identity === selectedRenderer,
+  )
+    ? selectedRenderer
+    : 'native';
   return (
     <section className="settings-section">
       <h2>游戏与运行</h2>
@@ -12,8 +40,22 @@ export function NativeRuntimeSettings() {
         <SettingRow title="启动前校验" description="检查实际资源、模组依赖和补丁目标版本。">
           <Badge tone="green">始终启用</Badge>
         </SettingRow>
-        <SettingRow title="渲染模式" description="使用 Android 原生 FNA3D 图形适配。">
-          <Badge>OpenGL ES 3</Badge>
+        <SettingRow title="渲染模式" description="选择 SDL2/FNA3D 图形后端。">
+          <Select
+            label="渲染器"
+            value={rendererSelection}
+            options={rendererOptions.map((renderer) => [
+              renderer.identity,
+              renderer.identity === 'native'
+                ? renderer.displayName
+                : `${renderer.displayName} · ${renderer.packageName}${renderer.packageVersion ? ` ${renderer.packageVersion}` : ''}`,
+            ])}
+            onChange={(rendererPlugin) =>
+              void nativeRequest('settings.save', { preferences: { rendererPlugin } }).catch(
+                (error: Error) => notify(error.message),
+              )
+            }
+          />
         </SettingRow>
         <SettingRow
           title="分辨率比例"

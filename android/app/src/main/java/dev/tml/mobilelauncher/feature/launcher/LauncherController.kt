@@ -15,6 +15,11 @@ import dev.tml.mobilelauncher.feature.mods.WorkshopClient
 import dev.tml.mobilelauncher.feature.patches.PatchRepository
 import dev.tml.mobilelauncher.feature.releases.TmlRelease
 import dev.tml.mobilelauncher.feature.releases.TmlReleaseClient
+import dev.tml.mobilelauncher.feature.renderers.AndroidRendererPluginPackageSource
+import dev.tml.mobilelauncher.feature.renderers.RendererPluginAssetStager
+import dev.tml.mobilelauncher.feature.renderers.RendererPluginOption
+import dev.tml.mobilelauncher.feature.renderers.RendererPluginRepository
+import dev.tml.mobilelauncher.feature.renderers.RendererSelection
 import dev.tml.mobilelauncher.feature.stores.SteamGameDetailsClient
 import dev.tml.mobilelauncher.feature.stores.StoreRepository
 import java.io.File
@@ -39,6 +44,12 @@ internal class LauncherController(private val context: Context) {
     private val filesWorker = Executors.newSingleThreadExecutor()
     private val fileBrowser = FileBrowserAccess(context)
     val settings = LauncherSettings(context)
+    private val rendererRepository = RendererPluginRepository(
+        AndroidRendererPluginPackageSource(context),
+        RendererPluginAssetStager(File(context.filesDir, "renderers")),
+        android.os.Build.VERSION.SDK_INT,
+        android.os.Build.SUPPORTED_ABIS.toList(),
+    )
     private var cancellation = AtomicBoolean(false)
     @Volatile private var closed = false
     var observer: ((JSONObject) -> Unit)? = null
@@ -55,6 +66,7 @@ internal class LauncherController(private val context: Context) {
     private var launchStage: String? = null
     private var lastProgressNanos = 0L
     private var storeState = JSONObject()
+    @Volatile private var rendererOptions = emptyList<RendererPluginOption>()
 
     fun snapshot(): JSONObject =
         JSONObject(data.toString())
@@ -66,10 +78,24 @@ internal class LauncherController(private val context: Context) {
             .put("operation", method)
             .put("launchStage", launchStage ?: JSONObject.NULL)
             .put("preferences", settings.read())
+            .put("renderers", rendererOptionsJson())
             .put("protocol", 1)
 
     fun resumeStores() {
         if (!closed) worker.execute { if (!closed) runCatching { stores.onResume() } }
+    }
+
+    fun refreshRendererCatalog() {
+        if (!closed) worker.execute {
+            val result = runCatching { rendererRepository.discover() }
+            result.onSuccess { catalog ->
+                rendererOptions = catalog.options
+                if (catalog.diagnostics.isNotEmpty()) {
+                    android.util.Log.w("RendererPlugins", catalog.diagnostics.joinToString("; "))
+                }
+            }.onFailure { android.util.Log.e("RendererPlugins", "Renderer discovery failed", it) }
+            main.post { if (!closed) emit() }
+        }
     }
 
     fun request(name: String, params: JSONObject, reply: (Result<Any>) -> Unit) {
@@ -155,7 +181,16 @@ internal class LauncherController(private val context: Context) {
                 return
             }
             "settings.save" -> {
-                reply(runCatching { settings.save(params.getJSONObject("preferences")) })
+                reply(runCatching {
+                    val patch = params.getJSONObject("preferences")
+                    if (patch.has("rendererPlugin")) {
+                        val identity = patch.getString("rendererPlugin")
+                        require(RendererSelection.isAvailable(identity, rendererOptions.map { it.identity }.toSet())) {
+                            "所选渲染器不可用，请刷新渲染器列表"
+                        }
+                    }
+                    settings.save(patch)
+                })
                 emit()
                 return
             }
@@ -688,6 +723,23 @@ internal class LauncherController(private val context: Context) {
 
     private fun emit() {
         observer?.invoke(snapshot())
+    }
+
+    private fun rendererOptionsJson(): JSONArray {
+        val result = JSONArray()
+            .put(JSONObject().put("identity", "native").put("packageName", "").put("packageVersion", "").put("rendererId", "native").put("displayName", "系统原生 OpenGL ES 3").put("description", "").put("backend", "native"))
+            .put(JSONObject().put("identity", RendererSelection.VULKAN).put("packageName", "").put("packageVersion", "").put("rendererId", RendererSelection.VULKAN).put("displayName", "SDL GPU · Vulkan").put("description", "SDL2-compat + SDL3 GPU").put("backend", "vulkan"))
+        rendererOptions.forEach { option ->
+            result.put(JSONObject()
+                .put("identity", option.identity)
+                .put("packageName", option.packageName)
+                .put("packageVersion", option.packageVersionName ?: "")
+                .put("rendererId", option.rendererId)
+                .put("displayName", option.displayName)
+                .put("description", option.description)
+                .put("backend", option.backend.id))
+        }
+        return result
     }
 
     private fun gameRunning(): Boolean =

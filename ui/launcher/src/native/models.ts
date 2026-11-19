@@ -33,6 +33,16 @@ export interface NativePreferences extends Partial<Preferences> {
   renderScale?: number;
   wifiOnly?: boolean;
   launchArguments?: string[];
+  rendererPlugin?: string;
+}
+export interface NativeRenderer {
+  identity: string;
+  packageName: string;
+  packageVersion: string;
+  rendererId: string;
+  displayName: string;
+  description: string;
+  backend: string;
 }
 export interface NativeSnapshot {
   protocol: 1;
@@ -51,6 +61,7 @@ export interface NativeSnapshot {
   mods: NativeMod[];
   packs: NativePack[];
   patches: NativePatch[];
+  renderers?: NativeRenderer[];
   preferences: NativePreferences;
   appVersion: string;
 }

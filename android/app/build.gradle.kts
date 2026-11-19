@@ -117,6 +117,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.fragment:fragment:1.8.5")
     implementation(libs.webkit)
     implementation(libs.commons.compress)
     implementation(libs.xz)

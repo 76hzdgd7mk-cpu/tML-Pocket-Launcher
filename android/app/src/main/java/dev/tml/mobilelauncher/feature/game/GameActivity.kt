@@ -24,9 +24,8 @@ class GameActivity : SDLActivity() {
     @Volatile private var latestDetail = "正在准备运行时…"
     private var startupVisible = true
 
-    override fun getLibraries() = arrayOf("SDL2", "FAudio", "main")
-
-    override fun getMainFunction() = "SDL_main"
+    override fun getLibraries() =
+        arrayOf("SDL3", "SDL2_compat", "FAudio_sdl3", "FNA3D_sdl3", "main")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -128,11 +127,11 @@ class GameActivity : SDLActivity() {
         )
     }
 
-    override fun Main(args: Array<String>?) {
+    override fun main() {
         try {
             GameRuntime.launch(
                 this,
-                (args ?: emptyArray()) +
+                getArguments() +
                     (intent.getStringArrayExtra("launcherArguments") ?: emptyArray()),
             )
         } catch (failure: Throwable) {
