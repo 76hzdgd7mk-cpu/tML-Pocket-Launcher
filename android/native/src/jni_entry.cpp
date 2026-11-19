@@ -9,6 +9,7 @@ thread_local bool g_attached = false;
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void*) {
     g_vm = vm;
+    mobile_launcher::capture_standard_streams();
     mobile_launcher::log_info("JNI_OnLoad");
     return JNI_VERSION_1_6;
 }

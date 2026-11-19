@@ -4,6 +4,8 @@
 
 namespace mobile_launcher {
 
+void capture_standard_streams();
+
 inline void log_info(const char* message) {
     __android_log_print(ANDROID_LOG_INFO, "FnaAndroidCoreClr", "%s", message);
 }

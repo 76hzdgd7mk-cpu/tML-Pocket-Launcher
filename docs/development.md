@@ -59,7 +59,7 @@ and publish the same projects and must not run concurrently against the same obj
 ```powershell
 adb install -r android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
 adb shell am start -n com.example.fnatemplate/dev.tml.mobilelauncher.feature.launcher.ui.MainActivity
-adb logcat -s FnaAndroidCoreClr SDL
+adb logcat -v time MobileLauncher:I FnaAndroidCoreClr:I FnaAndroidNative:I FnaAndroidStatus:I RendererPlugins:I SDL:I TmlAndroidIme:I libc:F DEBUG:F AndroidRuntime:E "*:S"
 ```
 
 ## Windows Java socket issue

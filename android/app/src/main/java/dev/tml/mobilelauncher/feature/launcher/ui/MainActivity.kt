@@ -14,10 +14,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
@@ -30,6 +32,7 @@ import androidx.webkit.WebViewFeature
 import dev.tml.mobilelauncher.BuildConfig
 import dev.tml.mobilelauncher.feature.files.FileBrowserAccess
 import dev.tml.mobilelauncher.feature.game.GameActivity
+import dev.tml.mobilelauncher.feature.game.GameCrashReports
 import dev.tml.mobilelauncher.feature.launcher.LauncherController
 import dev.tml.mobilelauncher.feature.mods.ModRepository.Companion.strings
 import dev.tml.mobilelauncher.feature.stores.GogLoginActivity
@@ -43,9 +46,13 @@ class MainActivity : Activity() {
     private var gogRequestId: String? = null
     private var launchPending = false
     private var returningFromGame = false
+    private val crashWorker = java.util.concurrent.Executors.newSingleThreadExecutor()
+    private var crashCheckPending = false
+    private var crashDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.i("MobileLauncher", "Launcher created; version=${BuildConfig.VERSION_NAME}; pid=${android.os.Process.myPid()}")
         controller =
             (lastNonConfigurationInstance as? LauncherController)
                 ?: LauncherController(applicationContext)
@@ -70,9 +77,11 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        Log.i("MobileLauncher", "Launcher resumed")
         enterImmersiveMode()
         controller.resumeStores()
         controller.refreshRendererCatalog()
+        checkGameCrash()
         if (returningFromGame) {
             returningFromGame = false
             web.evaluateJavascript(
@@ -91,7 +100,56 @@ class MainActivity : Activity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) enterImmersiveMode()
+        if (hasFocus) {
+            enterImmersiveMode()
+            checkGameCrash()
+        }
+    }
+
+    override fun onPause() {
+        Log.i("MobileLauncher", "Launcher paused")
+        super.onPause()
+    }
+
+    private fun checkGameCrash(retries: Int = 3) {
+        if (isDestroyed || isFinishing || crashCheckPending || crashDialog != null) return
+        crashCheckPending = true
+        crashWorker.execute {
+            // ActivityManager publishes native exit details asynchronously.
+            Thread.sleep(1500)
+            val report = runCatching { GameCrashReports.collect(applicationContext) }
+                .onFailure { Log.e("MobileLauncher", "Could not collect game crash report", it) }
+                .getOrNull()
+            runOnUiThread {
+                crashCheckPending = false
+                if (isDestroyed || isFinishing || !hasWindowFocus()) return@runOnUiThread
+                if (report == null) {
+                    if (retries > 0) window.decorView.postDelayed({ checkGameCrash(retries - 1) }, 1500)
+                    return@runOnUiThread
+                }
+                val text = android.widget.TextView(this).apply {
+                    setText(report.text)
+                    setTextIsSelectable(true)
+                    textSize = 12f
+                    val inset = (16 * resources.displayMetrics.density).toInt()
+                    setPadding(inset, inset, inset, inset)
+                }
+                val scroll = android.widget.ScrollView(this).apply { addView(text) }
+                crashDialog = AlertDialog.Builder(this)
+                    .setTitle("游戏异常退出")
+                    .setView(scroll)
+                    .setPositiveButton("关闭", null)
+                    .setNeutralButton("复制报告") { _, _ ->
+                        (getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager)
+                            .setPrimaryClip(android.content.ClipData.newPlainText("游戏崩溃报告", report.text))
+                    }
+                    .create().apply {
+                        setOnDismissListener { crashDialog = null }
+                        show()
+                    }
+                runCatching { GameCrashReports.handled(applicationContext, report.session) }
+            }
+        }
     }
 
     /** 系统深色状态；WebView 的 prefers-color-scheme 不总是跟随，需要主动告知页面。 */
@@ -159,6 +217,8 @@ class MainActivity : Activity() {
     override fun onRetainNonConfigurationInstance(): Any = controller
 
     override fun onDestroy() {
+        crashDialog?.dismiss()
+        crashWorker.shutdown()
         channel = null
         if (::web.isInitialized) {
             web.stopLoading()
@@ -196,6 +256,29 @@ class MainActivity : Activity() {
                 settings.mediaPlaybackRequiresUserGesture = true
                 webViewClient =
                     object : WebViewClient() {
+                        override fun onPageFinished(view: WebView, url: String) {
+                            if (Uri.parse(url).host == HOST)
+                                Log.i("MobileLauncher", "Launcher UI loaded")
+                        }
+
+                        override fun onReceivedError(
+                            view: WebView,
+                            request: WebResourceRequest,
+                            error: WebResourceError,
+                        ) {
+                            if (request.isForMainFrame)
+                                Log.e("MobileLauncher", "Launcher UI failed to load; code=${error.errorCode}")
+                        }
+
+                        override fun onReceivedHttpError(
+                            view: WebView,
+                            request: WebResourceRequest,
+                            response: WebResourceResponse,
+                        ) {
+                            if (request.isForMainFrame)
+                                Log.e("MobileLauncher", "Launcher UI HTTP error; status=${response.statusCode}")
+                        }
+
                         override fun shouldInterceptRequest(
                             view: WebView,
                             request: WebResourceRequest,
@@ -324,6 +407,7 @@ class MainActivity : Activity() {
                 respond(id, Result.success(true))
             }
             "launch" -> {
+                Log.i("MobileLauncher", "Game launch requested")
                 if (launchPending || returningFromGame) {
                     respond(id, Result.failure(IllegalStateException("游戏启动正在进行")))
                     return
@@ -338,13 +422,20 @@ class MainActivity : Activity() {
                                     .getJSONArray("arguments")
                                     .strings()
                                     .toTypedArray()
+                            val crashSession = GameCrashReports.begin(
+                                applicationContext,
+                                it.optString("version"),
+                                controller.settings.read().optString("rendererPlugin", "native"),
+                            )
                             startActivity(
                                 Intent(this, GameActivity::class.java)
                                     .putExtra("launcherArguments", args)
+                                    .putExtra("crashSession", crashSession)
                                     .putExtra("tmlVersion", it.optString("version")),
                                 launchOptions(params),
                             )
                             returningFromGame = true
+                            Log.i("MobileLauncher", "Game handed off to ${packageName}:game")
                             JSONObject().put("handedOff", true)
                         }
                     launchPending = false
@@ -426,6 +517,9 @@ class MainActivity : Activity() {
     }
 
     private fun respond(id: String, result: Result<Any>) {
+        result.exceptionOrNull()?.let {
+            Log.e("MobileLauncher", "Launcher request failed; type=${it.javaClass.name}")
+        }
         val response = JSONObject().put("id", id).put("ok", result.isSuccess)
         result.fold({ response.put("data", it) }, { response.put("error", it.message ?: "操作失败") })
         send(response)

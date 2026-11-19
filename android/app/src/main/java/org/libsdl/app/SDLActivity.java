@@ -1395,6 +1395,11 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         return mLayout;
     }
 
+    /** Allows an embedding game to distinguish text events from a request for the soft keyboard. */
+    protected boolean shouldShowTextInput() {
+        return true;
+    }
+
     static class ShowTextInputTask implements Runnable {
         /*
          * This is used to regulate the pan&scan method to have some offset from
@@ -1424,6 +1429,10 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
         @Override
         public void run() {
+            // Check when the queued task executes: input may have been cancelled in the meantime.
+            if (mSingleton == null || !mSingleton.shouldShowTextInput()) {
+                return;
+            }
             RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(w, h + HEIGHT_PADDING);
             params.leftMargin = x;
             params.topMargin = y;

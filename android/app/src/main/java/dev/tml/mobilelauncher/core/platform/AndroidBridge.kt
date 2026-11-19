@@ -37,6 +37,7 @@ object AndroidBridge {
     @JvmStatic
     fun attach(activity: Activity) {
         activityReference = WeakReference(activity)
+        imeRequestedVisible = false
         lastImeVisible = null
         NativeCoreClr.nativeRegisterBridgeActivity(activity)
     }
@@ -45,6 +46,7 @@ object AndroidBridge {
     fun detach(activity: Activity) {
         if (activityReference?.get() === activity) {
             activityReference = null
+            imeRequestedVisible = false
             NativeCoreClr.nativeClearBridgeActivity()
         }
     }
@@ -182,11 +184,13 @@ object AndroidBridge {
         val activity = currentActivity() ?: return -1
         activity.runOnUiThread {
             val gameActivity = activity as? GameActivity ?: return@runOnUiThread
-            if (fullscreen != 0) gameActivity.enterImmersiveMode()
-            else gameActivity.exitImmersiveMode()
+            // Desktop windowed preferences must not expose Android system bars over the game.
+            gameActivity.enterImmersiveMode()
         }
         return 0
     }
+
+    @JvmStatic fun isImeRequestedVisible(): Boolean = imeRequestedVisible
 
     @JvmStatic
     fun setImeVisible(visible: Int): Int {
@@ -204,10 +208,9 @@ object AndroidBridge {
                 if (SDLActivity.showTextInput(0, 0, 1, 1, 1)) 0 else -1
             } else {
                 val activity = currentActivity() ?: return -1
-                val manager =
-                    activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
-                        as? android.view.inputmethod.InputMethodManager ?: return -1
-                if (manager.hideSoftInputFromWindow(activity.window.decorView.windowToken, 0)) 0 else -1
+                // sendCommand queues the hide on the same SDL handler as showTextInput.
+                (activity as? GameActivity)?.hideGameKeyboard() ?: return -1
+                0
             }
         android.util.Log.i("TmlAndroidIme", "setImeVisible($visible) queued result=$result")
         return result

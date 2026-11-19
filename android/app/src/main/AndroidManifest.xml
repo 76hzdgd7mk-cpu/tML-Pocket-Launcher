@@ -36,15 +36,15 @@
             android:exported="false"
             android:hardwareAccelerated="true"
             android:process=":game"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="landscape"
             android:theme="@style/Theme.MobileLauncher.Game"
-            android:windowSoftInputMode="adjustPan">
+            android:windowSoftInputMode="stateAlwaysHidden|adjustNothing">
             <meta-data
                 android:name="SDL_ORIENTATION"
                 android:value="Landscape" />
             <meta-data
                 android:name="SDL_HINT_ORIENTATIONS"
-                android:value="LandscapeLeft LandscapeRight" />
+                android:value="LandscapeLeft" />
         </activity>
 
         <activity

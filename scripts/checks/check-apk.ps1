@@ -23,9 +23,11 @@ if ($null -ne $jarCommand) {
 
 foreach ($required in @(
     'lib/arm64-v8a/libmain.so',
-    'lib/arm64-v8a/libSDL2.so',
-    'lib/arm64-v8a/libFNA3D.so',
-    'lib/arm64-v8a/libFAudio.so',
+    'lib/arm64-v8a/libdotnethost.so',
+    'lib/arm64-v8a/libSDL3.so',
+    'lib/arm64-v8a/libSDL2_compat.so',
+    'lib/arm64-v8a/libFNA3D_sdl3.so',
+    'lib/arm64-v8a/libFAudio_sdl3.so',
     'lib/arm64-v8a/libc++_shared.so',
     'assets/runtime/dotnet.tar.xz',
     'assets/launcher/manifest.json',

@@ -16,6 +16,16 @@ internal static class RuntimeLogging
                 return;
             }
 
+            var output = Console.Out;
+            var error = Console.Error;
+            if (OperatingSystem.IsAndroid() || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDROID_ROOT")))
+            {
+                output = new AndroidLogTextWriter(4); // ANDROID_LOG_INFO
+                error = new AndroidLogTextWriter(6); // ANDROID_LOG_ERROR
+                Console.SetOut(output);
+                Console.SetError(error);
+            }
+
             var path = Path.Combine(workingDirectory, "dotnet-runtime.log");
             try
             {
@@ -30,9 +40,8 @@ internal static class RuntimeLogging
                 {
                     AutoFlush = true
                 };
-                var tee = new TeeTextWriter(Console.Out, fileWriter);
-                Console.SetOut(tee);
-                Console.SetError(tee);
+                Console.SetOut(new TeeTextWriter(output, fileWriter));
+                Console.SetError(new TeeTextWriter(error, fileWriter));
                 AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
                     Console.Error.WriteLine(
                         $"[dotnet] UnhandledException terminating={eventArgs.IsTerminating}:\n{eventArgs.ExceptionObject}");
@@ -57,26 +66,38 @@ internal static class RuntimeLogging
 
         public override void Write(char value)
         {
-            consoleWriter.Write(value);
-            fileWriter.Write(value);
+            lock (Sync)
+            {
+                consoleWriter.Write(value);
+                fileWriter.Write(value);
+            }
         }
 
         public override void Write(string? value)
         {
-            consoleWriter.Write(value);
-            fileWriter.Write(value);
+            lock (Sync)
+            {
+                consoleWriter.Write(value);
+                fileWriter.Write(value);
+            }
         }
 
         public override void WriteLine(string? value)
         {
-            consoleWriter.WriteLine(value);
-            fileWriter.WriteLine(value);
+            lock (Sync)
+            {
+                consoleWriter.WriteLine(value);
+                fileWriter.WriteLine(value);
+            }
         }
 
         public override void Flush()
         {
-            consoleWriter.Flush();
-            fileWriter.Flush();
+            lock (Sync)
+            {
+                consoleWriter.Flush();
+                fileWriter.Flush();
+            }
         }
     }
 }

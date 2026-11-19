@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
+import android.util.Log
 import dev.tml.mobilelauncher.core.runtime.AssetBootstrap
 import dev.tml.mobilelauncher.feature.files.FileBrowserAccess
 import dev.tml.mobilelauncher.feature.installation.GamePackageInstaller
@@ -574,6 +576,8 @@ internal class LauncherController(private val context: Context) {
         action: (cancelled: () -> Boolean) -> Any?,
     ) {
         if (closed) return
+        val startedAt = SystemClock.elapsedRealtime()
+        Log.i("MobileLauncher", "Operation started: $name")
         busy = true
         method = name
         launchStage = if (name == "launch.check") "resources" else null
@@ -592,6 +596,18 @@ internal class LauncherController(private val context: Context) {
             val refreshed = runCatching { readState() }
             if (refreshed.isFailure && result.isSuccess)
                 result = Result.failure(refreshed.exceptionOrNull()!!)
+            val elapsed = SystemClock.elapsedRealtime() - startedAt
+            val operationFailure = result.exceptionOrNull()
+            when {
+                token.get() -> Log.i("MobileLauncher", "Operation cancelled: $name (${elapsed}ms)")
+                operationFailure != null -> {
+                    // Exception messages can contain account responses or credentials.
+                    // Keep the type and call sites without logging request/response data.
+                    val frames = operationFailure.stackTrace.take(12).joinToString("\n    at ")
+                    Log.e("MobileLauncher", "Operation failed: $name (${elapsed}ms), ${operationFailure.javaClass.name}\n    at $frames")
+                }
+                else -> Log.i("MobileLauncher", "Operation completed: $name (${elapsed}ms)")
+            }
             main.post {
                 if (closed) return@post
                 refreshed.getOrNull()?.let { data = it }
@@ -672,7 +688,11 @@ internal class LauncherController(private val context: Context) {
                     .take(15)
                     .toList()
             }
-        return logs
+        val crashReports = File(context.filesDir, "userdata/Logs/game-crashes").listFiles()
+            ?.filter { it.isDirectory }
+            ?.map { File(it, "report.log") }
+            ?.filter { it.isFile }.orEmpty()
+        return (logs + crashReports).distinct()
             .sortedByDescending { it.lastModified() }
             .take(5)
             .joinToString("\n\n") { file ->
@@ -689,6 +709,7 @@ internal class LauncherController(private val context: Context) {
     }
 
     private fun launchProgress(stage: String, text: String) {
+        Log.i("MobileLauncher", "Game launch stage: $stage")
         main.post {
             if (!closed) {
                 launchStage = stage
