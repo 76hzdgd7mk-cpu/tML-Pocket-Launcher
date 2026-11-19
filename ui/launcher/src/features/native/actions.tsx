@@ -170,7 +170,7 @@ export function useNativeActions(launcher: LauncherContextValue) {
             <p>SteamKit2: LGPL-2.1-only。未修改的独立程序集，源码来自 SteamRE/SteamKit。</p>
             <p>
               RotatingartLauncher 触摸、显示、帧率、控制台与联机适配：GPL-3.0，源码位于
-              managed/MobileLauncher.Patches。MobileJoystick 0.1.4：yu，保留资源来源说明。
+              external/tML-Pocket-Patches。MobileJoystick 0.1.4：yu，源码见外部 tML-Pocket-Mods 项目并保留资源来源说明。
             </p>
             <p>完整许可文件随 APK 提供。</p>
           </>

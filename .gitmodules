@@ -7,3 +7,9 @@
 [submodule "external/FAudio"]
 	path = external/FAudio
 	url = https://github.com/RotatingArtDev/FAudio.git
+[submodule "external/tML-Pocket-Patches"]
+	path = external/tML-Pocket-Patches
+	url = https://github.com/FireworkSky/tML-Pocket-Patches.git
+[submodule "external/tML-Pocket-Mods"]
+	path = external/tML-Pocket-Mods
+	url = https://github.com/FireworkSky/tML-Pocket-Mods.git

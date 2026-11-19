@@ -18,7 +18,7 @@ foreach ($feature in @('installation', 'releases')) {
 }
 $managedRoot = Join-Path $repoRoot 'managed'
 Get-ChildItem -LiteralPath $managedRoot -Recurse -File -Filter '*.cs' |
-    Where-Object { $_.FullName -notmatch '[\\/](bin|obj|tests)[\\/]' -and $_.FullName -notlike "$managedRoot\mods\MobileJoystick\*" } |
+    Where-Object { $_.FullName -notmatch '[\\/](bin|obj|tests)[\\/]' } |
     ForEach-Object {
         $text = [IO.File]::ReadAllText($_.FullName)
         $declaration = [regex]::Match($text, '(?m)^namespace\s+([\w.]+);')

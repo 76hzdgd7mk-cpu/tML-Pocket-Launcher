@@ -130,14 +130,15 @@ tML-Pocket-Launcher/
 ├── android/                  Android 应用、Gradle、JNI 与原生运行宿主
 │   └── app/src/              Android Kotlin/Java 源码与 JVM 测试
 ├── managed/                  C# 宿主、平台兼容、Steam/GOG 服务与测试
-│   ├── MobileLauncher.Patches/ 内置移动端补丁
-│   └── mods/MobileJoystick/  内置触控模组源码、资源与来源记录
+│   ├── MobileLauncher.Bootstrap/、Host/Stores/ 启动器托管组件
 ├── ui/launcher/              React + TypeScript 启动器界面
 ├── scripts/
 │   ├── build/                启动器构建准备脚本
 │   ├── checks/               结构、运行时、测试与 APK 校验
 │   └── design/               图标源文件与导出工具
-├── external/                 SDL、FNA3D、FAudio 子模块及 MonoMod 依赖
+├── external/                 SDL、FNA3D、FAudio、补丁与模组源码子模块及 MonoMod 依赖
+│   ├── tML-Pocket-Patches/   移动端补丁独立项目
+│   └── tML-Pocket-Mods/      MobileJoystick 等模组独立项目
 ├── docs/                     使用、架构、开发与设计文档
 └── MobileLauncher.slnx       C# 解决方案入口
 ```

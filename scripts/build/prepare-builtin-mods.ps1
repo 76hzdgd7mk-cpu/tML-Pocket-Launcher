@@ -5,9 +5,9 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 & (Join-Path $PSScriptRoot 'prepare-game-references.ps1')
 $tmlRoot = [IO.File]::ReadAllText((Join-Path $repoRoot 'build/game-references/source.txt')).Trim()
-$modRoot = Join-Path $repoRoot 'managed/mods/MobileJoystick'
+$modRoot = Join-Path $repoRoot 'external/tML-Pocket-Mods/MobileJoystick'
 $buildData = Join-Path $repoRoot 'build/mod-packaging-userdata'
-dotnet build (Join-Path $modRoot 'MobileJoystick.csproj') -c Release --nologo
+dotnet build (Join-Path $modRoot 'MobileJoystick.csproj') -c Release --nologo -p:LauncherRoot=$repoRoot
 if ($LASTEXITCODE -ne 0) { throw 'MobileJoystick compile failed' }
 # tML's own packager converts textures and creates the signed-format container.
 # Its user data is isolated from both the developer's and the phone's saves.

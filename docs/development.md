@@ -14,7 +14,7 @@ Configure `JAVA_HOME` and `ANDROID_HOME` locally, or use an ignored `android/loc
 
 ```powershell
 # Native dependencies
-git submodule update --init --recursive external/SDL external/FNA3D external/FAudio
+git submodule update --init --recursive external/SDL external/FNA3D external/FAudio external/tML-Pocket-Patches external/tML-Pocket-Mods
 
 # Managed projects and tests
 .\scripts\build\prepare-game-references.ps1 -TmlRoot '<installed precompiled tModLoader release>'
@@ -33,6 +33,8 @@ Pop-Location
 # Inspect the generated APK
 .\scripts\checks\check-apk.ps1 -ApkPath android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
 ```
+
+The patch assembly and MobileJoystick project are checked out from `external/tML-Pocket-Patches` and `external/tML-Pocket-Mods`. Launcher build scripts pass `LauncherRoot` so both external projects use this checkout's game references and MonoMod dependencies.
 
 The APK includes Android CoreCLR, the launcher/store managed hosts and Android native libraries. It must not contain tModLoader.dll, FNA.dll or Terraria Content. The app downloads official tML ZIPs from GitHub Releases or imports local ZIPs. Terraria imports accept Steam ZIPs and GOG Linux `.sh` installers; downloads use SteamKit/GOG account authorization. Steam resources require a fresh online ownership check before launch; GOG resources require no login at launch.
 
