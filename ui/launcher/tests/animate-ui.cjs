@@ -26,6 +26,11 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     });
     const action = (id) => page.locator(`[data-action="${id}"]`);
     const nav = (id) => page.locator(`.main-nav [data-page="${id}"]`);
+    // 玻璃材质改为下拉框：先展开触发器，再按选项名称选择。
+    const selectGlass = async (name) => {
+      await action('glass-effects').click();
+      await page.getByRole('option', { name, exact: true }).click();
+    };
     const settled = async () => {
       await page.waitForFunction(
         () =>
@@ -127,14 +132,13 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await action('motion').click();
     assert.equal(await page.locator('html').getAttribute('data-motion'), 'reduced');
     await page.locator('[data-theme-choice=light]').click();
-    await page.getByRole('slider', { name: '面板不透明度', exact: true }).focus();
+    await page.getByRole('slider', { name: '面板透明度', exact: true }).focus();
     await page.keyboard.press('Home');
     for (let step = 0; step < 17; step++) await page.keyboard.press('ArrowRight');
-    await action('glass-effects').click();
+    await selectGlass('默认');
     await page.reload();
     assert.equal(await page.locator('html').getAttribute('data-theme'), 'light');
     assert.equal(await page.locator('html').getAttribute('data-glass'), 'off');
-    assert.equal(await page.locator('#glass-range').getAttribute('aria-valuenow'), '92');
     assert.equal(
       await action('motion').getAttribute('data-state'),
       'unchecked',
@@ -150,8 +154,14 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
       'reduced UI is settled',
     );
     await nav('settings').click();
+    assert.equal(
+      await page.getByRole('slider', { name: '面板透明度', exact: true }).count(),
+      0,
+      'panel opacity is only available with liquid glass',
+    );
     await action('motion').click();
-    await action('glass-effects').click();
+    await selectGlass('液态玻璃');
+    assert.equal(await page.locator('#glass-range').getAttribute('aria-valuenow'), '42');
     await page.locator('[data-theme-choice=dark]').click();
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await nav('home').click();
@@ -254,21 +264,25 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
       await page.locator('#page-content .page-scroll').evaluate((el) => el.scrollTop),
       scroll,
     );
-    await action('glass-effects').scrollIntoViewIfNeeded();
-    const switchScroll = await page
+    const glassSelect = action('glass-effects');
+    await glassSelect.scrollIntoViewIfNeeded();
+    const glassScroll = await page
       .locator('#page-content .page-scroll')
       .evaluate((el) => el.scrollTop);
-    await action('glass-effects').click();
+    await selectGlass('默认');
     assert.equal(
       await page.locator('#page-content .page-scroll').evaluate((el) => el.scrollTop),
-      switchScroll,
+      glassScroll,
+    );
+    await page.waitForFunction(
+      () => document.activeElement?.getAttribute('data-action') === 'glass-effects',
     );
     assert.equal(
-      await action('glass-effects').evaluate((el) => el === document.activeElement),
+      await glassSelect.evaluate((el) => el === document.activeElement),
       true,
-      'Switch remains mounted and focused',
+      'Select trigger remains mounted and focused',
     );
-    await action('glass-effects').click();
+    await selectGlass('液态玻璃');
     await nav('home').click();
     await page.locator('#page-content .page-scroll').evaluate((el) => (el.scrollTop = 0));
     await screenshot('animate-home-portrait.png');

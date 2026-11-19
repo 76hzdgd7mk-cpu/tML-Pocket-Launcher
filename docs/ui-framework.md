@@ -115,9 +115,9 @@ and imported-game compatibility require physical-device verification.
 
 根据用户提供的参考图调整控件材质：导航采用无描边的中性胶囊选中底板、图标在上文字在下，切换时底板通过 Animate UI spring 平滑移动；中央为带边缘高光的资源准备列表；右侧使用磨砂玻璃面板、版本选择控件与紧凑启动胶囊，日志采用小号文字入口。竖屏将版本选择与启动胶囊移至底部导航上方。版本统一由独立选择器管理，启动胶囊不再附带重复菜单；主操作保留至少 48 px 的原型触控区域，Android 实现对应至少 48 dp。
 
-玻璃材质采用低强度中性覆色、细高光边缘与轻阴影，移除大面积白色渐变、厚内阴影和实色蓝色渐变，避免石材或陶瓷质感。版本选择与启动按钮的背景层参考 [Inspira UI LiquidGlass](https://inspira-ui.com/docs/cn/components/visualization/liquid-glass)，在 Chromium 中采用 SVG 置换滤镜形成局部轻折射；每个控件使用独立 ID 和随尺寸更新的贴图，仅在尺寸改变时重建，无逐帧或指针跟随循环。Vue 组件适配为 React 背景层，保留上游 MIT 许可。文字、图标和 Ripple 动效独立于折射层；大块内容面板使用普通 CSS 材质。其他浏览器回退为 CSS 模糊。液态玻璃开关位于设置外观中，关闭后移除背景折射层及其 ResizeObserver，使用静态表面。面板不透明度仍由现有设置控制。纯色背景下，内容卡片与右侧面板不执行没有可见收益的背景模糊。浅色和深色主题分别定义材质覆色及启动文字颜色。
+玻璃材质采用低强度中性覆色、细高光边缘与轻阴影，移除大面积白色渐变、厚内阴影和实色蓝色渐变，避免石材或陶瓷质感。版本选择与启动按钮的背景层为 WebGL 液态玻璃透镜：按视口重建壁纸（纯色、色调渐变或自定义图片），用圆角矩形高度场求法线后做两次折射，叠加细色散、方向性边缘高光和游戏坞/胶囊覆色。透镜与控件同尺寸，仅在尺寸、主题或背景变化时按需重绘；无 WebGL 时回退为 CSS 模糊。技术思路参考 [Liquid Glass WebGL Demo](https://github.com/rxing365/html-liquid-glass-effect-webgl)。文字、图标和 Ripple 动效独立于折射层；大块内容面板使用普通 CSS 材质。液态玻璃开关位于设置外观中，关闭后移除透镜画布及其 ResizeObserver，使用静态表面。面板不透明度仍由现有设置控制。浅色和深色主题分别定义材质覆色及启动文字颜色。
 
-原生参考为 [AndroidLiquidGlass / Backdrop](https://github.com/Kyant0/AndroidLiquidGlass) 的 `LiquidButton` 和 `LiquidBottomTabs` 示例，包括 `blur`、`vibrancy`、`lens` 和交互高光。该库基于 Compose；浏览器原型仅用 CSS 模拟材质，尚未集成此原生依赖，也不等同于原生透镜折射。正式 Android 阶段需按现有 View/Controller 边界评估 Compose 控件承载方式、系统版本与设备性能，并提供静态表面回退。
+原生参考为 [AndroidLiquidGlass / Backdrop](https://github.com/Kyant0/AndroidLiquidGlass) 的 `LiquidButton` 和 `LiquidBottomTabs` 示例，包括 `blur`、`vibrancy`、`lens` 和交互高光。该库基于 Compose；浏览器原型用 WebGL 透镜模拟折射，尚未集成此原生依赖，效果也不等同于 Compose 原生透镜。正式 Android 阶段需按现有 View/Controller 边界评估 Compose 控件承载方式、系统版本与设备性能，并提供静态表面回退。
 
 This document specifies navigation and behavior. The ordinary browser preview demonstrates workflows. The Android application implements offline UI hosting, imports, official tML releases, local mods/packs, declarative patches, runtime entry and SteamKit/GOG account-resource integrations. Owned-account transfers need live account validation; Steam-only Workshop transfers remain unavailable as described in the implementation document.
 

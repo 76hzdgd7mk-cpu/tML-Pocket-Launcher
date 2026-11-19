@@ -20,7 +20,7 @@ export const defaultPreferences: Preferences = {
   orientation: 'landscape',
   motion: true,
   glassEffects: true,
-  glass: 85,
+  glass: 30,
   background: 'none',
   backgroundTint: defaultBackgroundTint,
   quickTools: ['mods', 'patches', 'controls', 'storage'],
@@ -42,8 +42,8 @@ export function readPreferences(): Preferences {
     if (
       typeof saved.glass === 'number' &&
       Number.isFinite(saved.glass) &&
-      saved.glass >= 75 &&
-      saved.glass <= 100
+      saved.glass >= 25 &&
+      saved.glass <= 50
     )
       result.glass = saved.glass;
     // 旧版本使用 soft 表示自定义色调。

@@ -213,37 +213,56 @@ function Appearance() {
               className={`background-option ${prefs.background === 'custom' ? 'active' : ''}`}
               data-action="upload-background"
               onClick={selectImage}
+              style={
+                prefs.background === 'custom' && prefs.customImage
+                  ? {
+                      // 应用图片背景后直接用缩略图替换纯色块。
+                      backgroundImage: `linear-gradient(#0000 45%, #000000a6), url(${prefs.customImage})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      color: '#fff',
+                    }
+                  : undefined
+              }
             >
-              <Icon name="plus" className="background-add" />
+              {!(prefs.background === 'custom' && prefs.customImage) && (
+                <Icon name="plus" className="background-add" />
+              )}
               图片背景
             </Button>
           </div>
-          <SettingRow title="面板不透明度" description="保持文字与按钮清晰可读。">
-            <Slider
-              id="glass-range"
-              label="面板不透明度"
-              min={75}
-              max={100}
-              value={prefs.glass}
-              onChange={(glass) => setPreferences({ glass })}
-            />
-          </SettingRow>
           <p className="setting-caption">
             可选像素场景、游戏截图或本地图片。背景仅用于启动器界面。
           </p>
         </div>
       </section>
       <section className="settings-section">
-        <h2>玻璃材质</h2>
+        <h2>前端风格</h2>
         <div className="panel">
-          <SettingRow title="液态玻璃" description="透光、背景模糊和边缘高光；关闭后使用静态表面。">
-            <Switch
-              label="启用液态玻璃"
+          <SettingRow title="前端样式" description="选择启动器使用的前端样式。">
+            <Select
+              label="前端样式"
               action="glass-effects"
-              checked={prefs.glassEffects}
-              onChange={(glassEffects) => setPreferences({ glassEffects })}
+              options={[
+                ['default', '默认'],
+                ['liquid', '液态玻璃'],
+              ]}
+              value={prefs.glassEffects ? 'liquid' : 'default'}
+              onChange={(value) => setPreferences({ glassEffects: value === 'liquid' })}
             />
           </SettingRow>
+          {prefs.glassEffects && (
+            <SettingRow title="面板透明度" description="保持文字与按钮清晰可读。">
+              <Slider
+                id="glass-range"
+                label="面板透明度"
+                min={25}
+                max={50}
+                value={prefs.glass}
+                onChange={(glass) => setPreferences({ glass })}
+              />
+            </SettingRow>
+          )}
         </div>
       </section>
       <section className="settings-section">

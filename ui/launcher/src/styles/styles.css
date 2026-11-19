@@ -29,7 +29,7 @@
   --blue: #4a6591;
   --shadow: 0 12px 40px #203b2910;
   --radius: 20px;
-  --glass: 85%;
+  --glass: 30%;
   --font: 'Launcher', 'Segoe UI', sans-serif;
 }
 [data-theme='dark'] {
@@ -1633,7 +1633,7 @@ select {
   transform: translate(-50%, 0);
 }
 body.has-background {
-  background-image: linear-gradient(#f5f6f3b5, #f5f6f3b5), var(--custom-background);
+  background-image: linear-gradient(#f5f6f359, #f5f6f359), var(--custom-background);
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -1646,7 +1646,7 @@ body.has-background .panel {
   backdrop-filter: blur(16px);
 }
 [data-theme='dark'] body.has-background {
-  background-image: linear-gradient(#151c19aa, #151c19aa), var(--custom-background);
+  background-image: linear-gradient(#151c1973, #151c1973), var(--custom-background);
 }
 .tint-palette {
   display: grid;

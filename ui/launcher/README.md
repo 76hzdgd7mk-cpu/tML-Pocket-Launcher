@@ -91,10 +91,11 @@ See [the UI framework](../../docs/ui-framework.md) for native integration bounda
 Animate UI's MIT + Commons Clause notice is included in
 [`public/animate-ui-license.txt`](public/animate-ui-license.txt).
 
-The small control backdrop in `src/components/liquid-glass-surface.tsx` adapts
-[Inspira UI's LiquidGlass](https://github.com/unovue/inspira-ui/blob/main/app/components/inspira/ui/liquid-glass/LiquidGlass.vue)
-to React. It uses per-instance, resize-aware SVG maps and subtle RGB displacement
-in Chromium; other browsers retain CSS blur. Text and ripple layers are separate.
-The glass switch removes the optical layers and their observers. Broad painted
-highlights and bevel shadows are replaced with neutral tints and thin rims.
-The upstream MIT license is included in [`public/inspira-ui-license.txt`](public/inspira-ui-license.txt).
+The control backdrop in `src/components/liquid-glass-surface.tsx` is a WebGL1
+lens. It rebuilds the launcher wallpaper (tint gradient or custom image) on a 2D
+canvas, derives a rounded-box height field, refracts the backdrop through it with
+a thin chromatic fringe and directional rim highlight, then composites the dock
+and capsule tints. Browsers without WebGL keep the CSS blur fallback. Text and
+ripple layers stay outside the lens, and the glass switch removes the lens and
+its observers. The technique is reimplemented from
+[Rxing's Liquid Glass WebGL demo](https://github.com/rxing365/html-liquid-glass-effect-webgl).

@@ -8,16 +8,18 @@ export function Select({
   value,
   defaultValue,
   onChange,
+  action,
 }: {
   label: string;
   options: readonly (readonly [string, string])[];
   value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
+  action?: string;
 }) {
   return (
     <SelectPrimitive.Root value={value} defaultValue={defaultValue} onValueChange={onChange}>
-      <SelectPrimitive.Trigger className="select-trigger" aria-label={label}>
+      <SelectPrimitive.Trigger className="select-trigger" aria-label={label} data-action={action}>
         <SelectPrimitive.Value />
         <SelectPrimitive.Icon className="select-chevron">
           <Icon name="chevron" />

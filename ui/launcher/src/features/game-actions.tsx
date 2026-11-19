@@ -227,7 +227,7 @@ export function useGameActions() {
       ],
       licenses: [
         '开源与许可',
-        '当前 Web UI 使用 React、Motion、Radix UI、Animate UI 与 Inspira UI 液态玻璃适配。',
+        '当前 Web UI 使用 React、Motion、Radix UI 与 Animate UI；液态玻璃透镜为自实现的 WebGL 折射。',
       ],
       'mod-folder': [
         '模组目录',
@@ -244,8 +244,12 @@ export function useGameActions() {
             </a>
           </p>
           <p>
-            <a href="/inspira-ui-license.txt" target="_blank" rel="noreferrer">
-              Inspira UI 许可与版权
+            <a
+              href="https://github.com/rxing365/html-liquid-glass-effect-webgl"
+              target="_blank"
+              rel="noreferrer"
+            >
+              液态玻璃 WebGL 参考实现
             </a>
           </p>
         </div>,

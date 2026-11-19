@@ -25,7 +25,7 @@ class LauncherSettings(context: Context) {
                 "glassEffects",
                 "touchEnabled",
                 "wifiOnly" -> require(value is Boolean)
-                "glass" -> require(value is Number && value.toInt() in 75..100)
+                "glass" -> require(value is Number && value.toInt() in 25..50)
                 "touchOpacity" -> require(value is Number && value.toInt() in 20..100)
                 "renderScale" -> require(value in listOf(50, 75, 100))
                 "rendererPlugin" -> require(value is String && RendererSelection.isValidIdentity(value))

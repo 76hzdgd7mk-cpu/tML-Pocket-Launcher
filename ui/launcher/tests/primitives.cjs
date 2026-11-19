@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+﻿const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -31,12 +31,18 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
   const capture = (name) => page.screenshot({ path: path.join(out, name), animations: 'disabled' });
   try {
     await page.goto(base);
-    await page.locator('.glass-lens[data-refraction="on"]').first().waitFor();
-    const glassIds = await page
-      .locator('.glass-lens filter')
-      .evaluateAll((filters) => filters.map((filter) => filter.id));
-    assert.equal(glassIds.length, 2);
-    assert.equal(new Set(glassIds).size, 2, 'control refraction maps have independent IDs');
+    await page.locator('.glass-lens[data-glass-canvas="on"]').first().waitFor();
+    const lenses = await page.locator('.glass-lens').evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const glass = node.querySelector('canvas');
+        return { canvases: node.querySelectorAll('canvas').length, width: glass?.width || 0 };
+      }),
+    );
+    assert.ok(lenses.length >= 2, 'launch controls keep their lenses');
+    assert.ok(
+      lenses.every((entry) => entry.canvases === 1 && entry.width > 0),
+      'each optical control owns a sized WebGL lens',
+    );
     assert.equal(
       await page.locator('.launch-button').evaluate((el) => getComputedStyle(el).filter),
       'none',
@@ -136,55 +142,37 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await settled();
     const glass = action('glass-effects');
     await glass.scrollIntoViewIfNeeded();
-    const toggle = await glass.boundingBox();
-    await page.mouse.move(toggle.x + toggle.width / 2, toggle.y + toggle.height / 2);
-    await page.mouse.down();
-    await page.waitForFunction(
-      () =>
-        document
-          .querySelector('[data-action="glass-effects"] .switch-thumb')
-          .getBoundingClientRect().width > 18.5,
+    assert.equal(await glass.getAttribute('role'), 'combobox');
+    assert.equal((await glass.locator('span').first().innerText()).trim(), '液态玻璃');
+    await glass.click();
+    assert.deepEqual(
+      await page.getByRole('listbox').getByRole('option').allInnerTexts(),
+      ['默认', '液态玻璃'],
+      'glass material offers two frontend modes',
     );
-    await page.mouse.up();
-    const travel = await glass.evaluate(
-      (el) =>
-        new Promise((resolve) => {
-          const values = [];
-          const sample = () => {
-            values.push(
-              el.querySelector('.switch-thumb').getBoundingClientRect().left -
-                el.getBoundingClientRect().left,
-            );
-            const previous = values.at(-2);
-            const settled =
-              values.length > 10 &&
-              previous !== undefined &&
-              Math.abs(values.at(-1) - previous) < 0.05;
-            if (values.length < 90 && !settled) requestAnimationFrame(sample);
-            else resolve(values);
-          };
-          requestAnimationFrame(sample);
-        }),
-    );
-    assert.ok(
-      travel.some((x) => x > 4 && x < 26),
-      'switch visibly glides through intermediate positions',
-    );
-    assert.ok(Math.abs(travel.at(-1) - 3) < 1, 'switch rests inside the track');
-    assert.equal(await glass.getAttribute('aria-checked'), 'false');
+    await page.getByRole('option', { name: '默认', exact: true }).click();
+    assert.equal(await page.locator('html').getAttribute('data-glass'), 'off');
     assert.equal(
       await page.locator('.glass-lens').count(),
       0,
       'disabling glass removes optical layers',
     );
-    const slider = page.getByRole('slider', { name: '面板不透明度', exact: true });
+    assert.equal(
+      await page.getByRole('slider', { name: '面板透明度', exact: true }).count(),
+      0,
+      'panel opacity is only available with liquid glass',
+    );
+    await glass.click();
+    await page.getByRole('option', { name: '液态玻璃', exact: true }).click();
+    const slider = page.getByRole('slider', { name: '面板透明度', exact: true });
+    await slider.waitFor();
     await slider.focus();
     await page.keyboard.press('End');
-    assert.equal(await slider.getAttribute('aria-valuenow'), '100');
+    assert.equal(await slider.getAttribute('aria-valuenow'), '50');
     await page.keyboard.press('Home');
-    assert.equal(await slider.getAttribute('aria-valuenow'), '75');
+    assert.equal(await slider.getAttribute('aria-valuenow'), '25');
     await page.keyboard.press('ArrowRight');
-    assert.equal(await slider.getAttribute('aria-valuenow'), '76');
+    assert.equal(await slider.getAttribute('aria-valuenow'), '26');
     await nav('home').click();
     await action('page-help').hover();
     await page.getByRole('tooltip').waitFor();

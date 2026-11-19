@@ -12,6 +12,7 @@ import { Button, Icon, IconButton } from './components/ui';
 import { OverlayHost } from './components/overlay-host';
 import { DemoControl } from './components/demo-control';
 import { LiquidGlassSurface } from './components/liquid-glass-surface';
+import { PanelGlass } from './components/glass/panel-glass';
 import { PageTransition } from './components/page-transition';
 import { HomePage } from './features/home';
 import { GamesPage } from './features/games';
@@ -59,6 +60,7 @@ export function App() {
       <div id="overlay-root">
         <OverlayHost />
       </div>
+      <PanelGlass />
       <motion.div
         id="toast"
         className={`toast ${toast ? 'show' : ''}`}
@@ -376,7 +378,7 @@ function LaunchDock() {
           <LiquidGlassSurface />
         </Button>
         <div className="launch-group">
-          <LiquidGlassSurface />
+          <LiquidGlassSurface tone="launch" />
           <RippleButton
             type="button"
             className="launch-button"
