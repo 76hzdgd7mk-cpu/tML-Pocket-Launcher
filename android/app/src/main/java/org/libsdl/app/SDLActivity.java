@@ -2122,7 +2122,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         int requestCode;
         boolean multipleChoice;
     }
-    
+
     /**
      * This method is called by SDL using JNI.
      */
@@ -2242,4 +2242,3 @@ class SDLClipboardHandler implements
         SDLActivity.onNativeClipboardChanged();
     }
 }
-
