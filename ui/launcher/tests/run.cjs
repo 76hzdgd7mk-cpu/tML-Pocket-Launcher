@@ -51,9 +51,7 @@ const run = (args, env = process.env) =>
           ready = true;
           break;
         }
-      } catch {
-        /* Wait for Vite to bind. */
-      }
+      } catch {}
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
     if (!ready) throw new Error('Preview server failed to start: ' + serverOutput);

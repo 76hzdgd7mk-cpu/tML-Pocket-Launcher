@@ -1,5 +1,4 @@
 import {
-  addTransitionType,
   createContext,
   useCallback,
   useContext,
@@ -8,7 +7,6 @@ import {
   useMemo,
   useRef,
   useState,
-  useTransition,
   type ReactNode,
 } from 'react';
 import { AnimateUIProvider } from '@animate-ui/react/provider';
@@ -17,7 +15,6 @@ import type { ActivityKind, LauncherState, Page, Preferences } from '../domain/t
 import { defaultFilters, demoMods } from '../domain/mods';
 import {
   defaultPreferences,
-  liquidGlassEnabled,
   normalizePreferences,
   readPreferences,
   savePreferences,
@@ -41,7 +38,6 @@ export interface DialogState extends DialogSpec {
   open: boolean;
 }
 type Update = (updater: (current: LauncherState) => LauncherState) => void;
-/** 原生外壳通过 URL 参数传入系统明暗，WebView 的媒体查询不总是可靠。 */
 function preferredSystemDark() {
   const preset = new URLSearchParams(location.search).get('system-theme');
   return preset ? preset === 'dark' : matchMedia('(prefers-color-scheme:dark)').matches;
@@ -85,7 +81,6 @@ export interface LauncherContextValue {
   notify: (text: string, kind?: ActivityKind) => void;
   record: (text: string, kind?: ActivityKind) => void;
   motionEnabled: boolean;
-  navigationPending: boolean;
 }
 const LauncherContext = createContext<LauncherContextValue | null>(null);
 export const pageNames: Record<Page, string> = {
@@ -130,7 +125,6 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   const workspaceReturn = useRef<NativeWorkspace | null>(null);
   const [nativeState, setNativeState] = useState<NativeSnapshot | null>(null);
   const nativeHydrated = useRef(false);
-  const [navigationPending, startNavigation] = useTransition();
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [toast, setToast] = useState('');
   const [pointer, setPointer] = useState(true);
@@ -180,52 +174,21 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   }, []);
   const navigate = useCallback(
     (page: Page) => {
-      const commit = () => {
-        closeDialog(false);
-        setNativeWorkspace(null);
-        workspaceReturn.current = null;
-        history.replaceState(null, '', '#' + page);
-        setState((current) => ({ ...current, page }));
-      };
-      if (
-        !motionEnabled ||
-        document.documentElement.dataset.input === 'keyboard' ||
-        typeof document.startViewTransition !== 'function' ||
-        page === state.page
-      ) {
-        commit();
-        return;
-      }
-      const order: Page[] = ['home', 'games', 'mods', 'patches', 'settings'];
-      startNavigation(() => {
-        addTransitionType(
-          order.indexOf(page) < order.indexOf(state.page) ? 'nav-back' : 'nav-forward',
-        );
-        commit();
-      });
+      closeDialog(false);
+      setNativeWorkspace(null);
+      workspaceReturn.current = null;
+      history.replaceState(null, '', '#' + page);
+      setState((current) => ({ ...current, page }));
     },
-    [closeDialog, motionEnabled, state.page, startNavigation],
+    [closeDialog],
   );
   const changeWorkspace = useCallback(
-    (next: NativeWorkspace | null, back = false) => {
-      const commit = () => {
-        closeDialog(false);
-        setNativeWorkspace(next);
-        history.replaceState(null, '', '#' + state.page + (next ? '/' + next : ''));
-      };
-      if (
-        !motionEnabled ||
-        document.documentElement.dataset.input === 'keyboard' ||
-        typeof document.startViewTransition !== 'function'
-      )
-        commit();
-      else
-        startNavigation(() => {
-          addTransitionType(back ? 'nav-back' : 'nav-forward');
-          commit();
-        });
+    (next: NativeWorkspace | null) => {
+      closeDialog(false);
+      setNativeWorkspace(next);
+      history.replaceState(null, '', '#' + state.page + (next ? '/' + next : ''));
     },
-    [closeDialog, motionEnabled, startNavigation, state.page],
+    [closeDialog, state.page],
   );
   const openWorkspace = useCallback(
     (next: NativeWorkspace) => {
@@ -245,7 +208,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   const closeWorkspace = useCallback(() => {
     const next = workspaceReturn.current;
     workspaceReturn.current = null;
-    changeWorkspace(next, true);
+    changeWorkspace(next);
   }, [changeWorkspace]);
   const setPreferences = useCallback(
     (patch: Partial<Preferences>) =>
@@ -330,7 +293,6 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   useLauncherOrientation(state.preferences.orientation, setPreferences);
   useEffect(() => {
     const down = (event: PointerEvent) => {
-      // Motion dispatches pointer events without a pointerType for Enter presses.
       if (!event.pointerType) return;
       setPointer(true);
       document.documentElement.dataset.input = 'pointer';
@@ -355,19 +317,19 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   }, []);
   useLayoutEffect(() => {
     const preferences = state.preferences;
-    const classic = preferences.theme === 'tml';
-    const dark =
-      preferences.theme === 'system' ? systemDark : preferences.theme === 'dark' || classic;
+    const classic = preferences.themeStyle === 'tml';
+    const dark = preferences.theme === 'system' ? systemDark : preferences.theme === 'dark';
     const { dataset } = document.documentElement;
     dataset.theme = dark ? 'dark' : 'light';
     if (classic) dataset.skin = 'tml';
     else delete dataset.skin;
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', classic ? '#131b37' : dark ? '#0c0f14' : '#f5f6f3');
+      ?.setAttribute(
+        'content',
+        classic ? (dark ? '#131b37' : '#e4ecf8') : dark ? '#0c0f14' : '#f5f6f3',
+      );
     dataset.motion = preferences.motion ? 'full' : 'reduced';
-    dataset.glass = liquidGlassEnabled(preferences) ? 'on' : 'off';
-    document.documentElement.style.setProperty('--glass', preferences.glass + '%');
     document.body.classList.toggle('has-background', preferences.background !== 'none');
     if (preferences.background === 'diy')
       document.body.style.setProperty(
@@ -397,7 +359,6 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => {
     if (!nativeMode || state.preferences.theme !== 'system') return;
-    // 每次选择（或再次点击）“跟随系统”都向原生重新查询，避免缓存值过期。
     void nativeRequest<{ dark?: boolean }>('appearance.system')
       .then((result) => setSystemDark(Boolean(result?.dark)))
       .catch(() => {});
@@ -422,7 +383,6 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       notify,
       record,
       motionEnabled,
-      navigationPending,
     }),
     [
       nativeState,
@@ -440,7 +400,6 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       notify,
       record,
       motionEnabled,
-      navigationPending,
     ],
   );
   return (

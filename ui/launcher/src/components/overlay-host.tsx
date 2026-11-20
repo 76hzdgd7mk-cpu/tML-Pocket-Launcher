@@ -18,7 +18,6 @@ export function OverlayHost() {
   useLayoutEffect(() => {
     const shell = document.querySelector<HTMLElement>('.app-shell');
     if (shell) shell.inert = Boolean(dialog?.open);
-    // AnimatePresence retains outgoing props. Hide our exiting surface immediately.
     const surface = document.querySelector<HTMLElement>('.animate-dialog');
     if (surface) {
       surface.inert = !dialog?.open;

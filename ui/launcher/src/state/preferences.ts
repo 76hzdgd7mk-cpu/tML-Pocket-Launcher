@@ -16,18 +16,14 @@ export const toolIds: Tool[] = [
   'activity',
 ];
 export const defaultPreferences: Preferences = {
-  theme: 'dark',
+  theme: 'system',
+  themeStyle: 'default',
   orientation: 'landscape',
   motion: true,
-  glassEffects: true,
-  glass: 30,
   background: 'none',
   backgroundTint: defaultBackgroundTint,
   quickTools: ['mods', 'patches', 'controls', 'storage'],
 };
-export function liquidGlassEnabled(preferences: Preferences): boolean {
-  return preferences.glassEffects && preferences.theme !== 'tml';
-}
 export function readPreferences(): Preferences {
   const result = { ...defaultPreferences, quickTools: [...defaultPreferences.quickTools] };
   try {
@@ -38,18 +34,15 @@ export function readPreferences(): Preferences {
     if (saved?.version !== 1) return result;
     if (['dark', 'light', 'system', 'tml'].includes(String(saved.theme)))
       result.theme = saved.theme as Preferences['theme'];
+    if (saved.theme === 'tml') {
+      result.theme = 'dark';
+      result.themeStyle = 'tml';
+    }
+    if (saved.themeStyle === 'default' || saved.themeStyle === 'tml')
+      result.themeStyle = saved.themeStyle;
     if (saved.orientation === 'landscape' || saved.orientation === 'portrait')
       result.orientation = saved.orientation;
     if (typeof saved.motion === 'boolean') result.motion = saved.motion;
-    if (typeof saved.glassEffects === 'boolean') result.glassEffects = saved.glassEffects;
-    if (
-      typeof saved.glass === 'number' &&
-      Number.isFinite(saved.glass) &&
-      saved.glass >= 25 &&
-      saved.glass <= 50
-    )
-      result.glass = saved.glass;
-    // 旧版本使用 soft 表示自定义色调。
     if (saved.background === 'soft') result.background = 'diy';
     if (saved.background === 'none' || saved.background === 'diy')
       result.background = saved.background;
@@ -72,12 +65,9 @@ export function readPreferences(): Preferences {
       saved.quickTools.every((id) => toolIds.includes(id as Tool))
     )
       result.quickTools = saved.quickTools as Tool[];
-  } catch {
-    /* The defaults remain usable when storage is corrupt or blocked. */
-  }
+  } catch {}
   return result;
 }
-/** 兼容旧版本偏好：soft 已更名为 diy。 */
 export function normalizePreferences(patch: Partial<Preferences>): Partial<Preferences> {
   return (patch.background as string | undefined) === 'soft'
     ? { ...patch, background: 'diy' }
@@ -97,7 +87,5 @@ export function savePreferences(preferences: Preferences) {
         customImage: image,
       }),
     );
-  } catch {
-    /* Persistence is optional. */
-  }
+  } catch {}
 }

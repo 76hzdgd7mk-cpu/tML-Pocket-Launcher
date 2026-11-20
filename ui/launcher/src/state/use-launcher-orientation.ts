@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import type { Preferences } from '../domain/types';
 
-// The phone preview resizes its existing frame, preserving launcher session state.
-// A regular browser viewport remains responsive; it is never rotated with CSS.
 export function useLauncherOrientation(
   orientation: Preferences['orientation'],
   setPreferences: (patch: Partial<Preferences>) => void,

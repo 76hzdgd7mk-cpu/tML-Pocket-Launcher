@@ -58,7 +58,6 @@ export const isSteamAuthenticating = (phase: string) =>
     phase,
   );
 
-/** Keeps the store session and download result alive when users leave a page. */
 export function SteamProvider({ children }: { children: ReactNode }) {
   const { nativeMode, nativeWorkspace, openWorkspace } = useLauncher();
   const [account, setAccount] = useState<SteamAccount | null>(null);

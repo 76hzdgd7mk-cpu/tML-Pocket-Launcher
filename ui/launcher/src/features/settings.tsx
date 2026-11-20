@@ -118,14 +118,13 @@ function Appearance() {
       <section className="settings-section">
         <h2>界面外观</h2>
         <div className="panel">
-          <SettingRow title="主题" description="配色与经典游戏菜单风格。">
+          <SettingRow title="主题模式" description="选择浅色、深色或跟随系统。">
             <div className="theme-options">
               {(
                 [
                   ['light', '浅色', 'sun'],
                   ['dark', '深色', 'moon'],
                   ['system', '跟随系统', 'settings'],
-                  ['tml', 'tModLoader', 'game'],
                 ] as const
               ).map(([theme, label, symbol]) => (
                 <Button
@@ -140,6 +139,21 @@ function Appearance() {
                 </Button>
               ))}
             </div>
+          </SettingRow>
+          <SettingRow title="主题样式" description="选择启动器使用的主题视觉样式。">
+            <Select
+              label="主题样式"
+              action="frontend-style"
+              options={[
+                ['default', '默认'],
+                ['tml', '泰拉风'],
+              ]}
+              value={prefs.themeStyle}
+              onChange={(themeStyle) => {
+                if (themeStyle === 'default' || themeStyle === 'tml')
+                  setPreferences({ themeStyle });
+              }}
+            />
           </SettingRow>
           <SettingRow title="启动器方向" description="默认横屏，切换后保留当前页面。">
             <Select
@@ -217,7 +231,6 @@ function Appearance() {
               style={
                 prefs.background === 'custom' && prefs.customImage
                   ? {
-                      // 应用图片背景后直接用缩略图替换纯色块。
                       backgroundImage: `linear-gradient(#0000 45%, #000000a6), url(${prefs.customImage})`,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
@@ -235,43 +248,6 @@ function Appearance() {
           <p className="setting-caption">
             可选像素场景、游戏截图或本地图片。背景仅用于启动器界面。
           </p>
-        </div>
-      </section>
-      <section className="settings-section">
-        <h2>前端风格</h2>
-        <div className="panel">
-          {prefs.theme === 'tml' ? (
-            <SettingRow
-              title="经典面板"
-              description="tModLoader 主题不使用液态玻璃。切换到其他主题时恢复原设置。"
-              children={null}
-            />
-          ) : (
-            <SettingRow title="前端样式" description="选择启动器使用的前端样式。">
-              <Select
-                label="前端样式"
-                action="glass-effects"
-                options={[
-                  ['default', '默认'],
-                  ['liquid', '液态玻璃'],
-                ]}
-                value={prefs.glassEffects ? 'liquid' : 'default'}
-                onChange={(value) => setPreferences({ glassEffects: value === 'liquid' })}
-              />
-            </SettingRow>
-          )}
-          {prefs.theme !== 'tml' && prefs.glassEffects && (
-            <SettingRow title="面板透明度" description="保持文字与按钮清晰可读。">
-              <Slider
-                id="glass-range"
-                label="面板透明度"
-                min={25}
-                max={50}
-                value={prefs.glass}
-                onChange={(glass) => setPreferences({ glass })}
-              />
-            </SettingRow>
-          )}
         </div>
       </section>
       <section className="settings-section">
@@ -294,7 +270,7 @@ function Appearance() {
           </SettingRow>
         </div>
         <p className="setting-caption">
-          主题、屏幕方向、动效、玻璃和快捷入口偏好保存在此浏览器；操作记录仅保留在本次会话。
+          主题、屏幕方向、动效和快捷入口偏好保存在此浏览器；操作记录仅保留在本次会话。
         </p>
       </section>
       {!nativeMode && (

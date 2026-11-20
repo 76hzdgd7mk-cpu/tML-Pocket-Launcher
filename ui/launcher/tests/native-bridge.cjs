@@ -145,7 +145,6 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
                 'Android/data 与 Android/obb 受系统保护，请将文件放到 Download 或 Documents。',
             };
           else if (method === 'files.permission') {
-            // The first permission round-trip is denied; shared storage must stay hidden.
             setTimeout(() => window.dispatchEvent(new Event('launcher:files-resume')), 20);
           } else if (method === 'files.list') {
             const names =
@@ -750,8 +749,6 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.getByRole('button', { name: '测试 Steam 连接', exact: true }).click();
     await page.locator('.steam-diagnostics summary').click();
     await page.getByRole('status').filter({ hasText: 'Steam 连接可用 · TCP' }).waitFor();
-    // Horizontal/vertical phones keep the form inside the content area; input
-    // focus remains visible when the keyboard reduces viewport height.
     const sizes = [
       { width: 932, height: 430 },
       { width: 844, height: 390 },
@@ -787,8 +784,6 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
       }),
     );
     await page.setViewportSize({ width: 932, height: 430 });
-    // Restore without another password/Guard exchange, then exercise download
-    // navigation, leaving an active task, cancellation and completion.
     await page.evaluate(() => {
       window.nativeStores.steam = {
         phase: 'ready',
@@ -914,8 +909,9 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.getByRole('option', { name: '75%', exact: true }).click();
     await page.waitForFunction(() => window.nativeFixture.preferences.renderScale === 75);
     await page.locator('#settings-tab-appearance').click();
-    await page.locator('[data-theme-choice=tml]').click();
-    await page.waitForFunction(() => window.nativeFixture.preferences.theme === 'tml');
+    await page.getByRole('combobox', { name: '主题样式', exact: true }).click();
+    await page.getByRole('option', { name: '泰拉风', exact: true }).click();
+    await page.waitForFunction(() => window.nativeFixture.preferences.themeStyle === 'tml');
     assert.equal(await page.locator('html').getAttribute('data-skin'), 'tml');
     await page.getByRole('button', { name: '图片背景', exact: true }).click();
     const imageBrowser = page.getByRole('dialog', { name: '选择文件', exact: true });
@@ -928,8 +924,9 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
       0,
       'Android does not expose a web/system file chooser',
     );
-    await page.locator('[data-theme-choice=light]').click();
-    await page.waitForFunction(() => window.nativeFixture.preferences.theme === 'light');
+    await page.getByRole('combobox', { name: '主题样式', exact: true }).click();
+    await page.getByRole('option', { name: '默认', exact: true }).click();
+    await page.waitForFunction(() => window.nativeFixture.preferences.themeStyle === 'default');
     assert.equal(await page.locator('html').getAttribute('data-skin'), null);
     assert.equal(
       await page.evaluate(() => window.nativeFixture.preferences.renderScale),

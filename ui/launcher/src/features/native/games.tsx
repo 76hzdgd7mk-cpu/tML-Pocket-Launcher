@@ -3,10 +3,8 @@ import { useGameActions } from '../game-actions';
 import { NativeVersionManager } from './versions';
 import { NativeAcquireAction } from './controls';
 
-/** Installed files and acquisition each have one home, without mirrored resource cards. */
 export function NativeGamesPage() {
   const { state, update, nativeState, versions, importInfo, accounts } = useGameActions();
-  // Old account shortcuts still resolve to the consolidated acquisition page.
   const tab = state.gameTab === 'accounts' ? 'sources' : state.gameTab;
   return (
     <div className="native-games-workspace">

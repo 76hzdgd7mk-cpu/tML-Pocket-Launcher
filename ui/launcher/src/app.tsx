@@ -11,8 +11,6 @@ import { motion } from 'motion/react';
 import { Button, Icon, IconButton } from './components/ui';
 import { OverlayHost } from './components/overlay-host';
 import { DemoControl } from './components/demo-control';
-import { LiquidGlassSurface } from './components/liquid-glass-surface';
-import { PanelGlass } from './components/glass/panel-glass';
 import { PageTransition } from './components/page-transition';
 import { HomePage } from './features/home';
 import { GamesPage } from './features/games';
@@ -73,7 +71,6 @@ export function App() {
       <div id="overlay-root">
         <OverlayHost />
       </div>
-      <PanelGlass />
       <motion.div
         id="toast"
         className={`toast ${toast ? 'show' : ''}`}
@@ -188,7 +185,6 @@ function Header() {
     getTerraria,
     navigate,
     update,
-    navigationPending,
     nativeMode,
     nativeState,
     nativeWorkspace,
@@ -219,7 +215,7 @@ function Header() {
       <h1 className="screen-title" id="screen-title">
         {nativeWorkspace ? workspaceNames[nativeWorkspace] : pageNames[state.page]}
       </h1>
-      {!nativeWorkspace && state.page === 'home' && state.preferences.theme === 'tml' && (
+      {!nativeWorkspace && state.page === 'home' && state.preferences.themeStyle === 'tml' && (
         <img
           className="tml-wordmark"
           src="/tml-pocket-wordmark.svg"
@@ -228,7 +224,7 @@ function Header() {
           height="28"
         />
       )}
-      <div className="topbar-actions" inert={navigationPending}>
+      <div className="topbar-actions">
         <span id="screen-action">
           {primary && (
             <Button
@@ -296,7 +292,7 @@ function Header() {
   );
 }
 function PageContent() {
-  const { state, motionEnabled, navigationPending, nativeMode, nativeWorkspace } = useLauncher();
+  const { state, motionEnabled, nativeMode, nativeWorkspace } = useLauncher();
   const content = useRef<HTMLDivElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const positions = useRef(new Map<string, number>());
@@ -320,8 +316,6 @@ function PageContent() {
     const element = scroller.current;
     if (!element) return;
     const changed = committed.current !== key;
-    // Input modality changes motion settings, but must not restore stale scroll
-    // positions between pointerdown and click.
     if (changed || !mounted.current) element.scrollTop = positions.current.get(key) || 0;
     if (changed && (nativeWorkspace || committed.current.split(':')[0] !== state.page))
       content.current?.focus({ preventScroll: true });
@@ -341,7 +335,6 @@ function PageContent() {
       id="page-content"
       tabIndex={-1}
       aria-labelledby="screen-title"
-      inert={navigationPending}
       ref={content}
     >
       <div className="page-tabs" id="page-tabs" />
@@ -434,10 +427,8 @@ function LaunchDock() {
             </strong>
           </span>
           <Icon name="chevron" />
-          <LiquidGlassSurface />
         </Button>
         <div className="launch-group">
-          <LiquidGlassSurface tone="launch" />
           <RippleButton
             type="button"
             className="launch-button"

@@ -1,4 +1,3 @@
-/** Bound stored backgrounds to WebView's local-storage quota. */
 export async function prepareBackground(source: string): Promise<string> {
   const image = new Image();
   image.src = source;

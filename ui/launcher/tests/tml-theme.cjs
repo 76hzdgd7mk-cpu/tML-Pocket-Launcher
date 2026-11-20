@@ -17,6 +17,10 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     });
     const root = page.locator('html');
     const choose = (theme) => page.locator(`[data-theme-choice="${theme}"]`);
+    const chooseStyle = async (name) => {
+      await page.getByRole('combobox', { name: '主题样式', exact: true }).click();
+      await page.getByRole('option', { name, exact: true }).click();
+    };
     const nav = (destination) => page.locator(`.main-nav [data-page="${destination}"]`);
     const capture = async (name) => {
       if (!process.env.LAUNCHER_CAPTURE) return;
@@ -25,18 +29,32 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
       await page.screenshot({ path: path.join(dir, `${name}.png`), animations: 'disabled' });
     };
     await page.goto(base);
-    assert.equal(await root.getAttribute('data-theme'), 'dark');
+    assert.equal(await root.getAttribute('data-theme'), 'light');
     assert.equal(await root.getAttribute('data-skin'), null);
     await nav('settings').click();
     await choose('dark').waitFor();
-    assert.equal(await choose('tml').count(), 1, 'classic theme is available in Appearance');
-    await choose('tml').click();
-    assert.equal(await choose('tml').getAttribute('aria-pressed'), 'true');
+    assert.equal(await choose('tml').count(), 0, 'theme modes no longer include the Terra style');
+    await chooseStyle('泰拉风');
     assert.equal(await root.getAttribute('data-skin'), 'tml');
+    assert.equal(await root.getAttribute('data-theme'), 'light');
+    assert.equal(
+      await page
+        .locator('.settings-section .panel')
+        .first()
+        .evaluate((panel) => {
+          const style = getComputedStyle(panel);
+          return (
+            style.backgroundColor === 'rgb(246, 249, 255)' &&
+            style.borderTopColor === 'rgb(139, 155, 182)' &&
+            style.backdropFilter === 'none'
+          );
+        }),
+      true,
+    );
+    await capture('tml-theme-settings-light-landscape');
+    await choose('dark').click();
     assert.equal(await root.getAttribute('data-theme'), 'dark');
-    assert.equal(await root.getAttribute('data-glass'), 'off');
-    assert.equal(await page.locator('.glass-lens').count(), 0);
-    assert.equal(await page.locator('[data-action="glass-effects"]').count(), 0);
+    assert.equal(await root.getAttribute('data-skin'), 'tml');
     assert.equal(
       await page
         .locator('.settings-section .panel')
@@ -69,24 +87,32 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await dialog.waitFor({ state: 'hidden' });
     await page.setViewportSize({ width: 320, height: 680 });
     await nav('settings').click();
-    await choose('tml').waitFor();
-    assert.equal(await choose('tml').getAttribute('aria-pressed'), 'true');
+    const styleTrigger = page.getByRole('combobox', { name: '主题样式', exact: true });
+    await styleTrigger.waitFor();
     assert.equal(
-      await choose('tml').evaluate(
-        (button) => button.getBoundingClientRect().right <= window.innerWidth,
-      ),
+      await styleTrigger.evaluate((trigger) => trigger.getBoundingClientRect().right <= innerWidth),
       true,
     );
     await capture('tml-theme-settings-portrait');
     await choose('light').click();
+    assert.equal(await root.getAttribute('data-skin'), 'tml');
+    assert.equal(await root.getAttribute('data-theme'), 'light');
+    assert.equal(
+      await page
+        .locator('.settings-section .panel')
+        .first()
+        .evaluate((panel) => getComputedStyle(panel).backgroundColor),
+      'rgb(246, 249, 255)',
+    );
+    await capture('tml-theme-settings-light-portrait');
+    await chooseStyle('默认');
     assert.equal(await root.getAttribute('data-skin'), null);
     assert.equal(await root.getAttribute('data-theme'), 'light');
-    assert.equal(await root.getAttribute('data-glass'), 'on');
     await choose('system').click();
     assert.equal(await root.getAttribute('data-theme'), 'light');
     assert.equal(await choose('system').getAttribute('aria-pressed'), 'true');
     console.log(
-      'PASS: tModLoader theme selection, persistence, panel/modal skin, narrow settings, light/system and glass restoration.',
+      'PASS: Terra light/dark styles, persistence, panel/modal skin, narrow settings, light and system modes.',
     );
   } finally {
     await browser.close();

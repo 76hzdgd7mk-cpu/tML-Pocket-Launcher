@@ -106,7 +106,6 @@ export const modTitle = (id: string) => catalog.find((mod) => mod.id === id)?.ti
 export const needsUpdate = (mod: Mod) =>
   catalog.some((item) => item.id === mod.id && item.version !== mod.version);
 
-/** Resolve dependencies without executing any mod code; reject cycles and unknown IDs. */
 export function resolveMods(ids: string[], installed: Mod[] = [], preferLocal = false): Mod[] {
   const visiting = new Set<string>();
   const visited = new Set<string>();

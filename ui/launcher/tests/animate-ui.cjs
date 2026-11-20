@@ -26,11 +26,6 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     });
     const action = (id) => page.locator(`[data-action="${id}"]`);
     const nav = (id) => page.locator(`.main-nav [data-page="${id}"]`);
-    // 玻璃材质改为下拉框：先展开触发器，再按选项名称选择。
-    const selectGlass = async (name) => {
-      await action('glass-effects').click();
-      await page.getByRole('option', { name, exact: true }).click();
-    };
     const settled = async () => {
       await page.waitForFunction(
         () =>
@@ -117,7 +112,6 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     assert.equal(await page.locator('.catalog-row').count(), 1);
     await page.locator('#catalog-search').fill('');
 
-    // Switching from Escape to a pointer must not move the next target as it is pressed.
     for (let attempt = 0; attempt < 5; attempt++) {
       await action('mw-incompatible-preview').click();
       await page.getByRole('dialog', { name: '需要匹配的 tML 版本', exact: true }).waitFor();
@@ -132,13 +126,8 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await action('motion').click();
     assert.equal(await page.locator('html').getAttribute('data-motion'), 'reduced');
     await page.locator('[data-theme-choice=light]').click();
-    await page.getByRole('slider', { name: '面板透明度', exact: true }).focus();
-    await page.keyboard.press('Home');
-    for (let step = 0; step < 17; step++) await page.keyboard.press('ArrowRight');
-    await selectGlass('默认');
     await page.reload();
     assert.equal(await page.locator('html').getAttribute('data-theme'), 'light');
-    assert.equal(await page.locator('html').getAttribute('data-glass'), 'off');
     assert.equal(
       await action('motion').getAttribute('data-state'),
       'unchecked',
@@ -154,14 +143,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
       'reduced UI is settled',
     );
     await nav('settings').click();
-    assert.equal(
-      await page.getByRole('slider', { name: '面板透明度', exact: true }).count(),
-      0,
-      'panel opacity is only available with liquid glass',
-    );
     await action('motion').click();
-    await selectGlass('液态玻璃');
-    assert.equal(await page.locator('#glass-range').getAttribute('aria-valuenow'), '42');
     await page.locator('[data-theme-choice=dark]').click();
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await nav('home').click();
@@ -264,25 +246,6 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
       await page.locator('#page-content .page-scroll').evaluate((el) => el.scrollTop),
       scroll,
     );
-    const glassSelect = action('glass-effects');
-    await glassSelect.scrollIntoViewIfNeeded();
-    const glassScroll = await page
-      .locator('#page-content .page-scroll')
-      .evaluate((el) => el.scrollTop);
-    await selectGlass('默认');
-    assert.equal(
-      await page.locator('#page-content .page-scroll').evaluate((el) => el.scrollTop),
-      glassScroll,
-    );
-    await page.waitForFunction(
-      () => document.activeElement?.getAttribute('data-action') === 'glass-effects',
-    );
-    assert.equal(
-      await glassSelect.evaluate((el) => el === document.activeElement),
-      true,
-      'Select trigger remains mounted and focused',
-    );
-    await selectGlass('液态玻璃');
     await nav('home').click();
     await page.locator('#page-content .page-scroll').evaluate((el) => (el.scrollTop = 0));
     await screenshot('animate-home-portrait.png');
@@ -329,7 +292,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await screenshot('animate-home-landscape.png');
     await page.evaluate(() => localStorage.setItem('tml-launcher-ui-v1', '{broken'));
     await page.reload();
-    assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark');
+    assert.equal(await page.locator('html').getAttribute('data-theme'), 'light');
     assert.equal(await action('extra-tool-storage').count(), 1);
     const touch = await browser.newPage({
       viewport: { width: 390, height: 844 },

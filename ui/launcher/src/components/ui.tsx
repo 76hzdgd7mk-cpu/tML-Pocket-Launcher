@@ -137,8 +137,6 @@ export function WorkspaceTabs<T extends string>({
   className?: string;
 }) {
   const list = useRef<HTMLDivElement>(null);
-  // Resolve the shell slot before the browser paints: an effect-only lookup
-  // leaves #page-tabs empty for a frame on every page switch.
   const [slot, setSlot] = useState<HTMLElement | null>(() =>
     typeof document === 'undefined' ? null : document.getElementById('page-tabs'),
   );

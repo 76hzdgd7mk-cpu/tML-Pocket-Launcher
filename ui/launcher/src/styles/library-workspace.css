@@ -1,4 +1,3 @@
-/* Local management and acquisition have separate surfaces and one action per workflow. */
 .native-game-library,
 .native-game-sources {
   display: grid;

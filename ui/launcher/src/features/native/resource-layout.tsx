@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button, Icon } from '../../components/ui';
 import { Select } from '../../components/form-controls';
 
-/** The same filters stay in a side column on landscape and a disclosure on phones. */
 export function ResourceBrowserLayout({
   title,
   summary,
@@ -19,7 +18,6 @@ export function ResourceBrowserLayout({
   const root = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   useEffect(() => {
-    // Match the CSS query's content-box width, including when the launch dock is visible.
     const container = root.current?.closest('.main');
     if (!container) return;
     let wide: boolean | undefined;

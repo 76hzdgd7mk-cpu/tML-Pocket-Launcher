@@ -1,4 +1,3 @@
-/* Animate UI owns the shared selection spring; labels stay visible in both layouts. */
 .launcher-navigation {
   --navigation-selection: #272727;
   min-height: 0;

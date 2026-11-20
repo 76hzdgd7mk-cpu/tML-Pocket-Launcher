@@ -31,18 +31,6 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
   const capture = (name) => page.screenshot({ path: path.join(out, name), animations: 'disabled' });
   try {
     await page.goto(base);
-    await page.locator('.glass-lens[data-glass-canvas="on"]').first().waitFor();
-    const lenses = await page.locator('.glass-lens').evaluateAll((nodes) =>
-      nodes.map((node) => {
-        const glass = node.querySelector('canvas');
-        return { canvases: node.querySelectorAll('canvas').length, width: glass?.width || 0 };
-      }),
-    );
-    assert.ok(lenses.length >= 2, 'launch controls keep their lenses');
-    assert.ok(
-      lenses.every((entry) => entry.canvases === 1 && entry.width > 0),
-      'each optical control owns a sized WebGL lens',
-    );
     assert.equal(
       await page.locator('.launch-button').evaluate((el) => getComputedStyle(el).filter),
       'none',
@@ -140,39 +128,6 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
 
     await nav('settings').click();
     await settled();
-    const glass = action('glass-effects');
-    await glass.scrollIntoViewIfNeeded();
-    assert.equal(await glass.getAttribute('role'), 'combobox');
-    assert.equal((await glass.locator('span').first().innerText()).trim(), '液态玻璃');
-    await glass.click();
-    assert.deepEqual(
-      await page.getByRole('listbox').getByRole('option').allInnerTexts(),
-      ['默认', '液态玻璃'],
-      'glass material offers two frontend modes',
-    );
-    await page.getByRole('option', { name: '默认', exact: true }).click();
-    assert.equal(await page.locator('html').getAttribute('data-glass'), 'off');
-    assert.equal(
-      await page.locator('.glass-lens').count(),
-      0,
-      'disabling glass removes optical layers',
-    );
-    assert.equal(
-      await page.getByRole('slider', { name: '面板透明度', exact: true }).count(),
-      0,
-      'panel opacity is only available with liquid glass',
-    );
-    await glass.click();
-    await page.getByRole('option', { name: '液态玻璃', exact: true }).click();
-    const slider = page.getByRole('slider', { name: '面板透明度', exact: true });
-    await slider.waitFor();
-    await slider.focus();
-    await page.keyboard.press('End');
-    assert.equal(await slider.getAttribute('aria-valuenow'), '50');
-    await page.keyboard.press('Home');
-    assert.equal(await slider.getAttribute('aria-valuenow'), '25');
-    await page.keyboard.press('ArrowRight');
-    assert.equal(await slider.getAttribute('aria-valuenow'), '26');
     await nav('home').click();
     await action('page-help').hover();
     await page.getByRole('tooltip').waitFor();
@@ -264,7 +219,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
         border: getComputedStyle(el).borderTopWidth,
         radius: getComputedStyle(el).borderRadius,
       }));
-      assert.equal(selection.background, 'rgb(39, 39, 39)');
+      assert.equal(selection.background, 'rgb(229, 231, 231)');
       assert.equal(selection.border, '0px');
       assert.equal(selection.radius, '999px');
       await capture(`bottom-navigation-${width}.png`);
@@ -277,7 +232,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.frameLocator('iframe').locator('[data-slot="bottom-navigation"]').waitFor();
     assert.deepEqual(errors, []);
     console.log(
-      'PASS: official launch RippleButton grows/fades/cleans up and preserves prepare/demo/keyboard actions; compact logs pointer/keyboard/focus restoration; Home environment check; visible button press and switch stretch/glide; tab highlight; Select inside Dialog pointer/keyboard; Slider keyboard bounds; Tooltip; reduced motion; BottomNavigation with always-visible stacked labels, neutral selection capsule and live spring motion at 320/390/480px; portrait preview URL.',
+      'PASS: official launch RippleButton grows/fades/cleans up and preserves prepare/demo/keyboard actions; compact logs pointer/keyboard/focus restoration; Home environment check; visible button press and switch stretch/glide; tab highlight; Select inside Dialog pointer/keyboard; Tooltip; reduced motion; BottomNavigation with always-visible stacked labels, neutral selection capsule and live spring motion at 320/390/480px; portrait preview URL.',
     );
   } catch (error) {
     await capture('primitives-failure.png').catch(() => {});

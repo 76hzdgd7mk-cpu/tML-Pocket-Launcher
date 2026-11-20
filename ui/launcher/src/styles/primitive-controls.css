@@ -1,4 +1,7 @@
-/* The official primitives own motion and focus; these rules provide the launcher skin. */
+:root {
+  --radix-popper-transform-origin: 50% 0%;
+}
+
 .launch-button {
   --ripple-button-ripple-color: #fff;
   isolation: isolate;
@@ -25,6 +28,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
   gap: 12px;
   min-height: 48px;
   max-width: 100%;
@@ -45,6 +49,12 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-trigger > span[data-animate-ui-value-ghost],
+.select-trigger > span[data-animate-ui-value-incoming] {
+  min-width: max-content;
+  min-height: 1lh;
   white-space: nowrap;
 }
 .select-chevron {

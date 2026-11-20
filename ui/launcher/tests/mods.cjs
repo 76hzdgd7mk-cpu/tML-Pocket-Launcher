@@ -157,7 +157,6 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     );
     await close();
 
-    // Fresh sample install to verify updates preserve enabled state and pack operations.
     await page.reload();
     await toggleDemo(page);
     await settle();

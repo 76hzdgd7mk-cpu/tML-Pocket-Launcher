@@ -31,7 +31,6 @@ interface DownloadsContextValue {
 }
 const DownloadsContext = createContext<DownloadsContextValue | null>(null);
 
-/** Owns task lifetime independently of the progress window and current page. */
 export function DownloadsProvider({ children }: { children: ReactNode }) {
   const { nativeState, dialog, openDialog, closeDialog, notify } = useLauncher();
   const [task, setTask] = useState<DownloadTask | null>(null);

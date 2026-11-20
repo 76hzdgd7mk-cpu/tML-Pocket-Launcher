@@ -1,5 +1,3 @@
-// Source: https://animate-ui.com/r/icons-lucide-layout-template.json
-// Animate UI: MIT + Commons Clause; Lucide: ISC/MIT. See public license notices.
 'use client';
 
 import { motion, type Variants } from 'motion/react';

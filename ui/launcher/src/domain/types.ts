@@ -17,10 +17,9 @@ export type Tool =
   | 'activity';
 export interface Preferences {
   theme: 'dark' | 'light' | 'system' | 'tml';
+  themeStyle: 'default' | 'tml';
   orientation: 'landscape' | 'portrait';
   motion: boolean;
-  glassEffects: boolean;
-  glass: number;
   background: 'none' | 'diy' | 'custom';
   backgroundTint: string;
   customImage?: string;

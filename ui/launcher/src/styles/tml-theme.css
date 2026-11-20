@@ -30,10 +30,48 @@
   --tml-rim: inset 0 1px 0 #a9beff38, inset 0 -2px #0c143c55, 0 2px #090e2180;
 }
 
+:root[data-skin='tml'][data-theme='light'] {
+  --bg: #e4ecf8;
+  --surface: #f6f9ff;
+  --elevated: #ffffff;
+  --nav: #eef4fdee;
+  --text: #1d2a47;
+  --strong: #0f1a33;
+  --muted: #53648a;
+  --faint: #dde7f7;
+  --line: #b7c5df;
+  --subtle: #edf3fc;
+  --accent: #d9a400;
+  --accent-hover: #b8860b;
+  --accent-soft: #fbf0c4;
+  --accent-ink: #7a5a00;
+  --blue: #2f5da8;
+  --warning: #8a6100;
+  --warning-bg: #fbf0d2;
+  --glass-edge: #24365c;
+  --tml-panel-edge: #8b9bb6;
+  --glass-glint: #ffffffcc;
+  --glass-shadow: #24365c26;
+  --stage: #d6e2f5;
+  --stage-ink: var(--strong);
+  --launch-start: #e8c65a;
+  --launch-ink: #332400;
+  --shadow: 0 8px 0 #24365c2e;
+  --tml-control: #e3ebf9;
+  --tml-control-hover: #d3e0f5;
+  --tml-rim: inset 0 1px 0 #ffffffd9, inset 0 -2px #7f92b84d, 0 2px #24365c33;
+}
+
 [data-skin='tml'] body:not(.has-background) {
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='188' height='132' fill='%23b1beef' fill-opacity='.26'%3E%3Cpath d='M17 31h2v2h-2zm68 73h2v2h-2zm78-55h2v2h-2zm-31-37h1v1h-1zM42 79h1v1h-1zM170 115h1v1h-1z'/%3E%3C/svg%3E"),
     linear-gradient(155deg, #151c38, #131b37 45%, #202a4e);
+}
+
+[data-skin='tml'][data-theme='light'] body:not(.has-background) {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='188' height='132' fill='%237d90b8' fill-opacity='.22'%3E%3Cpath d='M17 31h2v2h-2zm68 73h2v2h-2zm78-55h2v2h-2zm-31-37h1v1h-1zM42 79h1v1h-1zM170 115h1v1h-1z'/%3E%3C/svg%3E"),
+    linear-gradient(155deg, #f3f7fe, #e4ecf8 45%, #d8e4f7);
 }
 
 [data-skin='tml'] .tml-wordmark {
@@ -50,6 +88,11 @@
   color: var(--strong);
   font-weight: 700;
   text-shadow: 1px 2px #090e21;
+}
+
+[data-skin='tml'][data-theme='light']
+  :is(.screen-title, .workspace-section h2, .settings-section h2, .dialog-header h2) {
+  text-shadow: 0 1px 0 #ffffffc0;
 }
 
 :root[data-skin='tml']
@@ -76,6 +119,26 @@
   backdrop-filter: none;
 }
 
+:root[data-skin='tml'][data-theme='light']
+  :is(
+    .panel,
+    .source-card,
+    .instance-option,
+    .game-stage,
+    .game-dock,
+    .task-card,
+    .download-card,
+    .dialog,
+    .primitive-popup,
+    .resource-catalog-card,
+    .resource-filter-select,
+    .resource-source,
+    :where(.resource-browser-results) > .empty-state,
+    .native-resource-status
+  ) {
+  border-color: var(--tml-panel-edge);
+}
+
 :root[data-skin='tml'] :is(.dialog, .primitive-popup) {
   background: var(--elevated);
   box-shadow: var(--tml-rim), var(--shadow);
@@ -87,6 +150,10 @@
 
 [data-skin='tml'] .overlay {
   background: #080e25b8;
+}
+
+[data-skin='tml'][data-theme='light'] .overlay {
+  background: #24365c6b;
 }
 
 [data-skin='tml'] :is(.sidebar, .topbar) {
@@ -152,6 +219,10 @@
 [data-skin='tml'] .launch-group .launch-button {
   color: var(--launch-ink);
   --ripple-button-ripple-color: #ffe745;
+}
+
+[data-skin='tml'][data-theme='light'] .launch-group .launch-button {
+  --ripple-button-ripple-color: #b8860b;
 }
 
 [data-skin='tml']

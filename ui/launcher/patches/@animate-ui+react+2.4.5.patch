@@ -1,0 +1,20 @@
+diff --git a/node_modules/@animate-ui/react/dist/internal/value-swap.js b/node_modules/@animate-ui/react/dist/internal/value-swap.js
+index e6bbf62..145199d 100644
+--- a/node_modules/@animate-ui/react/dist/internal/value-swap.js
++++ b/node_modules/@animate-ui/react/dist/internal/value-swap.js
+@@ -137,6 +137,15 @@
+ 		held?.();
+ 		held = null;
+ 		if (next === text) return;
++		// Radix 用 portal 异步把选中文本填入 valueNode，过程中会出现
++		// "有值 → 空 → 有值" 的中间态。这些都不是用户操作，跳过交叉淡入淡出，
++		// 避免 tab 切换/挂载时文本跳变。只有"有值 → 另一有值"才做动画。
++		if (next === "" || text === "") {
++			text = next;
++			copy = el.cloneNode(true);
++			box = boxOf(el);
++			return;
++		}
+ 		stop?.();
+ 		stop = crossfade(el, copy, box, timing(), (options) => {
+ 			const incoming = el.cloneNode(true);

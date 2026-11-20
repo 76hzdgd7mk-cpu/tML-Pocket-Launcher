@@ -1,4 +1,3 @@
-/* Mobile Java launcher organization, adapted for Terraria resources and tML. */
 :root {
   --rail-width: 76px;
   --dock-width: 184px;
@@ -162,7 +161,6 @@
     0 6px 20px var(--glass-shadow);
   backdrop-filter: none;
 }
-/* Keep panel blur beside the optical controls, never on their backdrop ancestor. */
 body.has-background .game-dock::before {
   content: '';
   position: absolute;
@@ -469,15 +467,6 @@ body.has-background .game-dock::before {
 .toast {
   left: 50%;
   bottom: 24px;
-}
-[data-glass='off'] .game-dock {
-  backdrop-filter: none;
-  background: var(--surface);
-  box-shadow: none;
-  border-color: var(--line);
-}
-[data-glass='off'] .game-dock::before {
-  display: none;
 }
 @supports not (backdrop-filter: blur(1px)) {
   .game-dock {
