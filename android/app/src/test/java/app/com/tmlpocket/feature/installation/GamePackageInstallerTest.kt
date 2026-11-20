@@ -1,7 +1,12 @@
 package app.com.tmlpocket.feature.installation
 
+import java.io.EOFException
 import java.io.File
+import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.nio.file.Files
+import java.util.UUID
 import java.util.concurrent.CancellationException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -12,6 +17,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeNoException
 import org.junit.Rule
@@ -22,6 +28,323 @@ class GamePackageInstallerTest {
     @get:Rule val temporary = TemporaryFolder()
     private val filesDir by lazy { temporary.newFolder("files") }
     private val installer by lazy { GamePackageInstaller(filesDir) }
+
+    @Test
+    fun differentVersionsInstallIndependentlyAndSelectionSurvivesRestart() {
+        installBoth()
+        val oldRoot = installer.installation()!!.tmlRoot
+        installer.importPackage(
+            PackageKind.TMODLOADER,
+            zip(tml() + ("tModLoader.dll" to "new-assembly")),
+            "new",
+        )
+        val versions = installer.installedVersions()
+        assertEquals(2, versions.size)
+        val newRoot = installer.installation()!!.tmlRoot
+        assertTrue(newRoot != oldRoot)
+        assertEquals("assembly", File(oldRoot, "tModLoader.dll").readText())
+        val oldId = versions.single { it.version == "old" }.id
+        installer.selectVersion(oldId)
+        val reopened = GamePackageInstaller(filesDir)
+        assertEquals(oldRoot, reopened.installation()!!.tmlRoot)
+        assertEquals(oldId, reopened.installedVersions().single { it.active }.id)
+        assertEquals("new-assembly", File(newRoot, "tModLoader.dll").readText())
+    }
+
+    @Test
+    fun reinstallingSameVersionReplacesOnlyItsDirectory() {
+        installBoth()
+        installer.importPackage(PackageKind.TMODLOADER, zip(tml()), "v2026.09.1")
+        val id = installer.installedVersions().single { it.active }.id
+        val root = installer.installation()!!.tmlRoot
+        installer.importPackage(
+            PackageKind.TMODLOADER,
+            zip(tml() + ("tModLoader.dll" to "updated")),
+            "2026.9.1",
+        )
+        assertEquals(2, installer.installedVersions().size)
+        assertEquals(id, installer.installedVersions().single { it.active }.id)
+        assertEquals(root, installer.installation()!!.tmlRoot)
+        assertEquals("updated", File(root, "tModLoader.dll").readText())
+        installer.selectVersion("legacy")
+        assertEquals(
+            "assembly",
+            File(installer.installation()!!.tmlRoot, "tModLoader.dll").readText(),
+        )
+    }
+
+    @Test
+    fun legacyMetadataCanBeSelectedAndExtendedWithoutMovingItsFiles() {
+        installBoth()
+        val file = File(filesDir, "installed-packages.json")
+        val legacy =
+            JSONObject(file.readText()).apply {
+                remove("_tmlVersions")
+                remove("_activeTmlVersion")
+            }
+        file.writeText(legacy.toString())
+        val reopened = GamePackageInstaller(filesDir)
+        assertEquals("legacy", reopened.installedVersions().single().id)
+        reopened.importPackage(PackageKind.TMODLOADER, zip(tml()), "new")
+        reopened.selectVersion("legacy")
+        assertEquals(File(filesDir, "games/tmodloader"), reopened.installation()!!.tmlRoot)
+        assertEquals(2, GamePackageInstaller(filesDir).installedVersions().size)
+    }
+
+    @Test
+    fun uninstallingSelectedAndLastVersionsPreservesResourcesSavesAndMods() {
+        installBoth()
+        val save =
+            File(filesDir, "userdata/Players/Hero.plr").also {
+                it.parentFile!!.mkdirs()
+                it.writeText("save")
+            }
+        val mod =
+            File(filesDir, "userdata/Mods/User.tmod").also {
+                it.parentFile!!.mkdirs()
+                it.writeText("mod")
+            }
+        installer.importPackage(PackageKind.TMODLOADER, zip(tml()), "new")
+        val root = installer.installation()!!.tmlRoot
+        installer.uninstallVersion(installer.installedVersions().single { it.active }.id)
+        assertFalse(root.exists())
+        assertEquals("old", GamePackageInstaller(filesDir).installation()!!.version)
+        installer.uninstallVersion("legacy")
+        assertTrue(installer.installedVersions().isEmpty())
+        assertNull(installer.packageStatus(PackageKind.TMODLOADER))
+        assertNull(installer.installation())
+        assertNotNull(installer.packageStatus(PackageKind.TERRARIA))
+        assertEquals("save", save.readText())
+        assertEquals("mod", mod.readText())
+        assertNoPendingTransaction()
+        installer.importPackage(PackageKind.TMODLOADER, zip(tml()), "reinstalled")
+        assertEquals("reinstalled", installer.installation()!!.version)
+    }
+
+    @Test
+    fun uninstallingInactiveVersionKeepsCurrentSelection() {
+        installBoth()
+        installer.importPackage(PackageKind.TMODLOADER, zip(tml()), "new")
+        val selected = installer.installation()!!.tmlRoot
+        installer.uninstallVersion("legacy")
+        assertEquals(selected, installer.installation()!!.tmlRoot)
+        assertEquals(1, installer.installedVersions().size)
+        assertFalse(File(filesDir, "games/tmodloader").exists())
+    }
+
+    @Test
+    fun unavailableVersionsStayRemovableAndUnsafeOrMissingIdsCannotMutateStorage() {
+        installBoth()
+        installer.importPackage(PackageKind.TMODLOADER, zip(tml()), "new")
+        val selected = installer.installation()!!.tmlRoot
+        File(filesDir, "games/tmodloader/FNA.dll").delete()
+        assertFalse(installer.installedVersions().single { it.id == "legacy" }.available)
+        for (id in listOf("legacy", "../userdata", "", "00000000-0000-0000-0000-000000000000")) {
+            expectFailure { installer.selectVersion(id) }
+            assertEquals(selected, installer.installation()!!.tmlRoot)
+        }
+        for (id in listOf("../userdata", "", "00000000-0000-0000-0000-000000000000")) {
+            expectFailure { installer.uninstallVersion(id) }
+        }
+        installer.uninstallVersion("legacy")
+        assertEquals(1, installer.installedVersions().size)
+    }
+
+    @Test
+    fun cancelledUninstallRollsBackDirectoryAndSelection() {
+        installBoth()
+        val before = File(filesDir, "installed-packages.json").readText()
+        var committing = false
+        var checks = 0
+        assertThrows(CancellationException::class.java) {
+            installer.uninstallVersion(
+                "legacy",
+                cancelled = { committing && ++checks == 2 },
+                progress = { _, percent -> if (percent == 95) committing = true },
+            )
+        }
+        assertEquals("old", GamePackageInstaller(filesDir).installation()!!.version)
+        assertEquals(before, File(filesDir, "installed-packages.json").readText())
+        assertNoPendingTransaction()
+    }
+
+    @Test
+    fun interruptedUninstallRestoresBeforeCommitAndFinishesAfterCommit() {
+        for (committed in listOf(false, true)) {
+            if (installer.installedVersions().isEmpty()) installBoth()
+            var committing = false
+            var checks = 0
+            assertThrows(SimulatedProcessDeath::class.java) {
+                installer.uninstallVersion(
+                    "legacy",
+                    cancelled = {
+                        if (committing && ++checks == 2) throw SimulatedProcessDeath()
+                        false
+                    },
+                    progress = { _, percent -> if (percent == 95) committing = true },
+                )
+            }
+            if (committed)
+                File(filesDir, "installed-packages.json")
+                    .writeText(readJournal().getJSONObject("newState").toString())
+            val reopened = GamePackageInstaller(filesDir)
+            assertEquals(!committed, reopened.installedVersions().isNotEmpty())
+            assertEquals(!committed, File(filesDir, "games/tmodloader/tModLoader.dll").isFile)
+            assertNotNull(reopened.packageStatus(PackageKind.TERRARIA))
+            assertNoPendingTransaction()
+        }
+    }
+
+    @Test
+    fun interruptedAdditionalInstallNeverReplacesExistingRelease() {
+        installBoth()
+        crashDuringCommit(3, "new")
+        assertEquals("old", GamePackageInstaller(filesDir).installation()!!.version)
+        assertEquals(1, installer.installedVersions().size)
+        assertNoPendingTransaction()
+        crashDuringCommit(3, "new")
+        File(filesDir, "installed-packages.json")
+            .writeText(readJournal().getJSONObject("newState").toString())
+        assertEquals("new", GamePackageInstaller(filesDir).installation()!!.version)
+        assertEquals(2, installer.installedVersions().size)
+        assertEquals("assembly", File(filesDir, "games/tmodloader/tModLoader.dll").readText())
+        assertNoPendingTransaction()
+    }
+
+    @Test
+    fun formatOneJournalFromPreviousAppStillRecovers() {
+        installBoth()
+        val file = File(filesDir, "installed-packages.json")
+        val old =
+            JSONObject(file.readText()).apply {
+                remove("_tmlVersions")
+                remove("_activeTmlVersion")
+            }
+        file.writeText(old.toString())
+        val transaction = UUID.randomUUID().toString()
+        val next = JSONObject(old.toString()).put("_transaction", transaction)
+        next.getJSONObject("TMODLOADER").put("version", "new")
+        val destination = File(filesDir, "games/tmodloader")
+        Files.move(destination.toPath(), File(filesDir, "games/.backup-$transaction").toPath())
+        destination.mkdirs()
+        File(destination, "uncommitted").writeText("new")
+        journalFile()
+            .writeText(
+                JSONObject()
+                    .put("format", 1)
+                    .put("id", transaction)
+                    .put("kind", "TMODLOADER")
+                    .put("phase", "prepared")
+                    .put("hadDestination", true)
+                    .put("hadStateFile", true)
+                    .put("oldState", old)
+                    .put("newState", next)
+                    .toString()
+            )
+        assertEquals("old", GamePackageInstaller(filesDir).installation()!!.version)
+        assertEquals("assembly", File(destination, "tModLoader.dll").readText())
+        assertNoPendingTransaction()
+    }
+
+    @Test
+    fun uninstallDoesNotSelectDamagedReleaseAndCanForgetMissingDirectory() {
+        installBoth()
+        installer.importPackage(PackageKind.TMODLOADER, zip(tml()), "new")
+        val current = installer.installedVersions().single { it.active }.id
+        File(filesDir, "games/tmodloader").deleteRecursively()
+        installer.uninstallVersion(current)
+        assertNull(installer.installation())
+        assertNull(installer.packageStatus(PackageKind.TMODLOADER))
+        assertFalse(installer.installedVersions().single().active)
+        assertFalse(installer.installedVersions().single().available)
+        installer.uninstallVersion("legacy")
+        assertTrue(GamePackageInstaller(filesDir).installedVersions().isEmpty())
+        assertNotNull(installer.packageStatus(PackageKind.TERRARIA))
+        assertNoPendingTransaction()
+    }
+
+    @Test
+    fun unreadableMetadataCannotSwitchOrDeleteRelease() {
+        installBoth()
+        installer.importPackage(PackageKind.TMODLOADER, zip(tml()), "new")
+        val selected = installer.installation()!!.tmlRoot
+        val file = File(filesDir, "installed-packages.json")
+        val previous = file.readText()
+        file.delete()
+        file.mkdir()
+        File(file, "blocked").writeText("storage unavailable")
+        expectFailure { installer.selectVersion("legacy") }
+        expectFailure { installer.uninstallVersion("legacy") }
+        assertTrue(File(selected, "tModLoader.dll").isFile)
+        file.deleteRecursively()
+        file.writeText(previous)
+        assertEquals(selected, GamePackageInstaller(filesDir).installation()!!.tmlRoot)
+        assertEquals(2, installer.installedVersions().size)
+    }
+
+    @Test
+    fun packagesWithUnknownVersionsDoNotReplaceEachOther() {
+        installBoth()
+        val unknown = tml() + ("tModLoader.deps.json" to deps().replace("2026.9.1", "1.4.4.9"))
+        installer.importPackage(PackageKind.TMODLOADER, zip(unknown))
+        val firstRoot = installer.installation()!!.tmlRoot
+        installer.importPackage(PackageKind.TMODLOADER, zip(unknown))
+        assertEquals(3, installer.installedVersions().size)
+        assertTrue(firstRoot != installer.installation()!!.tmlRoot)
+        assertTrue(File(firstRoot, "tModLoader.dll").isFile)
+    }
+
+    @Test
+    fun tamperedVersionJournalCannotChangeAnotherReleaseOrEscapeStorage() {
+        installBoth()
+        crashDuringCommit(2, "new")
+        val original = readJournal()
+        val oldFiles = File(filesDir, "games/tmodloader/tModLoader.dll")
+        val mutations: List<(JSONObject) -> Unit> =
+            listOf(
+                { it.put("versionId", "../userdata") },
+                { it.put("operation", "unknown") },
+                {
+                    it.getJSONObject("newState")
+                        .getJSONObject("_tmlVersions")
+                        .getJSONObject("legacy")
+                        .put("version", "tampered")
+                },
+            )
+        for (mutate in mutations) {
+            journalFile().writeText(JSONObject(original.toString()).also(mutate).toString())
+            assertNull(GamePackageInstaller(filesDir).installation())
+            expectFailure { installer.uninstallVersion("legacy") }
+            assertEquals("assembly", oldFiles.readText())
+            assertTrue(journalFile().isFile)
+        }
+        journalFile().writeText(original.toString())
+        assertEquals("old", GamePackageInstaller(filesDir).installation()!!.version)
+        assertNoPendingTransaction()
+    }
+
+    @Test
+    fun truncatedCompressedEntryReportsCorruptionAndPreservesInstalledPackage() {
+        val archive = zip(tml())
+        rewriteFirstZipEntry(archive, 20, 1) // Limit compressed data to one byte, keeping the directory.
+        val failure = assertCorruptImportPreservesInstallation(archive)
+        assertTrue(failure.message.orEmpty().contains("EOFException"))
+        assertTrue(generateSequence(failure.cause) { it.cause }.any { it is EOFException })
+    }
+
+    @Test
+    fun invalidZipReportsCorruptionAndPreservesInstalledPackage() {
+        val archive = temporary.newFile().also { it.writeText("incomplete download") }
+        assertCorruptImportPreservesInstallation(archive)
+    }
+
+    @Test
+    fun checksumMismatchReportsCorruptionAndPreservesInstalledPackage() {
+        val archive = zip(tml())
+        rewriteFirstZipEntry(archive, 16, 0) // Corrupt the first entry's expected CRC.
+        val failure = assertCorruptImportPreservesInstallation(archive)
+        assertTrue(failure.message.orEmpty().contains("tModLoader.dll"))
+    }
 
     @Test
     fun oldVersionLabelsAreCorrectedWithoutReimporting() {
@@ -167,6 +490,12 @@ class GamePackageInstallerTest {
     @Test
     fun cancellationAfterNewPackageMovesRollsBack() {
         assertCancellationRollsBack(cancelAtCommitCheck = 3)
+    }
+
+    @Test
+    fun cancellationDuringAdditionalInstallPreservesOtherReleases() {
+        assertCancellationRollsBack(cancelAtCommitCheck = 3, version = "new")
+        assertEquals(1, installer.installedVersions().size)
     }
 
     @Test
@@ -323,9 +652,9 @@ class GamePackageInstallerTest {
         } catch (unavailable: Exception) {
             assumeNoException("Host does not allow creating symbolic links", unavailable)
         }
-        installer.importPackage(PackageKind.TMODLOADER, zip(tml()), "new")
+        installer.importPackage(PackageKind.TMODLOADER, zip(tml()), "old")
         assertEquals("save-data", save.readText())
-        assertEquals("new", installer.installation()!!.version)
+        assertEquals("old", installer.installation()!!.version)
         assertNoStagingDirectories()
     }
 
@@ -363,7 +692,7 @@ class GamePackageInstallerTest {
         File(filesDir, "installed-packages.json")
             .writeText(journal.getJSONObject("newState").toString())
         val reopened = GamePackageInstaller(filesDir)
-        assertEquals("new", reopened.installation()!!.version)
+        assertEquals("old", reopened.installation()!!.version)
         assertEquals(
             "replacement",
             File(reopened.installation()!!.tmlRoot, "tModLoader.dll").readText(),
@@ -379,8 +708,8 @@ class GamePackageInstallerTest {
         File(filesDir, "installed-packages.json")
             .writeText(journal.getJSONObject("newState").toString())
         assertTrue(File(filesDir, "games/.backup-${journal.getString("id")}").deleteRecursively())
-        assertEquals("new", GamePackageInstaller(filesDir).installation()!!.version)
-        assertEquals("new", GamePackageInstaller(filesDir).installation()!!.version)
+        assertEquals("old", GamePackageInstaller(filesDir).installation()!!.version)
+        assertEquals("old", GamePackageInstaller(filesDir).installation()!!.version)
         assertNoPendingTransaction()
     }
 
@@ -488,7 +817,7 @@ class GamePackageInstallerTest {
 
     private class SimulatedProcessDeath : Error()
 
-    private fun crashDuringCommit(commitCheck: Int) {
+    private fun crashDuringCommit(commitCheck: Int, version: String = "old") {
         var committing = false
         var checks = 0
         val replacement = tml().toMutableMap().apply { put("tModLoader.dll", "replacement") }
@@ -496,7 +825,7 @@ class GamePackageInstallerTest {
             installer.importPackage(
                 PackageKind.TMODLOADER,
                 zip(replacement),
-                "new",
+                version,
                 cancelled = {
                     if (committing && ++checks == commitCheck) throw SimulatedProcessDeath()
                     false
@@ -519,7 +848,7 @@ class GamePackageInstallerTest {
         assertNoStagingDirectories()
     }
 
-    private fun assertCancellationRollsBack(cancelAtCommitCheck: Int) {
+    private fun assertCancellationRollsBack(cancelAtCommitCheck: Int, version: String = "old") {
         installBoth()
         val state = File(filesDir, "installed-packages.json").readText()
         var committing = false
@@ -528,7 +857,7 @@ class GamePackageInstallerTest {
             installer.importPackage(
                 PackageKind.TMODLOADER,
                 zip(tml()),
-                "new",
+                version,
                 cancelled = { committing && ++checks >= cancelAtCommitCheck },
                 progress = { _, percent -> if (percent == 95) committing = true },
             )
@@ -538,6 +867,35 @@ class GamePackageInstallerTest {
             assertEquals(state, File(filesDir, "installed-packages.json").readText())
             assertNoStagingDirectories()
         }
+    }
+
+    private fun rewriteFirstZipEntry(archive: File, fieldOffset: Int, value: Int) {
+        val data = archive.readBytes()
+        val buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN)
+        val directory = buffer.getInt(data.size - 22 + 16)
+        assertEquals(0x02014b50, buffer.getInt(directory))
+        buffer.putInt(directory + fieldOffset, value)
+        archive.writeBytes(data)
+    }
+
+    private fun assertCorruptImportPreservesInstallation(archive: File): IOException {
+        installBoth()
+        val state = File(filesDir, "installed-packages.json").readText()
+        val save = File(filesDir, "userdata/Players/Hero.plr")
+        save.parentFile!!.mkdirs()
+        save.writeText("keep-save")
+        val failure = assertThrows(IOException::class.java) {
+            installer.importPackage(PackageKind.TMODLOADER, archive, "replacement")
+        }
+        assertEquals("old", installer.installation()!!.version)
+        assertEquals(state, File(filesDir, "installed-packages.json").readText())
+        assertEquals("assembly", File(filesDir, "games/tmodloader/tModLoader.dll").readText())
+        assertEquals("keep-save", save.readText())
+        assertNoPendingTransaction()
+        assertTrue(failure.message.orEmpty(), failure.message.orEmpty().contains("ZIP 已损坏"))
+        assertTrue(failure.message.orEmpty().contains("重新下载"))
+        assertNotNull(failure.cause)
+        return failure
     }
 
     private fun installBoth() {

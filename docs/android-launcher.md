@@ -17,6 +17,11 @@ needed on a phone. The old Android button-list screen has been replaced.
 - Browse paginated official GitHub Releases, filter stable/preview, confirm size,
   download, verify available hashes and install. Tasks report actual progress,
   support cancellation and retry, and survive launcher screen recreation.
+- Steam, GOG and tModLoader downloads open a progress window without navigating
+  away from the current page. Minimize, Escape and Android Back dismiss the window
+  while the task continues. The downloads page can reopen it, cancel the task,
+  retry with the same selection, and show the latest session result. Background
+  completion or failure posts a notification without opening a window.
 - Read the tModLoader release from the PE ProductVersion build identifier, rather
   than the base Terraria version in deps.json. Correct old installed labels at
   read time without reimporting or changing resources. Terraria versions come from
@@ -42,6 +47,60 @@ needed on a phone. The old Android button-list screen has been replaced.
 - Start the existing SDL/CoreCLR GameActivity after installation, dependency and
   patch checks. File mutations and duplicate starts are blocked while its process
   is running. Game packages and saves remain outside the APK.
+
+## tML version management
+
+tML releases install side by side. Use Games → Installed or the launch bar's
+version selector to choose the current launch version or uninstall one release.
+Installing selects that release; reinstalling the same normalized version label
+replaces only its own files. Saves, mods, configuration and Terraria resources
+remain shared. Uninstalling the selected version falls back to another validated
+release, or clears selection if none is usable. Damaged releases remain visible
+for removal but cannot be selected. Installation and uninstall use the same durable
+recovery journal; legacy single-release metadata and format-1 journals remain
+readable. Version changes are blocked while the game process is running.
+
+Unrecognized tML version labels are not deduplicated: each such import is kept
+independently so an unidentified package cannot replace another by accident.
+
+## Game and mod management pages
+
+Games has two tabs: Installed and Add game. Installed shows Terraria's local
+resource status and a single compact tML version list, with direct selection and
+uninstall controls. The current release uses one badge instead of a second disabled
+selection button. Add game groups official tML downloads/local ZIP import and
+Steam/GOG/local Terraria acquisition. Account shortcuts resolve to this same tab;
+there is no separate mirrored account page or second resource-status card. The
+game page's launch dock contains the current-version picker, launch and logs,
+without another account shortcut.
+
+Mods has Installed and Mod packs tabs. Add mod opens a choice between the existing
+Workshop download workspace and local multi-file TMOD import. Workshop is no
+longer embedded again under a local-management tab; old browse shortcuts redirect
+to its workspace and Back returns to Installed. On Mod packs, the header changes
+to JSON import and the content only saves/manages local presets. This avoids a
+second JSON import entry or an unrelated mod-import action on the pack page.
+
+## Resource browser
+
+Games → Add game → Download version opens the download workspace. Its category navigation
+switches between Games (official tML releases), Mods (Steam Workshop) and Mod packs
+(local JSON presets). Wide layouts place categories on the left, resource cards in
+the center and search/filter controls on the right. Narrow layouts move categories
+to the bottom and fold filters into a disclosure. Themes use the launcher's existing
+light/dark settings.
+
+Release search, channel and sort apply to loaded pages; Load more fetches the next
+official page. Refresh replaces the list only after a successful response, and
+Retry repeats the failed request. Installed-version management and ZIP import
+remain available in the filter column.
+
+Workshop keyword search opens Steam's website. Entering a numeric project ID reads
+real metadata; a public file can download through the same foreground progress
+window and minimized task flow as game resources. Viewing installed resources
+after a Workshop download returns to installed mods. Mod packs support name search,
+sorting, saving the enabled-mod list, JSON import/export, apply and delete. These
+presets do not bundle or automatically download missing mods.
 
 ## Current limits
 
@@ -87,8 +146,8 @@ verified before installation. Many modern UGC items do not offer anonymous file
 URLs and need Steam's authenticated UGC transport. These items show an explicit
 limitation and can be imported after obtaining their .tmod files through Steam.
 
-The installer currently manages one active tML release. Installing another replaces
-the distribution transactionally and retains user data. There is no resumable
+The installer selects one active tML release from the independently installed
+versions described above. There is no resumable
 download/pause engine. MobileJoystick supplies its in-game drag-and-drop control editor;
 the Android joystick overlay has been removed. Rendering uses OpenGL ES with
 50%/75%/100% backbuffer scaling through the migrated patch.

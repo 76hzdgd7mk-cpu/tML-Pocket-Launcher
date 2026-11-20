@@ -2,57 +2,63 @@ import { Button, Icon, TaskProgress } from '../../../components/ui';
 import { nativeRequest } from '../../../native/bridge';
 import { useLauncher } from '../../../state/launcher';
 import { useSteam } from './state';
+import { useDownloads } from '../download-state';
 
-export function NativeDownloadsPage() {
-  const { nativeState, notify, navigate, update, openWorkspace } = useLauncher();
-  const { account, download, startDownload, cancelDownload, details } = useSteam();
-  const generic = nativeState?.busy && nativeState.operation !== 'store.steam.download';
-  const steam = !generic && (download || nativeState?.operation === 'store.steam.download');
-  const running = steam
-    ? download?.status === 'running' || (!download && nativeState?.busy)
-    : nativeState?.busy;
-  const completed =
-    steam &&
-    (download?.status === 'completed' ||
-      (!download && !nativeState?.busy && !nativeState?.error && nativeState?.progress === 100));
-  const cancelled = steam && download?.status === 'cancelled';
-  const failure = steam
-    ? download?.status === 'failed'
-      ? download.error
-      : !download
-        ? nativeState?.error
-        : ''
+export function NativeDownloadsPage({ compact = false }: { compact?: boolean }) {
+  const { nativeState, notify, navigate, update, openWorkspace, closeDialog } = useLauncher();
+  const { account, details } = useSteam();
+  const downloads = useDownloads();
+  const { task } = downloads;
+  const unrelated = Boolean(
+    (nativeState?.busy || nativeState?.error) && (!task || nativeState.operation !== task.method),
+  );
+  const currentTask = unrelated && !compact ? null : task;
+  const steam = currentTask?.method === 'store.steam.download';
+  const running = currentTask ? currentTask.status === 'running' : nativeState?.busy;
+  const completed = currentTask?.status === 'completed';
+  const cancelled = currentTask?.status === 'cancelled';
+  const failure = currentTask
+    ? currentTask.status === 'failed'
+      ? currentTask.error
+      : ''
     : nativeState?.error;
-  const empty = !steam && !running && !nativeState?.error;
+  const empty = !currentTask && !running && !failure;
   const progress = completed
     ? 100
-    : running && nativeState?.operation === 'store.steam.download'
-      ? Math.max(-1, nativeState.progress)
-      : running && !steam
-        ? (nativeState?.progress ?? -1)
-        : -1;
+    : currentTask
+      ? currentTask.progress
+      : (nativeState?.progress ?? -1);
   const message = completed
     ? '资源已安装，随时可以继续准备游戏。'
     : cancelled
       ? '临时下载已取消，已安装的资源和存档保留。'
-      : failure || (running ? nativeState?.message || '正在准备下载…' : '尚无正在进行的下载。');
-  const installing =
-    running && /^(?!.*准备安装).*(安装|解压|Extract|Install)/i.test(nativeState?.message || '');
-  const verifying =
-    running && /校验完成|准备安装|校验资源|正在校验|正在打包/.test(nativeState?.message || '');
+      : failure ||
+        (running
+          ? currentTask?.message || nativeState?.message || '正在准备下载…'
+          : '尚无正在进行的下载。');
+  const installing = running && /^(?!.*准备安装).*(安装|解压|Extract|Install)/i.test(message);
+  const verifying = running && /校验完成|准备安装|校验资源|正在校验|正在打包/.test(message);
   const stage = completed ? 3 : installing ? 2 : verifying ? 1 : 0;
   const run = (method: string) =>
     void nativeRequest(method).catch((error: Error) => notify(error.message));
   const installed = () => {
-    update((current) => ({ ...current, gameTab: 'installed' }));
-    navigate('games');
+    closeDialog(false);
+    update((current) => ({
+      ...current,
+      gameTab: 'installed',
+      ...(currentTask?.method === 'workshop.download' ? { modTab: 'installed' } : {}),
+    }));
+    navigate(currentTask?.method === 'workshop.download' ? 'mods' : 'games');
   };
   return (
-    <section className="download-page" aria-labelledby="download-title">
+    <section
+      className={`download-page ${compact ? 'download-compact' : ''}`}
+      aria-labelledby={compact ? 'download-window-title' : 'download-title'}
+    >
       <div className="download-page-heading">
         <div>
           <span className="download-eyebrow">下载与安装</span>
-          <h2 id="download-title">
+          <h2 id={compact ? 'download-window-title' : 'download-title'}>
             {completed
               ? '一切准备就绪'
               : cancelled
@@ -101,14 +107,15 @@ export function NativeDownloadsPage() {
               </span>
               <div>
                 <span className="download-eyebrow">
-                  {steam ? 'STEAM · 游戏资源' : '启动器任务'}
+                  {currentTask?.source || (steam ? 'STEAM · 游戏资源' : '启动器任务')}
                 </span>
                 <h3>
-                  {steam
-                    ? details?.name || 'Terraria'
-                    : nativeState?.operation === 'download'
-                      ? 'tModLoader'
-                      : '资源处理'}
+                  {currentTask?.name ||
+                    (steam
+                      ? details?.name || 'Terraria'
+                      : nativeState?.operation === 'download'
+                        ? 'tModLoader'
+                        : '资源处理')}
                 </h3>
                 <p>{steam ? 'Linux · public · Content' : '下载、校验与安装'}</p>
               </div>
@@ -123,7 +130,7 @@ export function NativeDownloadsPage() {
             >
               {message}
             </p>
-            {steam && (
+            {currentTask && (
               <ol className="download-stages" aria-label="资源安装阶段">
                 {['下载资源', '校验文件', completed ? '安装完成' : '安装资源'].map(
                   (label, index) => (
@@ -148,10 +155,10 @@ export function NativeDownloadsPage() {
             <div className="download-card-actions">
               {running && (
                 <Button
-                  disabled={Boolean(download?.cancelling)}
-                  onClick={steam && download ? cancelDownload : () => run('cancel')}
+                  disabled={Boolean(currentTask?.cancelling)}
+                  onClick={currentTask ? downloads.cancel : () => run('cancel')}
                 >
-                  {download?.cancelling ? '正在取消…' : '取消任务'}
+                  {currentTask?.cancelling ? '正在取消…' : '取消任务'}
                 </Button>
               )}
               {completed && (
@@ -160,11 +167,13 @@ export function NativeDownloadsPage() {
                   <Icon name="arrow" />
                 </Button>
               )}
-              {(failure || cancelled) && steam && (
+              {(failure || cancelled) && currentTask && (
                 <Button
                   variant="primary"
-                  disabled={nativeState?.busy || account?.phase !== 'ready' || !account.owned}
-                  onClick={startDownload}
+                  disabled={
+                    nativeState?.busy || (steam && (account?.phase !== 'ready' || !account.owned))
+                  }
+                  onClick={downloads.retry}
                 >
                   重新下载
                 </Button>
@@ -172,30 +181,36 @@ export function NativeDownloadsPage() {
               {(failure || cancelled) && steam && account?.phase !== 'ready' && (
                 <Button onClick={() => openWorkspace('steam-login')}>恢复 Steam 连接</Button>
               )}
-              {!running && !steam && nativeState?.retry && (
+              {!running && !currentTask && nativeState?.retry && (
                 <Button onClick={() => run('retry')}>重试</Button>
               )}
               {steam && <Button onClick={() => openWorkspace('steam-library')}>返回资源库</Button>}
+              {compact && <Button onClick={downloads.minimize}>最小化</Button>}
+              {!compact && currentTask && <Button onClick={downloads.show}>查看下载窗口</Button>}
             </div>
           </article>
-          <div className="download-footer-notes">
-            <div>
-              <Icon name="folder" />
-              <p>
-                <strong>自动安装</strong>
-                <span>下载完成后继续校验和安装，无需手动导入。</span>
-              </p>
+          {!compact && (
+            <div className="download-footer-notes">
+              <div>
+                <Icon name="folder" />
+                <p>
+                  <strong>自动安装</strong>
+                  <span>下载完成后继续校验和安装，无需手动导入。</span>
+                </p>
+              </div>
+              <div>
+                <Icon name="lock" />
+                <p>
+                  <strong>保留你的冒险</strong>
+                  <span>模组、配置与存档单独保存。</span>
+                </p>
+              </div>
             </div>
-            <div>
-              <Icon name="lock" />
-              <p>
-                <strong>保留你的冒险</strong>
-                <span>模组、配置与存档单独保存。</span>
-              </p>
-            </div>
-          </div>
+          )}
           <p className="download-footnote">
-            {running ? '可以切换页面，任务会继续。' : '显示当前会话的最近一次任务。'}
+            {running
+              ? '最小化后任务继续，可在下载任务中随时重新打开。'
+              : '显示当前会话的最近一次任务。'}
             {steam && '仅下载游戏资源；tModLoader 版本在游戏页管理。'}
           </p>
         </>

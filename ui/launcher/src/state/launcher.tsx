@@ -34,7 +34,7 @@ export interface DialogSpec {
   actions?: ReactNode;
   drawer?: boolean;
   prototype?: boolean;
-  surface?: 'files';
+  surface?: 'files' | 'download';
 }
 export interface DialogState extends DialogSpec {
   id: number;
@@ -46,11 +46,25 @@ function preferredSystemDark() {
   const preset = new URLSearchParams(location.search).get('system-theme');
   return preset ? preset === 'dark' : matchMedia('(prefers-color-scheme:dark)').matches;
 }
-export type NativeWorkspace = 'steam-login' | 'steam-library' | 'downloads';
+export const resourceDestinations = [
+  { id: 'resource-versions', label: '游戏', symbol: 'game' },
+  { id: 'resource-mods', label: '模组', symbol: 'mod' },
+  { id: 'resource-packs', label: '模组包', symbol: 'folder' },
+] as const;
+export type ResourceWorkspace = (typeof resourceDestinations)[number]['id'];
+export type NativeWorkspace = 'steam-login' | 'steam-library' | 'downloads' | ResourceWorkspace;
+export function isResourceWorkspace(
+  workspace: NativeWorkspace | null,
+): workspace is ResourceWorkspace {
+  return resourceDestinations.some((item) => item.id === workspace);
+}
 export const workspaceNames: Record<NativeWorkspace, string> = {
   'steam-login': 'Steam',
   'steam-library': 'Steam',
   downloads: '下载',
+  'resource-versions': '下载 - 游戏',
+  'resource-mods': '下载 - 模组',
+  'resource-packs': '下载 - 模组包',
 };
 export interface LauncherContextValue {
   nativeMode: boolean;
@@ -220,7 +234,10 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         return;
       }
       workspaceReturn.current =
-        next === 'downloads' && nativeWorkspace === 'steam-library' ? 'steam-library' : null;
+        next === 'downloads' &&
+        (nativeWorkspace === 'steam-library' || isResourceWorkspace(nativeWorkspace))
+          ? nativeWorkspace
+          : null;
       changeWorkspace(next);
     },
     [nativeWorkspace, changeWorkspace, closeDialog],

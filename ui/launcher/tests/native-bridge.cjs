@@ -21,6 +21,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
       fs.mkdirSync(dir, { recursive: true });
       await page.screenshot({
         path: path.join(dir, name + '.png'),
+        animations: 'disabled',
         style: '#toast { visibility: hidden !important; }',
       });
     };
@@ -250,32 +251,44 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
             ];
           else if (method === 'store.steam.logout')
             stores.steam = { phase: 'signedOut', account: '', message: '尚未登录', owned: false };
-          else if (method === 'store.steam.download') {
-            if (window.steamDownloadMode === 'deferred') {
+          else if (
+            method === 'store.steam.download' ||
+            method === 'download' ||
+            method === 'store.gog.download'
+          ) {
+            const source =
+              method === 'download' ? 'tml' : method === 'store.gog.download' ? 'gog' : 'steam';
+            if (window[`${source}DownloadMode`] === 'deferred') {
               Object.assign(state, {
                 busy: true,
                 operation: method,
                 progress: 23,
-                message: 'Steam：下载资源 23/100 MB',
+                message: `${source}：下载资源 23/100 MB`,
                 error: null,
               });
               send({ event: 'snapshot', data: state });
-              window.finishSteamDownload = (outcome = 'success') => {
+              window.finishNativeDownload = (outcome = 'success') => {
                 Object.assign(state, {
                   busy: false,
                   progress: outcome === 'success' ? 100 : -1,
-                  error: outcome === 'cancel' ? '操作已取消' : null,
+                  error:
+                    outcome === 'cancel'
+                      ? '操作已取消'
+                      : outcome === 'failure'
+                        ? '连接中断，请重试'
+                        : null,
                   message: outcome === 'cancel' ? '操作已取消' : '操作完成',
                 });
                 send({ event: 'snapshot', data: state });
                 send({ id, ok: outcome === 'success', data: true, error: state.error });
-                window.finishSteamDownload = null;
+                window.finishNativeDownload = null;
               };
               return;
             }
-            error = 'Steam 资源 SHA-1 校验失败';
-          } else if (method === 'cancel' && window.finishSteamDownload)
-            window.finishSteamDownload('cancel');
+            if (source === 'steam') error = 'Steam 资源 SHA-1 校验失败';
+            if (source === 'tml') error = 'SHA-256 校验失败，请重试';
+          } else if (method === 'cancel' && window.finishNativeDownload)
+            window.finishNativeDownload('cancel');
           else if (method === 'settings.save')
             state.preferences = { ...state.preferences, ...params.preferences };
           else if (method === 'patches.toggle')
@@ -294,12 +307,13 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
                 },
               ],
             };
-          else if (method === 'download') error = 'SHA-256 校验失败，请重试';
           else if (method === 'logs') data = { text: '[dotnet] 实际启动日志' };
           else if (method === 'packs.save')
             state.packs.push({ name: params.name, mods: ['ActualMod'] });
           else if (method === 'import' && params.kind.startsWith('terraria-'))
             state.terrariaSource = params.kind === 'terraria-gog' ? 'gog' : 'steam';
+          else if (method === 'import' && params.kind === 'tml' && window.tmlImportFailure)
+            error = window.tmlImportFailure;
           else if (method === 'launch') {
             if (
               state.terrariaSource !== 'gog' &&
@@ -317,6 +331,16 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     });
     await page.goto(base);
     await page.getByText('v2026.10.1.0', { exact: true }).first().waitFor();
+    const setup = page.getByRole('region', { name: 'tModLoader 游戏状态' });
+    for (const [title, file] of [
+      ['Terraria', 'terraria.png'],
+      ['tModLoader', 'tmodloader.png'],
+    ]) {
+      const icon = setup.getByRole('button', { name: new RegExp(`^${title} `) }).locator('img');
+      assert.equal(await icon.count(), 1, `${title} should display a game icon`);
+      assert.equal(await icon.getAttribute('src'), `/${file}`);
+      await icon.evaluate((image) => image.decode());
+    }
     assert.equal(await page.locator('#demo-toggle').count(), 0);
     assert.equal(await page.getByText(/示例稳定版本|示例资源包/).count(), 0);
     const nav = (id) => page.locator(`.main-nav [data-page="${id}"]`);
@@ -328,8 +352,13 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await nav('mods').click();
     await page.getByText('设备模组', { exact: false }).first().waitFor();
     assert.equal(await page.getByRole('button', { name: '导入 .tmod', exact: true }).count(), 0);
-    assert.equal(await page.getByRole('button', { name: '导入模组', exact: true }).count(), 1);
-    await page.getByRole('button', { name: '导入模组', exact: true }).click();
+    assert.equal(await page.getByRole('button', { name: '添加模组', exact: true }).count(), 1);
+    assert.equal(await page.getByRole('tab', { name: '下载模组', exact: true }).count(), 0);
+    await capture('mods-cleanup-installed-landscape');
+    await page.getByRole('button', { name: '添加模组', exact: true }).click();
+    await page.getByRole('dialog', { name: '添加模组', exact: true }).waitFor();
+    await capture('mods-cleanup-add-dialog');
+    await page.getByRole('button', { name: '导入 .tmod', exact: true }).click();
     const modsBrowser = page.getByRole('dialog', { name: '选择文件', exact: true });
     await modsBrowser.locator('.file-entry').filter({ hasText: 'First.tmod' }).click();
     await modsBrowser.locator('.file-entry').filter({ hasText: 'Second.tmod' }).click();
@@ -348,7 +377,8 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     const countBeforeCancel = await page.evaluate(
       () => window.nativeCalls.filter((call) => call.method === 'import').length,
     );
-    await page.getByRole('button', { name: '导入模组', exact: true }).click();
+    await page.getByRole('button', { name: '添加模组', exact: true }).click();
+    await page.getByRole('button', { name: '导入 .tmod', exact: true }).click();
     await page
       .getByRole('dialog', { name: '选择文件', exact: true })
       .getByRole('button', { name: '取消', exact: true })
@@ -427,9 +457,25 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.getByRole('switch', { name: '启用设备模组', exact: true }).click();
     await page.waitForFunction(() => window.nativeFixture.mods[0].enabled);
     await page.getByRole('tab', { name: /模组包/ }).click();
+    assert.equal(
+      await page.getByRole('button', { name: '添加模组', exact: true }).count(),
+      0,
+      'pack tab has no unrelated mod action',
+    );
+    assert.equal(
+      await page.getByRole('button', { name: '导入 JSON', exact: true }).count(),
+      1,
+      'one JSON import entry',
+    );
+    await page.getByRole('button', { name: '导入 JSON', exact: true }).click();
+    await chooseFile('enabled.json');
+    await page.waitForFunction(() =>
+      window.nativeCalls.some((call) => call.method === 'import' && call.params.kind === 'pack'),
+    );
     await page.getByRole('textbox', { name: '模组包名称' }).fill('实际清单');
     await page.getByRole('button', { name: '保存模组包', exact: true }).click();
     await page.getByText('实际清单', { exact: true }).waitFor();
+    await capture('mods-cleanup-packs-landscape');
     await page.getByRole('button', { name: '导出', exact: true }).first().click();
     const saveDialog = page.getByRole('dialog', { name: '保存文件', exact: true });
     await saveDialog.getByLabel('导出文件名').fill('existing.json');
@@ -439,10 +485,8 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await saveDialog.getByRole('button', { name: '保存到此目录', exact: true }).click();
     await saveDialog.waitFor({ state: 'hidden' });
     await nav('games').click();
-    await page
-      .locator('.resource-actions')
-      .getByRole('button', { name: '导入资源', exact: true })
-      .click();
+    await page.getByRole('tab', { name: '添加游戏', exact: true }).click();
+    await page.getByRole('button', { name: '导入资源', exact: true }).click();
     await page.getByRole('button', { name: '选择 ZIP', exact: true }).click();
     const fileDialog = page.getByRole('dialog', { name: '选择文件', exact: true });
     await fileDialog.getByRole('button', { name: '授予文件访问权限', exact: true }).click();
@@ -504,13 +548,14 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.getByRole('dialog', { name: '暂时无法启动', exact: true }).waitFor();
     assert.ok(await page.getByRole('button', { name: '前往 Steam', exact: true }).count());
     await page.keyboard.press('Escape');
-    await page
-      .locator('.resource-actions')
-      .getByRole('button', { name: '导入资源', exact: true })
-      .click();
+    await page.getByRole('button', { name: '导入资源', exact: true }).click();
     await page.getByRole('button', { name: '选择 .sh', exact: true }).click();
     await chooseFile('Terraria.sh');
-    await page.getByText('GOG · 无需登录验证', { exact: true }).waitFor();
+    await page.getByRole('tab', { name: '已安装', exact: true }).click();
+    await page
+      .getByLabel('Terraria 资源状态', { exact: true })
+      .getByText(/GOG · 离线可用/)
+      .waitFor();
     await page.locator('.launch-button').click();
     await page.waitForFunction(() => window.nativeFixture.message === '已请求启动 Android 游戏');
     await page.evaluate(() => window.dispatchEvent(new Event('launcher:game-returned')));
@@ -532,8 +577,28 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
         ),
       ),
     );
+    const corruptPackageError =
+      '安装包 ZIP 已损坏或下载不完整，请重新下载后导入。\n详细信息：EOFException：压缩数据意外结束';
+    await page.getByRole('tab', { name: '添加游戏', exact: true }).click();
+    await page.evaluate((reason) => (window.tmlImportFailure = reason), corruptPackageError);
     await page.getByRole('button', { name: '导入 ZIP', exact: true }).first().click();
     await chooseFile('tModLoader.zip');
+    const importFailure = page.getByRole('dialog', { name: '导入失败', exact: true });
+    await importFailure.waitFor({ timeout: 5000 });
+    assert.ok((await importFailure.innerText()).includes(corruptPackageError));
+    await capture('native-import-error');
+    assert.equal(await page.getByRole('dialog', { name: '选择文件', exact: true }).count(), 0);
+    await page.evaluate(() => (window.tmlImportFailure = '缺少必需文件：FNA.dll'));
+    await importFailure.getByRole('button', { name: '重新选择', exact: true }).click();
+    await chooseFile('tModLoader.zip');
+    await importFailure.getByText('缺少必需文件：FNA.dll', { exact: true }).waitFor();
+    await importFailure.getByRole('button', { name: '关闭', exact: true }).last().click();
+    await importFailure.waitFor({ state: 'hidden' });
+    await page.evaluate(() => (window.tmlImportFailure = ''));
+    await page.getByRole('button', { name: '导入 ZIP', exact: true }).first().click();
+    await chooseFile('tModLoader.zip');
+    await page.getByRole('dialog', { name: '选择文件', exact: true }).waitFor({ state: 'hidden' });
+    assert.equal(await page.getByRole('dialog', { name: '导入失败', exact: true }).count(), 0);
     await page.waitForFunction(() => window.nativeCalls.some((call) => call.method === 'import'));
     await page.getByRole('button', { name: '下载版本', exact: true }).click();
     assert.equal(
@@ -543,11 +608,61 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     );
     await page.getByRole('button', { name: '下载', exact: true }).click();
     await page.getByRole('button', { name: '下载并安装', exact: true }).click();
-    await page.getByRole('dialog', { name: '下载未完成', exact: true }).waitFor();
+    const downloadWindow = page.getByRole('dialog', { name: '下载与安装', exact: true });
+    await downloadWindow.waitFor({ timeout: 5000 });
+    await downloadWindow.getByRole('alert').filter({ hasText: 'SHA-256 校验失败' }).waitFor();
     assert.ok((await page.getByRole('dialog').innerText()).includes('SHA-256 校验失败'));
-    await page.keyboard.press('Escape');
-    await page.getByRole('tab', { name: '账户', exact: true }).click();
-    await page.locator('.account-row').filter({ hasText: 'STEAM' }).getByRole('button').click();
+    assert.ok(!page.url().endsWith('/downloads'), 'starting a download keeps the current page');
+    await downloadWindow.getByRole('button', { name: '最小化', exact: true }).last().click();
+    await page.locator('.topbar [data-action=tasks]').click();
+    await page.getByRole('alert').filter({ hasText: 'SHA-256 校验失败' }).waitFor();
+    await page.evaluate(() => (window.tmlDownloadMode = 'deferred'));
+    await page.getByRole('button', { name: '重新下载', exact: true }).click();
+    await page.waitForFunction(() => typeof window.finishNativeDownload === 'function');
+    await downloadWindow.getByRole('button', { name: '最小化', exact: true }).last().click();
+    await nav('mods').click();
+    await page.evaluate(() => window.finishNativeDownload());
+    await page.waitForFunction(() =>
+      document.querySelector('#toast')?.textContent.includes('已下载'),
+    );
+    assert.equal(
+      await page.getByRole('dialog').count(),
+      0,
+      'background completion does not steal focus',
+    );
+    await page.locator('.topbar [data-action=tasks]').click();
+    await page.getByRole('heading', { name: '一切准备就绪', exact: true }).waitFor();
+    await page.getByRole('heading', { name: /tModLoader/ }).waitFor();
+    await page.getByRole('button', { name: '查看下载窗口', exact: true }).click();
+    await downloadWindow.getByRole('heading', { name: '一切准备就绪', exact: true }).waitFor();
+    await downloadWindow.getByRole('button', { name: '最小化', exact: true }).last().click();
+    await page.getByRole('button', { name: '查看已安装资源', exact: true }).click();
+    await page.getByRole('tab', { name: '添加游戏', exact: true }).click();
+    await page.getByRole('button', { name: '下载版本', exact: true }).click();
+    await page.getByRole('button', { name: '下载', exact: true }).click();
+    await page.getByRole('button', { name: '下载并安装', exact: true }).click();
+    await page.waitForFunction(() => typeof window.finishNativeDownload === 'function');
+    await downloadWindow.getByRole('button', { name: '最小化', exact: true }).last().click();
+    await page.getByRole('button', { name: '返回上一页', exact: true }).click();
+    await nav('mods').click();
+    await page.evaluate(() => window.finishNativeDownload('failure'));
+    await page.waitForFunction(() =>
+      document.querySelector('#toast')?.textContent.includes('下载未完成'),
+    );
+    assert.equal(
+      await page.getByRole('dialog').count(),
+      0,
+      'background failure does not steal focus',
+    );
+    await page.locator('.topbar [data-action=tasks]').click();
+    await page.getByRole('alert').filter({ hasText: '连接中断，请重试' }).waitFor();
+    await page.getByRole('button', { name: '重新下载', exact: true }).click();
+    await page.waitForFunction(() => typeof window.finishNativeDownload === 'function');
+    await page.evaluate(() => window.finishNativeDownload());
+    await downloadWindow.getByRole('heading', { name: '一切准备就绪', exact: true }).waitFor();
+    await downloadWindow.getByRole('button', { name: '查看已安装资源', exact: true }).click();
+    await page.getByRole('tab', { name: '添加游戏', exact: true }).click();
+    await page.getByRole('button', { name: 'Steam 登录与下载', exact: true }).click();
     await page.waitForURL('**/#games/steam-login');
     assert.equal(await page.getByRole('dialog').count(), 0, 'Steam uses a dedicated page');
     assert.equal(
@@ -591,11 +706,18 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await capture('steam-library-landscape');
     assert.equal(await page.getByLabel('Steam 密码', { exact: true }).count(), 0);
     await page.getByRole('button', { name: '下载 Terraria 资源', exact: true }).click();
-    await page.waitForURL('**/#games/downloads');
+    await downloadWindow.waitFor();
+    assert.ok(page.url().endsWith('/steam-library'));
     await page.waitForFunction(() =>
       window.nativeCalls.some((call) => call.method === 'store.steam.download'),
     );
-    await page.getByRole('alert').filter({ hasText: 'Steam 资源 SHA-1 校验失败' }).waitFor();
+    await downloadWindow
+      .getByRole('alert')
+      .filter({ hasText: 'Steam 资源 SHA-1 校验失败' })
+      .waitFor();
+    await downloadWindow.getByRole('button', { name: '最小化', exact: true }).last().click();
+    await page.locator('.topbar [data-action=tasks]').click();
+    await page.waitForURL('**/#games/downloads');
     const statusCount = await page.evaluate(
       () => window.nativeCalls.filter((call) => call.method === 'store.status').length,
     );
@@ -683,16 +805,58 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     }
     await page.setViewportSize({ width: 932, height: 430 });
     await page.getByRole('button', { name: '下载 Terraria 资源', exact: true }).click();
-    await page.waitForURL('**/#games/downloads');
+    await downloadWindow.waitFor();
+    assert.ok(page.url().endsWith('/steam-library'));
     await page.waitForFunction(
       () => document.querySelector('[role=progressbar]')?.getAttribute('aria-valuenow') === '23',
     );
+    await downloadWindow
+      .getByRole('button', { name: '最小化', exact: true })
+      .last()
+      .scrollIntoViewIfNeeded();
     await capture('steam-download-landscape');
     for (const size of sizes) {
       await page.setViewportSize(size);
       await fits();
+      assert.ok(
+        await downloadWindow.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+        'download window fits phone',
+      );
+      if (size.width === 390) {
+        await downloadWindow
+          .getByRole('button', { name: '最小化', exact: true })
+          .last()
+          .scrollIntoViewIfNeeded();
+        await capture('steam-download-portrait');
+      }
     }
     await page.setViewportSize({ width: 932, height: 430 });
+    const downloadsStarted = await page.evaluate(
+      () => window.nativeCalls.filter((call) => call.method === 'store.steam.download').length,
+    );
+    const cancellations = await page.evaluate(
+      () => window.nativeCalls.filter((call) => call.method === 'cancel').length,
+    );
+    await downloadWindow.getByRole('button', { name: '最小化', exact: true }).last().click();
+    assert.ok(page.url().endsWith('/steam-library'), 'minimize returns to the original page');
+    await page.getByRole('button', { name: '查看下载进度', exact: true }).click();
+    await downloadWindow.waitFor();
+    assert.equal(
+      await page.evaluate(
+        () => window.nativeCalls.filter((call) => call.method === 'store.steam.download').length,
+      ),
+      downloadsStarted,
+      'reopen never starts a duplicate',
+    );
+    await page.evaluate(() => window.dispatchEvent(new Event('launcher:back')));
+    await downloadWindow.waitFor({ state: 'hidden' });
+    assert.equal(
+      await page.evaluate(
+        () => window.nativeCalls.filter((call) => call.method === 'cancel').length,
+      ),
+      cancellations,
+      'back only minimizes',
+    );
     await nav('mods').click();
     await page.locator('.topbar [data-action=tasks]').click();
     await page.waitForFunction(
@@ -701,18 +865,19 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.getByRole('button', { name: '取消任务', exact: true }).click();
     await page.getByRole('heading', { name: '下载已取消', exact: true }).waitFor();
     await page.getByRole('button', { name: '重新下载', exact: true }).click();
-    await page.waitForFunction(() => typeof window.finishSteamDownload === 'function');
-    await page.evaluate(() => window.finishSteamDownload());
-    await page.getByRole('heading', { name: '一切准备就绪', exact: true }).waitFor();
+    await page.waitForFunction(() => typeof window.finishNativeDownload === 'function');
+    await page.evaluate(() => window.finishNativeDownload());
+    await downloadWindow.getByRole('heading', { name: '一切准备就绪', exact: true }).waitFor();
     await capture('steam-download-completed');
+    await downloadWindow.getByRole('button', { name: '最小化', exact: true }).last().click();
     assert.ok(page.url().endsWith('/downloads'), 'completion stays on the download result page');
     await page.evaluate(() => window.dispatchEvent(new Event('launcher:back')));
     await page.waitForFunction(() => !location.hash.includes('/'));
     await page.locator('.topbar [data-action=tasks]').click();
     await page.getByRole('heading', { name: '一切准备就绪', exact: true }).waitFor();
     await page.getByRole('button', { name: '查看已安装资源', exact: true }).click();
-    await page.getByRole('tab', { name: '账户', exact: true }).click();
-    await page.locator('.account-row').filter({ hasText: 'gog.com' }).getByRole('button').click();
+    await page.getByRole('tab', { name: '添加游戏', exact: true }).click();
+    await page.getByRole('button', { name: 'GOG 登录与下载', exact: true }).click();
     await page.getByRole('button', { name: '打开 GOG 官方登录', exact: true }).click();
     await page.getByRole('button', { name: '读取可下载版本', exact: true }).click();
     await page.getByLabel('Terraria Linux 资源版本', { exact: true }).selectOption('linux-en');
@@ -722,6 +887,8 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
         (call) => call.method === 'store.gog.download' && call.params.id === 'linux-en',
       ),
     );
+    await downloadWindow.getByRole('heading', { name: '一切准备就绪', exact: true }).waitFor();
+    assert.ok((await downloadWindow.innerText()).includes('GOG'));
     await page.keyboard.press('Escape');
     await nav('settings').click();
     await page.locator('#settings-tab-controls').click();
@@ -785,7 +952,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.getByText('[dotnet] 实际启动日志', { exact: true }).waitFor();
     assert.deepEqual(errors, []);
     console.log(
-      'PASS: native bridge fixture; custom file browser at 6 phone sizes, denied/restored permissions, directories/search, mod multiselect, cancel, protected export naming, ZIP/SH imports and native background selection; dedicated Steam login/Guard/library/download navigation; keyboard viewport; progress survives navigation; download failure/cancel/retry/completion; Android Back; GOG versions; mods/packs/releases; settings and launch/logs. Fixture results do not establish real-device authentication or resource downloads.',
+      'PASS: native bridge fixture; file browser and detailed import failures; Steam/GOG/tModLoader download windows, minimize/reopen without duplicate downloads, Android Back, six phone sizes, cancellation/retry, retained results, and background success/failure without stealing focus; Steam login/Guard/library/download navigation; GOG versions; mods/packs/releases; settings and launch/logs. Fixture results do not establish real-device authentication or resource downloads.',
     );
   } finally {
     await browser.close();

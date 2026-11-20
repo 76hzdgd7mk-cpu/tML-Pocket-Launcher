@@ -361,6 +361,11 @@ body.has-background .game-dock::before {
   width: 20px;
   height: 20px;
 }
+.setup-icon img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
 .setup-copy {
   flex: 1;
   min-width: 0;

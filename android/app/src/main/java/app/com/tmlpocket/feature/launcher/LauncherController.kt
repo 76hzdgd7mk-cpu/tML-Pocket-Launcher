@@ -215,6 +215,8 @@ internal class LauncherController(private val context: Context) {
             name in
                 setOf(
                     "download",
+                    "versions.select",
+                    "versions.uninstall",
                     "mods.enable",
                     "mods.delete",
                     "packs.apply",
@@ -285,6 +287,14 @@ internal class LauncherController(private val context: Context) {
                 }
                 "state",
                 "refresh" -> null
+                "versions.select" -> {
+                    installer.selectVersion(params.getString("id"))
+                    true
+                }
+                "versions.uninstall" -> {
+                    installer.uninstallVersion(params.getString("id"), cancelled, ::progress)
+                    true
+                }
                 "releases" -> {
                     val page = client.releases(params.optInt("page", 1), cancelled)
                     page.releases.forEach { releases[it.id] = it }
@@ -613,7 +623,14 @@ internal class LauncherController(private val context: Context) {
                 refreshed.getOrNull()?.let { data = it }
                 busy = false
                 val failure = result.exceptionOrNull()
-                error = failure?.message ?: if (token.get()) "操作已取消" else null
+                error =
+                    when {
+                        failure != null ->
+                            failure.message?.takeIf { it.isNotBlank() }
+                                ?: "操作失败（${failure.javaClass.simpleName}）"
+                        token.get() -> "操作已取消"
+                        else -> null
+                    }
                 retry =
                     if (
                         error != null &&
@@ -627,7 +644,7 @@ internal class LauncherController(private val context: Context) {
                 emit()
                 reply(
                     if (error == null) Result.success(result.getOrNull() ?: snapshot())
-                    else Result.failure(IllegalStateException(error))
+                    else Result.failure(IllegalStateException(error, failure))
                 )
             }
         }
@@ -648,6 +665,16 @@ internal class LauncherController(private val context: Context) {
             .put("terraria", terraria ?: JSONObject.NULL)
             .put("terrariaSource", installer.terrariaSource()?.id ?: JSONObject.NULL)
             .put("tml", tml ?: JSONObject.NULL)
+            .put(
+                "installedVersions",
+                JSONArray(installer.installedVersions().map {
+                    JSONObject()
+                        .put("id", it.id)
+                        .put("version", it.version)
+                        .put("active", it.active)
+                        .put("available", it.available)
+                }),
+            )
             .put("ready", installer.installation() != null && runtime)
             .put("runtime", runtime)
             .put("mods", mods.list())
@@ -678,7 +705,10 @@ internal class LauncherController(private val context: Context) {
 
     private fun readLogs(): String {
         val roots =
-            listOf(File(context.filesDir, "games/tmodloader"), File(context.filesDir, "userdata"))
+            listOf(File(context.filesDir, "userdata")) +
+                File(context.filesDir, "games").listFiles().orEmpty().filter {
+                    it.isDirectory && (it.name == "tmodloader" || it.name.startsWith("tmodloader-"))
+                }
         val logs =
             roots.flatMap { root ->
                 root

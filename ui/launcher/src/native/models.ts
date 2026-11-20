@@ -44,6 +44,12 @@ export interface NativeRenderer {
   description: string;
   backend: string;
 }
+export interface NativeInstalledVersion {
+  id: string;
+  version: string;
+  active: boolean;
+  available: boolean;
+}
 export interface NativeSnapshot {
   protocol: 1;
   busy: boolean;
@@ -58,6 +64,7 @@ export interface NativeSnapshot {
   terraria: string | null;
   terrariaSource?: 'steam' | 'gog' | null;
   tml: string | null;
+  installedVersions?: NativeInstalledVersion[];
   mods: NativeMod[];
   packs: NativePack[];
   patches: NativePatch[];

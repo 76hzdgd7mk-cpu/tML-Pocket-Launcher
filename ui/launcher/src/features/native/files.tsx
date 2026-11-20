@@ -47,6 +47,7 @@ interface BrowseOptions {
     destination: FileSelection & { name: string },
   ) => Promise<unknown>;
   complete?: (result: unknown) => void;
+  failed?: (failure: unknown) => void;
 }
 const labels: Record<FileKind, string> = {
   'terraria-steam': 'Steam 资源 · ZIP',
@@ -224,8 +225,9 @@ function NativeFileBrowser({
       if (alive.current) done(result);
     } catch (failure) {
       if (alive.current) {
-        setError((failure as Error).message);
         setPending(false);
+        if (options.failed) options.failed(failure);
+        else setError((failure as Error).message);
       }
     }
   };

@@ -152,7 +152,7 @@ export function useGameActions() {
       ) : undefined,
       drawer: true,
     });
-  const importInfo = (kind: 'terraria' | 'tml' | 'mod' | 'patch') => {
+  const importInfo = (kind: 'terraria' | 'tml' | 'mod' | 'patch' | 'pack') => {
     const [title, description, steps] = {
       terraria: [
         '导入 Terraria 资源',
@@ -173,6 +173,11 @@ export function useGameActions() {
         '导入补丁包',
         '展示补丁来源、用途、目标版本与文件变更，再确认安装。',
         '校验清单与目标 → 检查冲突 → 备份并安装，可恢复',
+      ],
+      pack: [
+        '导入模组包',
+        '选择 JSON 模组启用清单，导入后可在模组包中应用。',
+        '读取清单 → 检查格式 → 保存本地预设',
       ],
     }[kind];
     notice(
@@ -266,6 +271,7 @@ export function useGameActions() {
     versions,
     instances,
     importInfo,
+    addMods: () => importInfo('mod'),
     environment,
     showInfo,
     getTerraria: () => {

@@ -38,12 +38,19 @@ Pop-Location
 
 The patch assembly and MobileJoystick project are checked out from `external/tML-Pocket-Patches` and `external/tML-Pocket-Mods`. Launcher build scripts pass `LauncherRoot` so both external projects use this checkout's game references and MonoMod dependencies.
 
+When preparing APK assets, the launcher script also passes `DirectoryBuildPropsPath` to the external patch build so it reads `managed/Directory.Build.props`. Android Studio does not need a shell environment variable for these shared settings.
+
 The APK includes Android CoreCLR, the launcher/store managed hosts and Android native libraries. It must not contain tModLoader.dll, FNA.dll or Terraria Content. The app downloads official tML ZIPs from GitHub Releases or imports local ZIPs. Terraria imports accept Steam ZIPs and GOG Linux `.sh` installers; downloads use SteamKit/GOG account authorization. Steam resources require a fresh online ownership check before launch; GOG resources require no login at launch.
 
 Gradle also runs `scripts/build/prepare-launcher-ui.ps1` and packages the approved
 UI under `assets/ui`. Source maps and the phone preview wrapper are excluded.
-Run `npm test` and `npm run format:check` in `ui/launcher` for the seven browser suites,
-including the native bridge fixture. See [implemented Android paths and limits](android-launcher.md).
+Run `npm test` and `npm run format:check` in `ui/launcher` for the browser suites,
+including the native bridge, version-manager and resource-browser fixtures. The
+resource suite covers real operation names with mocked responses, failed/retried
+pagination, Workshop downloads, mod-pack operations and ten responsive sizes.
+Set `LAUNCHER_CAPTURE=1` to save screenshots under ignored `build/ui-previews`.
+These fixtures do not perform live downloads or establish device compatibility.
+See [implemented Android paths and limits](android-launcher.md).
 
 ## Runtime validation
 

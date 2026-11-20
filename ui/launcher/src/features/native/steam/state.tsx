@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { nativeRequest } from '../../../native/bridge';
 import { useLauncher } from '../../../state/launcher';
+import { useDownloads } from '../download-state';
 
 export interface SteamAccount {
   phase: string;
@@ -59,13 +60,11 @@ export const isSteamAuthenticating = (phase: string) =>
 
 /** Keeps the store session and download result alive when users leave a page. */
 export function SteamProvider({ children }: { children: ReactNode }) {
-  const { nativeMode, nativeWorkspace, nativeState, openWorkspace, notify } = useLauncher();
+  const { nativeMode, nativeWorkspace, openWorkspace } = useLauncher();
   const [account, setAccount] = useState<SteamAccount | null>(null);
   const [connectionError, setConnectionError] = useState('');
-  const [download, setDownload] = useState<SteamDownload | null>(null);
-  const activeDownload = useRef(false);
-  const sequence = useRef(0);
-  const cancelRequested = useRef(false);
+  const downloads = useDownloads();
+  const download = downloads.task?.method === 'store.steam.download' ? downloads.task : null;
   const [details, setDetails] = useState<SteamGameDetails | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState('');
@@ -121,47 +120,13 @@ export function SteamProvider({ children }: { children: ReactNode }) {
   }, [nativeWorkspace, account?.phase, openWorkspace]);
   const openSteam = () =>
     openWorkspace(account?.phase === 'ready' ? 'steam-library' : 'steam-login');
-  const startDownload = () => {
-    if (activeDownload.current) {
-      openWorkspace('downloads');
-      return;
-    }
-    if (nativeState?.busy) {
-      notify('已有任务正在进行，请先完成或取消。');
-      return;
-    }
-    activeDownload.current = true;
-    cancelRequested.current = false;
-    const id = ++sequence.current;
-    setDownload({ id, status: 'running', cancelling: false });
-    openWorkspace('downloads');
-    void nativeRequest('store.steam.download')
-      .then(() => {
-        setDownload({ id, status: 'completed', cancelling: false });
-        notify('Terraria 资源已下载、校验并安装。', '任务');
-      })
-      .catch((error: Error) =>
-        setDownload({
-          id,
-          status: cancelRequested.current ? 'cancelled' : 'failed',
-          error: error.message,
-          cancelling: false,
-        }),
-      )
-      .finally(() => {
-        activeDownload.current = false;
-      });
-  };
-  const cancelDownload = () => {
-    if (!activeDownload.current || cancelRequested.current) return;
-    cancelRequested.current = true;
-    setDownload((current) => (current ? { ...current, cancelling: true } : current));
-    void nativeRequest('cancel').catch((error: Error) => {
-      cancelRequested.current = false;
-      setDownload((current) => (current ? { ...current, cancelling: false } : current));
-      notify(error.message);
+  const startDownload = () =>
+    downloads.start({
+      method: 'store.steam.download',
+      name: details?.name || 'Terraria',
+      source: 'Steam · Linux 游戏资源',
     });
-  };
+  const cancelDownload = downloads.cancel;
   return (
     <SteamContext.Provider
       value={{

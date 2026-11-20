@@ -66,6 +66,8 @@ const run = (args, env = process.env) =>
       'tml-theme',
       'settings-navigation',
       'native-bridge',
+      'native-versions',
+      'resource-browser',
       'launch-transition',
     ])
       await run([`tests/${suite}.cjs`], env);

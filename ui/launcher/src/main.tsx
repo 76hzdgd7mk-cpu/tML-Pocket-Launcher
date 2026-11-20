@@ -15,18 +15,23 @@ import './styles/native-workspace.css';
 import './styles/steam-workspace.css';
 import './styles/file-browser.css';
 import './styles/launch-transition.css';
+import './styles/resource-browser.css';
+import './styles/library-workspace.css';
 import './styles/tml-theme.css';
 import { SteamProvider } from './features/native/steam/state';
 import { LaunchTransitionProvider } from './features/launch/transition';
+import { DownloadsProvider } from './features/native/download-state';
 
 createRoot(document.getElementById('root')!).render(
   <LauncherProvider>
     <TooltipProvider delayDuration={400} skipDelayDuration={300}>
-      <SteamProvider>
-        <LaunchTransitionProvider>
-          <App />
-        </LaunchTransitionProvider>
-      </SteamProvider>
+      <DownloadsProvider>
+        <SteamProvider>
+          <LaunchTransitionProvider>
+            <App />
+          </LaunchTransitionProvider>
+        </SteamProvider>
+      </DownloadsProvider>
     </TooltipProvider>
   </LauncherProvider>,
 );

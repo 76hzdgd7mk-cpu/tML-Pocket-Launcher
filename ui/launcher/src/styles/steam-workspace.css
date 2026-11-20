@@ -826,6 +826,96 @@
   max-width: 320px;
   margin: 0 0 20px;
 }
+.download-dialog {
+  padding: 18px;
+}
+.download-dialog .dialog-header {
+  margin-bottom: 8px;
+}
+.download-dialog .dialog-header h2 {
+  margin-block: 0;
+}
+.download-dialog .modal-body > p {
+  margin: 0 0 10px;
+}
+.download-dialog .download-compact {
+  border: 0;
+  border-radius: 12px;
+  padding: 16px;
+  min-height: 0;
+}
+.download-compact .download-page-heading {
+  margin-bottom: 14px;
+}
+.download-compact .download-page-heading h2 {
+  font-size: 18px;
+}
+.download-compact .download-card {
+  padding: 14px;
+}
+.download-compact .download-game-line {
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.download-compact .download-game-icon {
+  width: 36px;
+  height: 40px;
+}
+.download-compact .download-game-line h3 {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.download-compact .download-percent {
+  font-size: 18px;
+}
+.download-compact .download-stages {
+  padding: 12px 0;
+  margin-top: 12px;
+  gap: 8px;
+}
+.download-compact .download-footnote {
+  margin-top: 12px;
+}
+@media (max-height: 550px) and (min-width: 600px) {
+  .download-dialog .download-compact {
+    padding: 10px;
+  }
+  .download-compact .download-page-heading {
+    margin-bottom: 10px;
+  }
+  .download-compact .download-page-heading h2 {
+    font-size: 16px;
+  }
+  .download-compact .download-card {
+    padding: 10px;
+  }
+  .download-compact .download-game-line {
+    margin-bottom: 10px;
+  }
+  .download-compact .download-stages {
+    margin-top: 8px;
+    padding-block: 8px;
+  }
+  .download-compact .download-game-line p,
+  .download-compact .download-footnote {
+    display: none;
+  }
+}
+@media (max-width: 380px) {
+  .download-dialog .download-compact {
+    padding: 10px;
+  }
+  .download-compact .download-card {
+    padding: 10px;
+  }
+  .download-compact .download-game-icon {
+    display: none;
+  }
+  .download-compact .download-stages li {
+    gap: 4px;
+    font-size: 10px;
+  }
+}
 @media (hover: hover) and (pointer: fine) {
   .steam-primary:not(:disabled):hover {
     filter: brightness(1.13);

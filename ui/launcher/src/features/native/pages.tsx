@@ -1,5 +1,4 @@
 import { Badge, Button, EmptyState, Icon, Switch, WorkspaceTabs } from '../../components/ui';
-import { useGameActions } from '../game-actions';
 import { useWorkspaceActions, tools } from '../home';
 import { nativeRequest } from '../../native/bridge';
 import { useLauncher } from '../../state/launcher';
@@ -23,21 +22,21 @@ export function NativeHomePage() {
         ? `${status.terraria} · ${status.terrariaSource === 'gog' ? 'GOG' : 'Steam'}`
         : '导入 Steam ZIP 或 GOG .sh',
       ready: !!status?.terraria,
-      symbol: 'folder',
+      icon: <img src="/terraria.png" alt="" />,
       action: getTerraria,
     },
     {
       title: 'tModLoader',
       detail: status?.tml || '下载官方版本，或导入发行 ZIP',
       ready: !!status?.tml,
-      symbol: 'game',
+      icon: <img src="/tmodloader.png" alt="" />,
       action: versions,
     },
     {
       title: '运行环境',
       detail: status?.runtime ? 'Android 运行时与兼容层已打包' : '正在检查运行时…',
       ready: !!status?.runtime,
-      symbol: 'patch',
+      icon: <Icon name="patch" />,
       action: environment,
     },
   ];
@@ -51,9 +50,7 @@ export function NativeHomePage() {
           </div>
           {setup.map((item) => (
             <Button className="setup-row" key={item.title} onClick={item.action}>
-              <span className="setup-icon">
-                <Icon name={item.symbol} />
-              </span>
+              <span className="setup-icon">{item.icon}</span>
               <span className="setup-copy">
                 <strong>{item.title}</strong>
                 <small>{item.detail}</small>
@@ -124,105 +121,6 @@ export function NativeHomePage() {
         </div>
       )}
     </>
-  );
-}
-
-export function NativeGamesPage() {
-  const { state, update, nativeState, versions, instances, importInfo, accounts } =
-    useGameActions();
-  const resources = (
-    <section className="panel">
-      <div className="panel-header">
-        <h2>游戏资源</h2>
-        <Badge tone={nativeState?.ready ? 'green' : ''}>
-          {nativeState?.ready ? '已就绪' : '等待准备'}
-        </Badge>
-      </div>
-      {(['terraria', 'tml'] as const).map((kind) => (
-        <div className="resource-row" key={kind}>
-          <span className="resource-icon">
-            <Icon name={kind === 'tml' ? 'mod' : 'game'} />
-          </span>
-          <div className="resource-copy">
-            <h3>{kind === 'tml' ? 'tModLoader' : 'Terraria'}</h3>
-            <p>{nativeState?.[kind] || '尚未安装'}</p>
-            {kind === 'terraria' && nativeState?.terraria && (
-              <p>
-                {nativeState.terrariaSource === 'gog'
-                  ? 'GOG · 无需登录验证'
-                  : 'Steam · 启动前在线验证游戏所有权'}
-              </p>
-            )}
-            <Badge tone={nativeState?.[kind] ? 'green' : ''}>
-              {nativeState?.[kind] ? '已校验' : '等待导入'}
-            </Badge>
-          </div>
-          <div className="resource-actions">
-            {kind === 'tml' && <Button onClick={versions}>下载版本</Button>}
-            <Button onClick={() => importInfo(kind)}>
-              {kind === 'terraria' ? '导入资源' : '导入 ZIP'}
-            </Button>
-          </div>
-        </div>
-      ))}
-      <div className="panel-note">使用预编译发行包；模组与存档单独保存。</div>
-    </section>
-  );
-  const stores = (
-    <section className="panel">
-      {(['steam', 'gog'] as const).map((store) => (
-        <div className="account-row" key={store}>
-          <span className={`brand-word ${store}`}>{store === 'steam' ? 'STEAM' : 'gog.com'}</span>
-          <div className="account-copy">
-            <strong>{store === 'steam' ? 'Steam游戏库' : 'GOG游戏库'}</strong>
-            <small>
-              {store === 'steam'
-                ? 'SteamKit 登录 · Steam Guard · 已购资源下载'
-                : '官方网页授权 · 已购 Linux 资源下载'}
-            </small>
-          </div>
-          <Button onClick={() => accounts(store)}>
-            登录与下载 <Icon name="chevron" />
-          </Button>
-        </div>
-      ))}
-    </section>
-  );
-  return (
-    <WorkspaceTabs
-      value={state.gameTab}
-      onChange={(gameTab) => update((current) => ({ ...current, gameTab }))}
-      label="游戏资源分类"
-      items={[
-        {
-          value: 'installed',
-          label: '已安装',
-          content: (
-            <>
-              {resources}
-              <div className="section-title">
-                <h2>当前版本</h2>
-                <Button onClick={instances}>管理版本</Button>
-              </div>
-            </>
-          ),
-        },
-        {
-          value: 'sources',
-          label: '获取资源',
-          content: (
-            <>
-              {resources}
-              <div className="section-title">
-                <h2>正版资源来源</h2>
-              </div>
-              {stores}
-            </>
-          ),
-        },
-        { value: 'accounts', label: '账户', content: stores },
-      ]}
-    />
   );
 }
 

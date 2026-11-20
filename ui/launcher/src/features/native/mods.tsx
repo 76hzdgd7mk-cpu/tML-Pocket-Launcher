@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { NativePacks } from './packs';
 import {
   Badge,
   Button,
@@ -8,20 +9,17 @@ import {
   Switch,
   WorkspaceTabs,
 } from '../../components/ui';
-import { NativeField as Field } from './controls';
 import { useLauncher } from '../../state/launcher';
-import { useNativeActions } from './actions';
 import { nativeRequest } from '../../native/bridge';
-import { useNativeFileBrowser } from './files';
 
 export function NativeModsPage() {
-  const { state, update, nativeState, openDialog, closeDialog, notify } = useLauncher();
-  const { importInfo } = useNativeActions(useLauncher());
-  const { exportJson } = useNativeFileBrowser();
+  const { state, update, nativeState, openDialog, closeDialog, openWorkspace } = useLauncher();
+  useEffect(() => {
+    if (state.modTab !== 'browse') return;
+    update((current) => ({ ...current, modTab: 'installed' }));
+    openWorkspace('resource-mods');
+  }, [state.modTab, update, openWorkspace]);
   const [query, setQuery] = useState('');
-  const [workshopQuery, setWorkshopQuery] = useState('');
-  const [id, setId] = useState('');
-  const [packName, setPackName] = useState('');
   const [filter, setFilter] = useState('all');
   const mods = nativeState?.mods || [];
   const filteredMods = mods.filter(
@@ -115,7 +113,11 @@ export function NativeModsPage() {
         />
       </div>
       {!mods.length ? (
-        <EmptyState symbol="mod" title="还没有模组" description="使用右上角导入模组。" />
+        <EmptyState
+          symbol="mod"
+          title="还没有模组"
+          description="使用右上角「添加模组」下载或导入 .tmod 文件。"
+        />
       ) : !filteredMods.length ? (
         <EmptyState symbol="search" title="没有匹配的模组" description="试试其他关键词或清除筛选。">
           <Button
@@ -168,174 +170,15 @@ export function NativeModsPage() {
       )}
     </>
   );
-  const browse = (
-    <>
-      <div className="native-mod-tools native-workshop-search">
-        <label className="search-field">
-          <Icon name="search" />
-          <input
-            type="search"
-            aria-label="搜索创意工坊"
-            placeholder="搜索创意工坊"
-            value={workshopQuery}
-            onChange={(event) => setWorkshopQuery(event.target.value)}
-          />
-        </label>
-        <Button
-          onClick={() =>
-            run('openExternal', {
-              url: `https://steamcommunity.com/workshop/browse/?appid=1281930&searchtext=${encodeURIComponent(workshopQuery)}`,
-            })
-          }
-        >
-          浏览创意工坊
-        </Button>
-      </div>
-      <section className="panel">
-        <div className="native-toolbar">
-          <Field
-            label="创意工坊项目编号"
-            value={id}
-            onChange={setId}
-            placeholder="例如 2563309347"
-          />
-          <Button
-            disabled={!/^\d{1,20}$/.test(id) || nativeState?.busy}
-            onClick={() => {
-              void nativeRequest<{ title: string; description: string; file_url: string }>(
-                'workshop.details',
-                { id },
-              )
-                .then((detail) =>
-                  openDialog({
-                    title: detail.title,
-                    description:
-                      '下载公开直链文件并校验 TMOD；Steam UGC 专用文件需要从 Steam 客户端获取后导入。',
-                    body: <p>{detail.description?.slice(0, 1200)}</p>,
-                    actions: (
-                      <>
-                        <Button onClick={() => importInfo('mod')}>导入本地文件</Button>
-                        <Button
-                          disabled={!detail.file_url}
-                          onClick={() => {
-                            closeDialog();
-                            run('workshop.download', { id });
-                          }}
-                        >
-                          下载并安装
-                        </Button>
-                      </>
-                    ),
-                  }),
-                )
-                .catch((error: Error) => notify(error.message));
-            }}
-          >
-            查询模组
-          </Button>
-        </div>
-      </section>
-    </>
-  );
-  const packs = (
-    <>
-      <div className="native-toolbar">
-        <Field
-          label="模组包名称"
-          value={packName}
-          onChange={setPackName}
-          placeholder="保存当前启用清单"
-        />
-        <Button
-          disabled={!packName.trim() || nativeState?.busy}
-          onClick={() => run('packs.save', { name: packName })}
-        >
-          保存模组包
-        </Button>
-        <Button onClick={() => importInfo('pack')}>导入 JSON</Button>
-      </div>
-      {!nativeState?.packs.length ? (
-        <EmptyState
-          symbol="folder"
-          title="还没有模组包"
-          description="把当前启用的模组清单保存为预设，可导出分享。"
-        />
-      ) : (
-        <section className="panel">
-          {nativeState.packs.map((pack) => (
-            <div className="resource-row" key={pack.name}>
-              <span className="resource-icon">
-                <Icon name="folder" />
-              </span>
-              <div className="resource-copy">
-                <h3>{pack.name}</h3>
-                <p>{pack.mods.length} 个模组</p>
-              </div>
-              <Button
-                disabled={nativeState.busy}
-                onClick={() =>
-                  openDialog({
-                    title: `应用 ${pack.name}`,
-                    description: '将替换当前启用清单并检查依赖；缺失模组时保留原清单。',
-                    actions: (
-                      <>
-                        <Button onClick={() => closeDialog()}>取消</Button>
-                        <Button
-                          onClick={() => {
-                            closeDialog();
-                            run('packs.apply', { name: pack.name });
-                          }}
-                        >
-                          应用
-                        </Button>
-                      </>
-                    ),
-                  })
-                }
-              >
-                应用
-              </Button>
-              <Button onClick={() => exportJson(pack.name, JSON.stringify(pack.mods, null, 2))}>
-                导出
-              </Button>
-              <Button
-                onClick={() =>
-                  openDialog({
-                    title: `删除模组包 ${pack.name}`,
-                    description: '仅删除此预设清单，已安装模组和存档保留。',
-                    actions: (
-                      <>
-                        <Button onClick={() => closeDialog()}>取消</Button>
-                        <Button
-                          onClick={() => {
-                            closeDialog();
-                            run('packs.delete', { name: pack.name });
-                          }}
-                        >
-                          删除清单
-                        </Button>
-                      </>
-                    ),
-                  })
-                }
-              >
-                删除
-              </Button>
-            </div>
-          ))}
-        </section>
-      )}
-    </>
-  );
+  const packs = <NativePacks />;
   return (
     <div className="native-mods-workspace">
       <WorkspaceTabs
-        value={state.modTab}
+        value={state.modTab === 'browse' ? 'installed' : state.modTab}
         onChange={(modTab) => update((current) => ({ ...current, modTab }))}
         label="模组分类"
         items={[
           { value: 'installed', label: '已安装', count: mods.length, content: installed },
-          { value: 'browse', label: '下载模组', content: browse },
           {
             value: 'packs',
             label: '模组包',

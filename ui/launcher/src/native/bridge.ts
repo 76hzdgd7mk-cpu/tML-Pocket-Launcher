@@ -58,6 +58,7 @@ export function nativeRequest<T = unknown>(method: string, params: object = {}):
         ? 180_000
         : [
               'import',
+              'versions.uninstall',
               'files.export',
               'download',
               'workshop.download',

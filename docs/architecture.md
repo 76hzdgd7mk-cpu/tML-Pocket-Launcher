@@ -71,12 +71,15 @@ UI classes render state and forward actions. Controllers own background operatio
 | --- | --- | --- |
 | `launcher/` | Managed host and compatibility libraries | APK asset preparation |
 | `runtime/` | Android CoreCLR | APK runtime extraction |
-| `games/tmodloader/` | Imported tML release and its Content | Import/download installer |
+| `games/tmodloader/` | Legacy/first imported tML release and its Content | Version-aware import/download installer |
+| `games/tmodloader-<UUID>/` | Additional independent tML releases and their Content | Version-aware import/download installer |
 | `games/terraria/` | Imported Terraria resources | Import installer |
 | `userdata/` | Saves, mods, game configuration | Game process |
-| `installed-packages.json` | Validated package layout/version | Package installer |
+| `installed-packages.json` | Validated version catalog, selected tML and shared Terraria layout | Package installer |
 
 Launcher updates must never merge packaged game binaries over imported packages. Installation uses staging, a durable transaction journal and recovery so cancellation or process interruption cannot silently replace the last valid installation. User data stays outside replaceable package directories.
+
+The tML catalog is keyed by `legacy` or canonical UUIDs; filesystem destinations are derived from these keys, never from version labels or bridge paths. Older single-install manifests remain readable without moving files. A successful install selects its release; the same normalized label replaces only that release. Selection atomically updates metadata, and `installation()` supplies the selected root to runtime preparation. Uninstall renames only the specified release into a transaction backup, commits catalog/selection, then removes the backup. Interrupted uninstalls roll back before the metadata commit or finish cleanup afterward. Format-1 journals from older launcher builds remain recoverable. Version selection and uninstall are blocked while the game process runs. All versions share Terraria resources and `userdata/`; uninstall never removes either.
 
 ## Native and managed boundaries
 

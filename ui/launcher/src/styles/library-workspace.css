@@ -1,0 +1,153 @@
+/* Local management and acquisition have separate surfaces and one action per workflow. */
+.native-game-library,
+.native-game-sources {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.native-resource-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+.native-resource-status > div {
+  flex: 1 1 150px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.native-resource-status h2,
+.native-section-heading h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.native-resource-status p,
+.native-section-heading p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.65;
+}
+.native-resource-status > img {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  object-fit: contain;
+}
+.native-version-panel .panel-header {
+  padding: 14px 16px;
+}
+.native-version-panel .native-versions {
+  padding: 14px;
+}
+.native-version-panel .version-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.native-version-panel .version-summary {
+  flex: 1 1 200px;
+}
+.native-version-panel .version-actions {
+  margin: 0 0 0 auto;
+}
+.native-version-panel .version-confirm {
+  flex-basis: 100%;
+}
+.native-version-panel .version-confirm .version-actions {
+  margin-top: 12px;
+}
+.native-source-section {
+  padding: 18px;
+  background: var(--surface);
+}
+.native-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.native-section-heading > img {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  object-fit: contain;
+}
+.native-acquire-options {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.native-acquire-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  text-align: left;
+  background: var(--subtle);
+}
+.native-acquire-action > svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  color: var(--accent-ink);
+}
+.native-acquire-action > svg:last-child {
+  width: 15px;
+  height: 15px;
+  flex-basis: 15px;
+  color: var(--muted);
+}
+.native-acquire-action > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.native-acquire-action strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 550;
+}
+.native-acquire-action small {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+@media (hover: hover) and (pointer: fine) {
+  .native-acquire-action:hover {
+    background: var(--faint);
+  }
+}
+@media (min-width: 481px) {
+  .game-library-dock {
+    align-self: end;
+    height: auto;
+    min-height: 0;
+  }
+}
+@container (min-width: 620px) {
+  .native-game-sources {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+@container (max-width: 400px) {
+  .native-source-section {
+    padding: 14px;
+  }
+  .native-acquire-action {
+    padding-inline: 10px;
+    gap: 10px;
+  }
+}

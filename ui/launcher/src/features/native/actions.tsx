@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Badge, Button, EmptyState } from '../../components/ui';
+import { Button } from '../../components/ui';
 import { useLauncher, type LauncherContextValue } from '../../state/launcher';
 import { nativeRequest } from '../../native/bridge';
-import type { NativeRelease, ReleasePage } from '../../native/models';
 import { NativeGogPanel } from './gog';
 import { useSteam } from './steam/state';
 import { useNativeFileBrowser } from './files';
+import { NativeVersionManager } from './versions';
+import { NativeAcquireAction } from './controls';
 
 export function useNativeActions(launcher: LauncherContextValue) {
-  const { nativeState, openDialog, closeDialog, navigate, notify, openWorkspace } = launcher;
+  const { openDialog, closeDialog, navigate, notify, openWorkspace } = launcher;
   const { openSteam } = useSteam();
   const { browse } = useNativeFileBrowser();
   const notice = (title: string, description: string, body?: React.ReactNode) =>
@@ -18,19 +19,31 @@ export function useNativeActions(launcher: LauncherContextValue) {
     void nativeRequest(method, params).catch((error: Error) => notice('操作未完成', error.message));
   };
   const tasks = () => openWorkspace('downloads');
-  const versions = () =>
-    openDialog({
-      title: '选择 tModLoader 版本',
-      description: '官方 GitHub Releases · 下载预编译发行包。安装时保留模组与存档。',
-      body: <NativeReleaseList />,
-      drawer: true,
-    });
+  const versions = () => openWorkspace('resource-versions');
   const importFile = (
     kind: 'terraria-steam' | 'terraria-gog' | 'tml' | 'mod' | 'patch' | 'pack',
   ) => {
     browse({
       kind,
       choose: (files) => nativeRequest('import', { kind, files }),
+      failed: (failure) =>
+        openDialog({
+          title: '导入失败',
+          description: '无法导入所选文件，请查看具体原因后重新选择。',
+          body: (
+            <pre className="native-log" role="alert" tabIndex={0}>
+              {failure instanceof Error && failure.message.trim()
+                ? failure.message
+                : '操作失败，未提供错误详情。'}
+            </pre>
+          ),
+          actions: (
+            <>
+              <Button onClick={() => closeDialog()}>关闭</Button>
+              <Button onClick={() => importFile(kind)}>重新选择</Button>
+            </>
+          ),
+        }),
       complete: (imported) => {
         if (!imported) return;
         if (kind === 'terraria-steam') {
@@ -96,22 +109,33 @@ export function useNativeActions(launcher: LauncherContextValue) {
           body: <NativeGogPanel />,
           drawer: true,
         });
+  const addMods = () =>
+    openDialog({
+      title: '添加模组',
+      description: '选择获取方式。安装后可在「已安装」中管理启用状态。',
+      body: (
+        <div className="native-acquire-options">
+          <NativeAcquireAction
+            title="下载模组"
+            description="进入 Steam 创意工坊下载中心"
+            symbol="download"
+            onClick={() => openWorkspace('resource-mods')}
+          />
+          <NativeAcquireAction
+            title="导入 .tmod"
+            description="选择本地模组文件，支持多选"
+            symbol="folder"
+            onClick={() => importInfo('mod')}
+          />
+        </div>
+      ),
+    });
   const instances = () =>
     openDialog({
       title: '已安装版本',
-      description: '当前安装的 tModLoader；安装其他版本会替换发行文件，保留用户数据。',
-      body: nativeState?.tml ? (
-        <div className="resource-row">
-          <strong>{nativeState.tml}</strong>
-          <Badge tone="green">当前版本</Badge>
-        </div>
-      ) : (
-        <EmptyState
-          symbol="game"
-          title="尚未安装 tModLoader"
-          description="选择官方版本下载，或导入本地发行 ZIP。"
-        />
-      ),
+      description:
+        '不同 tML 版本独立安装。选择下次启动版本，或卸载指定版本。存档、模组与 Terraria 资源共用并保留。',
+      body: <NativeVersionManager />,
       actions: (
         <>
           <Button onClick={versions}>下载版本</Button>
@@ -170,7 +194,8 @@ export function useNativeActions(launcher: LauncherContextValue) {
             <p>SteamKit2: LGPL-2.1-only。未修改的独立程序集，源码来自 SteamRE/SteamKit。</p>
             <p>
               RotatingartLauncher 触摸、显示、帧率、控制台与联机适配：GPL-3.0，源码位于
-              external/tML-Pocket-Patches。MobileJoystick 0.1.4：yu，源码见外部 tML-Pocket-Mods 项目并保留资源来源说明。
+              external/tML-Pocket-Patches。MobileJoystick 0.1.4：yu，源码见外部 tML-Pocket-Mods
+              项目并保留资源来源说明。
             </p>
             <p>完整许可文件随 APK 提供。</p>
           </>
@@ -184,6 +209,7 @@ export function useNativeActions(launcher: LauncherContextValue) {
     versions,
     importInfo,
     accounts,
+    addMods,
     instances,
     environment,
     showInfo,
@@ -193,99 +219,6 @@ export function useNativeActions(launcher: LauncherContextValue) {
       versions();
     },
   };
-}
-
-export function NativeReleaseList() {
-  const { nativeState, notify, closeDialog, openDialog } = useLauncher();
-  const [items, setItems] = useState<NativeRelease[]>([]);
-  const [page, setPage] = useState(1);
-  const [more, setMore] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [failure, setFailure] = useState('');
-  const [channel, setChannel] = useState('all');
-  const load = (next: number) => {
-    setLoading(true);
-    setFailure('');
-    void nativeRequest<ReleasePage>('releases', { page: next })
-      .then((result) => {
-        setItems((old) => [
-          ...old,
-          ...result.releases.filter((release) => !old.some((item) => item.id === release.id)),
-        ]);
-        setMore(result.hasMore);
-        setPage(next + 1);
-      })
-      .catch((error: Error) => setFailure(error.message))
-      .finally(() => setLoading(false));
-  };
-  useEffect(() => {
-    load(1);
-  }, []);
-  const download = (release: NativeRelease) =>
-    openDialog({
-      title: `安装 ${release.tag}`,
-      description: `${(release.size / 1048576).toFixed(1)} MB · 官方发行包。将替换当前发行文件，保留模组与存档。`,
-      actions: (
-        <>
-          <Button onClick={() => closeDialog()}>取消</Button>
-          <Button
-            variant="primary"
-            onClick={() => {
-              closeDialog(false);
-              void nativeRequest('download', { id: release.id })
-                .then(() => notify('tModLoader 已下载并校验。', '任务'))
-                .catch((error: Error) =>
-                  openDialog({ title: '下载未完成', description: error.message }),
-                );
-            }}
-          >
-            下载并安装
-          </Button>
-        </>
-      ),
-    });
-  return (
-    <>
-      <div className="filter-group dialog-spaced">
-        {[
-          ['all', '全部'],
-          ['stable', '稳定版'],
-          ['preview', '预览版'],
-        ].map(([id, label]) => (
-          <Button
-            key={id}
-            className={`filter ${channel === id ? 'active' : ''}`}
-            onClick={() => setChannel(id)}
-          >
-            {label}
-          </Button>
-        ))}
-      </div>
-      {failure && <p role="alert">{failure}</p>}
-      {items
-        .filter((item) => channel === 'all' || (item.preview ? 'preview' : 'stable') === channel)
-        .map((release) => (
-          <div className="release-row" key={release.id}>
-            <div className="resource-copy">
-              <h3>{release.name}</h3>
-              <p>
-                {release.tag} · {(release.size / 1048576).toFixed(1)} MB
-              </p>
-              <Badge>{release.preview ? '预览版' : '稳定版'}</Badge>
-            </div>
-            <Button disabled={nativeState?.busy} onClick={() => download(release)}>
-              下载
-            </Button>
-          </div>
-        ))}
-      {loading && <p role="status">正在读取官方版本…</p>}
-      {more && (
-        <Button disabled={loading || nativeState?.busy} onClick={() => load(page)}>
-          {failure ? '重试' : '加载更多'}
-        </Button>
-      )}
-    </>
-  );
 }
 
 function NativeEnvironment() {

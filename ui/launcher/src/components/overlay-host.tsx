@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as Dialog from '@animate-ui/react/primitives/radix-ui/dialog';
 import { IconButton } from './ui';
 import { useLauncher } from '../state/launcher';
+import { NativeDownloadsPage } from '../features/native/steam/downloads';
 
 export function OverlayHost() {
   const { dialog, closeDialog, returnFocus, motionEnabled, nativeMode } = useLauncher();
@@ -52,7 +53,7 @@ export function OverlayHost() {
           exitTransition={{ duration: motionEnabled ? 0.16 : 0 }}
         />
         <Dialog.Content
-          className={`dialog animate-dialog ${dialog.drawer ? 'drawer animate-sheet' : 'animate-modal'} ${dialog.surface === 'files' ? 'file-dialog' : ''}`}
+          className={`dialog animate-dialog ${dialog.drawer ? 'drawer animate-sheet' : 'animate-modal'} ${dialog.surface === 'files' ? 'file-dialog' : dialog.surface === 'download' ? 'download-dialog' : ''}`}
           data-slot="dialog-content"
           aria-labelledby="dialog-title"
           data-side={dialog.drawer ? (portrait ? 'bottom' : 'right') : undefined}
@@ -84,8 +85,8 @@ export function OverlayHost() {
               <span className="file-dialog-kind">{dialog.description}</span>
             )}
             <IconButton
-              symbol="close"
-              label="关闭"
+              symbol={dialog.surface === 'download' ? 'minus' : 'close'}
+              label={dialog.surface === 'download' ? '最小化' : '关闭'}
               data-action="close"
               onClick={() => closeDialog()}
             />
@@ -93,7 +94,7 @@ export function OverlayHost() {
           <div className={dialog.drawer ? 'drawer-body' : 'modal-body'}>
             <Dialog.Description>{dialog.description}</Dialog.Description>
             <div className="dialog-feature-content" key={dialog.id}>
-              {dialog.body}
+              {dialog.surface === 'download' ? <NativeDownloadsPage compact /> : dialog.body}
             </div>
           </div>
           {dialog.actions && <div className="dialog-actions">{dialog.actions}</div>}

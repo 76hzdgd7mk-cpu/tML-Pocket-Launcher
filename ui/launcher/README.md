@@ -31,10 +31,11 @@ npm test
 ```
 
 Tests build production assets, start a temporary preview on port 8770, and run
-seven Playwright suites. They default to installed Microsoft Edge; set
+nine Playwright suites. They default to installed Microsoft Edge; set
 `PLAYWRIGHT_CHANNEL=chrome` to use Chrome. For Playwright's bundled Chromium,
 install it with `npx playwright install chromium` and set
-`PLAYWRIGHT_CHANNEL=chromium`. Screenshots go to ignored `test-results/`.
+`PLAYWRIGHT_CHANNEL=chromium`. Screenshot outputs use ignored `test-results/`
+and, with `LAUNCHER_CAPTURE=1`, `build/ui-previews/` at the repository root.
 
 ## Structure
 
@@ -54,6 +55,20 @@ Progress handles task indication. BottomNavigation supplies the shared selection
 spring, with a neutral rounded selection capsule in portrait and on the landscape
 rail. All five destinations keep their icons above always-visible labels; the bar
 itself has no outer capsule or border.
+In Android's download workspace, this navigation switches to Games, Mods and
+Mod packs. The resource browser uses broad rounded cards and a right-hand filter
+column; narrow screens fold filters and use the bottom category navigation.
+Games reads real paginated release metadata, Mods uses existing Workshop
+search/details/download APIs, and Mod packs manages local JSON presets. The
+regular browser preview remains separate from native data. The resource-browser
+test supplies bridge fixtures and checks ten responsive sizes, search/paging,
+retries, mod queries and preset operations.
+Native local management is separate: Games has Installed and Add game tabs;
+Mods has Installed and Mod packs tabs. The game page avoids mirrored status cards
+and account sections. The mod header opens one Add mod chooser, or JSON import
+when viewing packs. Workshop uses the dedicated download workspace, including
+redirects from legacy browse shortcuts. `features/native/games.tsx` owns the game
+page and `NativeAcquireAction` shares its acquisition controls with the mod chooser.
 Select, Slider and Tooltip provide the filter/settings popups,
 opacity adjustment and icon hints. The launch dock has a single version selector,
 a standalone primary action and a compact 32 px text entry for logs. Environment

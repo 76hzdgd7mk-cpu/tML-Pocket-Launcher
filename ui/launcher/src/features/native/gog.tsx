@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Badge, Button } from '../../components/ui';
 import { useLauncher } from '../../state/launcher';
 import { nativeRequest } from '../../native/bridge';
+import { useDownloads } from './download-state';
 
 interface GogAccount {
   phase: string;
@@ -18,7 +19,8 @@ interface GogInstaller {
 }
 
 export function NativeGogPanel() {
-  const { nativeState, notify } = useLauncher();
+  const { nativeState } = useLauncher();
+  const downloads = useDownloads();
   const [account, setAccount] = useState<GogAccount | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
@@ -130,8 +132,11 @@ export function NativeGogPanel() {
             variant="primary"
             disabled={pending || nativeState?.busy || !selection}
             onClick={() =>
-              void run('store.gog.download', { id: selection }).then((result) => {
-                if (result) notify('Terraria 资源已下载、校验并安装。', '配置');
+              downloads.start({
+                method: 'store.gog.download',
+                params: { id: selection },
+                name: 'Terraria',
+                source: 'GOG · Linux 游戏资源',
               })
             }
           >

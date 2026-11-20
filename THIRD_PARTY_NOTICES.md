@@ -22,6 +22,7 @@ Preserve upstream copyright, license and notice files when distributing this pro
 | Animate UI 2.4.5 | [Animate UI](https://animate-ui.com/docs), `ui/launcher/public/animate-ui-license.txt` | Animated Web primitives; MIT + Commons Clause |
 | Inspira UI LiquidGlass | [Upstream source](https://github.com/unovue/inspira-ui/blob/main/app/components/inspira/ui/liquid-glass/LiquidGlass.vue), `ui/launcher/public/inspira-ui-license.txt` | Legacy SVG backdrop-refraction notice retained with the Web assets; the current control lens is a WebGL reimplementation; MIT |
 | Lucide icons | [Lucide](https://lucide.dev), `ui/launcher/public/lucide-license.txt` | Menu, LayoutTemplate, Cog and Settings from Animate UI's official icon registry, Wallpaper from Lucide; ISC/MIT |
+| Terraria icon | Windows Steam release, `Terraria.exe` icon resource; `ui/launcher/public/terraria.png` | Terraria identification in the launcher UI; artwork by Re-Logic |
 
 The Animate UI launcher workspace consumes the official `@animate-ui/react` package.
 Its copyright and full MIT + Commons Clause notice accompany the built Web assets

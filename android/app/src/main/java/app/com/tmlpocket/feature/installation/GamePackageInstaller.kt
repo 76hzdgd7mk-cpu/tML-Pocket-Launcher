@@ -1,5 +1,6 @@
 package app.com.tmlpocket.feature.installation
 
+import java.io.EOFException
 import java.io.File
 import java.io.IOException
 import java.nio.file.FileVisitResult
@@ -13,6 +14,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CancellationException
 import java.util.zip.CRC32
+import java.util.zip.ZipException
 import org.apache.commons.compress.archivers.zip.ZipFile
 import org.json.JSONArray
 import org.json.JSONObject
@@ -44,14 +46,26 @@ class GamePackageInstaller(private val filesDir: File) {
             val oldState = JSONObject(state.toString())
             val transaction = UUID.randomUUID().toString()
             val staging = File(gamesDir, ".import-$transaction")
-            val backup = File(gamesDir, ".backup-$transaction")
-            val destination = packageDirectory(kind)
-            rejectLink(destination)
             requireDirectory(staging)
             var journal: JSONObject? = null
             try {
                 progress("Extracting package", 0)
-                extract(archive, staging, cancelled, progress)
+                try {
+                    extract(archive, staging, cancelled, progress)
+                } catch (failure: IOException) {
+                    val archiveFailure =
+                        generateSequence<Throwable>(failure) { it.cause }.firstOrNull {
+                            it is EOFException || it is ZipException
+                        } ?: throw failure
+                    val detail =
+                        archiveFailure.message?.takeIf { it.isNotBlank() }
+                            ?: "压缩数据意外结束或 ZIP 结构无效"
+                    throw IOException(
+                        "安装包 ZIP 已损坏或下载不完整，请重新下载后导入。\n" +
+                            "详细信息：${archiveFailure.javaClass.simpleName}：$detail",
+                        failure,
+                    )
+                }
                 checkCancelled(cancelled)
                 progress("Validating package", 90)
                 val layout = validate(kind, staging)
@@ -66,31 +80,27 @@ class GamePackageInstaller(private val filesDir: File) {
                         .put("root", relative(staging, layout.root))
                         .put("content", relative(staging, layout.content))
                         .put("version", resolvedVersion)
-                if (kind == PackageKind.TERRARIA) record.put("source", source.id)
-                state.put(kind.name, record)
+                val versionId =
+                    if (kind == PackageKind.TMODLOADER) {
+                        val catalog = TmlVersionCatalog(state)
+                        catalog.installId(resolvedVersion).also { id ->
+                            catalog.records[id] = record
+                            catalog.activeId = id
+                            catalog.persist()
+                        }
+                    } else {
+                        record.put("source", source.id)
+                        state.put(kind.name, record)
+                        null
+                    }
+                val destination = packageDirectory(kind, versionId)
+                rejectLink(destination)
                 state.put("_transaction", transaction)
                 progress("Installing package", 95)
                 val pending =
-                    JSONObject()
-                        .put("format", 1)
-                        .put("id", transaction)
-                        .put("kind", kind.name)
-                        .put("phase", "prepared")
-                        .put("hadDestination", destination.exists())
-                        .put("hadStateFile", stateFile.exists())
-                        .put("oldState", oldState)
-                        .put("newState", state)
-                // The durable journal precedes the first rename of an installed package.
-                writeJsonAtomic(journalFile, pending)
+                    newTransaction(transaction, kind, versionId, oldState, state)
                 journal = pending
-                checkCancelled(cancelled)
-                if (destination.exists()) {
-                    Files.move(destination.toPath(), backup.toPath())
-                }
-                checkCancelled(cancelled)
-                Files.move(staging.toPath(), destination.toPath())
-                checkCancelled(cancelled)
-                writeState(state)
+                commitTransaction(pending, cancelled)
             } catch (failure: Exception) {
                 try {
                     // A failed atomic metadata write has not committed. Roll back even if
@@ -108,6 +118,125 @@ class GamePackageInstaller(private val filesDir: File) {
             runCatching { progress("Package installed", 100) }
             Unit
         }
+
+    fun installedVersions(): List<InstalledTmlVersion> =
+        synchronized(installLock) {
+            val catalog = TmlVersionCatalog(readState())
+            catalog.records
+                .map { (id, record) ->
+                    val layout = runCatching { versionLayout(id, record) }.getOrNull()
+                    InstalledTmlVersion(
+                        id,
+                        layout?.version ?: record.optString("version", "未知版本"),
+                        catalog.activeId == id,
+                        layout != null,
+                    )
+                }
+                .sortedWith(
+                    compareByDescending<InstalledTmlVersion> { it.active }
+                        .thenByDescending { it.version }
+                )
+        }
+
+    fun selectVersion(id: String) =
+        synchronized(installLock) {
+            val state = readState()
+            val catalog = TmlVersionCatalog(state)
+            val record = catalog.requireRecord(id)
+            val available = runCatching { versionLayout(id, record) != null }
+            if (!available.getOrDefault(false)) {
+                throw IOException("所选 tML 版本文件缺失或已损坏，请重新安装。", available.exceptionOrNull())
+            }
+            catalog.activeId = id
+            catalog.persist()
+            writeState(state)
+        }
+
+    fun uninstallVersion(
+        id: String,
+        cancelled: () -> Boolean = { false },
+        progress: (String, Int) -> Unit = { _, _ -> },
+    ) =
+        synchronized(installLock) {
+            checkCancelled(cancelled)
+            val state = readState()
+            val oldState = JSONObject(state.toString())
+            val catalog = TmlVersionCatalog(state)
+            catalog.requireRecord(id)
+            catalog.records.remove(id)
+            if (catalog.activeId == id) {
+                catalog.activeId =
+                    catalog.records.entries.firstOrNull { (otherId, record) ->
+                        runCatching { versionLayout(otherId, record) != null }.getOrDefault(false)
+                    }?.key
+            }
+            catalog.persist()
+            val transaction = UUID.randomUUID().toString()
+            state.put("_transaction", transaction)
+            val staging = File(gamesDir, ".import-$transaction")
+            requireDirectory(staging)
+            var journal: JSONObject? = null
+            try {
+                progress("正在卸载所选 tML 版本…", 95)
+                val pending =
+                    newTransaction(
+                        transaction,
+                        PackageKind.TMODLOADER,
+                        id,
+                        oldState,
+                        state,
+                        removing = true,
+                    )
+                journal = pending
+                commitTransaction(pending, cancelled)
+            } catch (failure: Exception) {
+                try {
+                    journal?.let(::rollbackTransaction) ?: deleteTree(staging)
+                } catch (rollbackFailure: Exception) {
+                    failure.addSuppressed(rollbackFailure)
+                }
+                throw failure
+            }
+            runCatching { recoverTransaction() }
+            runCatching { progress("所选 tML 版本已卸载，存档与模组已保留。", 100) }
+            Unit
+        }
+
+    private fun newTransaction(
+        transaction: String,
+        kind: PackageKind,
+        versionId: String?,
+        oldState: JSONObject,
+        state: JSONObject,
+        removing: Boolean = false,
+    ): JSONObject =
+        JSONObject()
+            .put("format", if (versionId == null) 1 else 2)
+            .put("id", transaction)
+            .put("kind", kind.name)
+            .put("versionId", versionId)
+            .put("operation", if (removing) "uninstall" else "install")
+            .put("phase", "prepared")
+            .put("hadDestination", packageDirectory(kind, versionId).exists())
+            .put("hadStateFile", stateFile.exists())
+            .put("oldState", oldState)
+            .put("newState", state)
+
+    private fun commitTransaction(pending: JSONObject, cancelled: () -> Boolean) {
+        val transaction = parseTransaction(pending)
+        verifyTransactionDirectories(transaction)
+        val destination = packageDirectory(transaction.kind, transaction.versionId)
+        val backup = File(gamesDir, ".backup-${transaction.id}")
+        val staging = File(gamesDir, ".import-${transaction.id}")
+        // The durable journal precedes the first rename of an installed package.
+        writeJsonAtomic(journalFile, pending)
+        checkCancelled(cancelled)
+        if (destination.exists()) Files.move(destination.toPath(), backup.toPath())
+        checkCancelled(cancelled)
+        if (!transaction.removing) Files.move(staging.toPath(), destination.toPath())
+        checkCancelled(cancelled)
+        writeState(transaction.newState)
+    }
 
     fun installation(): InstalledGame? =
         synchronized(installLock) {
@@ -153,8 +282,21 @@ class GamePackageInstaller(private val filesDir: File) {
     private data class Layout(val root: File, val content: File, val version: String)
 
     private fun installedLayout(kind: PackageKind, state: JSONObject): Layout? {
+        if (kind == PackageKind.TMODLOADER) {
+            val catalog = TmlVersionCatalog(state)
+            val id = catalog.activeId ?: return null
+            return versionLayout(id, catalog.requireRecord(id))
+        }
         val record = state.optJSONObject(kind.name) ?: return null
-        val directory = packageDirectory(kind)
+        return recordedLayout(kind, packageDirectory(kind), record)
+    }
+
+    private fun versionLayout(id: String, record: JSONObject) =
+        recordedLayout(PackageKind.TMODLOADER, packageDirectory(PackageKind.TMODLOADER, id), record)
+
+    private fun recordedLayout(kind: PackageKind, directory: File, record: JSONObject): Layout? {
+        rejectLink(filesDir)
+        rejectLink(gamesDir)
         rejectLink(directory)
         val layout = validate(kind, directory)
         if (
@@ -375,7 +517,7 @@ class GamePackageInstaller(private val filesDir: File) {
                         }
                     }
                     if (count != entry.size || crc.value != entry.crc)
-                        throw IOException("ZIP entry checksum or length mismatch: ${entry.name}")
+                        throw ZipException("ZIP entry checksum or length mismatch: ${entry.name}")
                 }
                 progress("Extracting ${entry.name}", ((index + 1L) * 85 / entries.size).toInt())
             }
@@ -423,6 +565,8 @@ class GamePackageInstaller(private val filesDir: File) {
         val json: JSONObject,
         val id: String,
         val kind: PackageKind,
+        val versionId: String?,
+        val removing: Boolean,
         val phase: String,
         val hadDestination: Boolean,
         val hadStateFile: Boolean,
@@ -433,10 +577,21 @@ class GamePackageInstaller(private val filesDir: File) {
     private fun parseTransaction(json: JSONObject): InstallTransaction {
         val id = json.getString("id")
         // Paths are derived from a canonical UUID and enum, never supplied by the journal.
-        if (json.getInt("format") != 1 || UUID.fromString(id).toString() != id) {
+        val format = json.getInt("format")
+        if (format !in 1..2 || UUID.fromString(id).toString() != id) {
             throw IOException("Invalid package transaction identifier")
         }
         val kind = PackageKind.valueOf(json.getString("kind"))
+        val versionId =
+            if (format == 2) json.getString("versionId").also(TmlVersionCatalog::checkId)
+            else null
+        val removing = format == 2 && json.getString("operation") == "uninstall"
+        if (
+            format == 2 &&
+                (kind != PackageKind.TMODLOADER ||
+                    json.getString("operation") !in setOf("install", "uninstall"))
+        )
+            throw IOException("Invalid version transaction operation")
         val phase = json.getString("phase")
         if (phase != "prepared" && phase != "rolling-back")
             throw IOException("Invalid package transaction phase")
@@ -448,18 +603,52 @@ class GamePackageInstaller(private val filesDir: File) {
                 ?: throw IOException("Invalid package transaction manifest flag")
         val oldState = json.getJSONObject("oldState")
         val newState = json.getJSONObject("newState")
-        if (newState.getString("_transaction") != id || newState.optJSONObject(kind.name) == null) {
+        if (
+            newState.getString("_transaction") != id ||
+                (format == 1 && newState.optJSONObject(kind.name) == null)
+        ) {
             throw IOException("Invalid package transaction metadata")
+        }
+        if (versionId != null) {
+            val before = TmlVersionCatalog(oldState)
+            val after = TmlVersionCatalog(newState)
+            val previousOthers = JSONObject(before.records.filterKeys { it != versionId })
+            val nextOthers = JSONObject(after.records.filterKeys { it != versionId })
+            if (!sameJson(previousOthers, nextOthers) || !newState.has(TmlVersionCatalog.VERSIONS))
+                throw IOException("Version transaction changes unrelated versions")
+            if (removing) {
+                before.requireRecord(versionId)
+                if (
+                    after.records.containsKey(versionId) ||
+                        (before.activeId != versionId && before.activeId != after.activeId)
+                )
+                    throw IOException("Invalid version uninstall metadata")
+            } else {
+                after.requireRecord(versionId)
+                if (after.activeId != versionId)
+                    throw IOException("Installed version must be selected")
+            }
+            val selected = after.activeId?.let(after::requireRecord)
+            if (!sameJsonValue(selected, newState.optJSONObject(PackageKind.TMODLOADER.name)))
+                throw IOException("Selected version metadata is inconsistent")
         }
         val previousOtherPackages =
             JSONObject(oldState.toString()).apply {
                 remove(kind.name)
                 remove("_transaction")
+                if (versionId != null) {
+                    remove(TmlVersionCatalog.VERSIONS)
+                    remove(TmlVersionCatalog.ACTIVE)
+                }
             }
         val nextOtherPackages =
             JSONObject(newState.toString()).apply {
                 remove(kind.name)
                 remove("_transaction")
+                if (versionId != null) {
+                    remove(TmlVersionCatalog.VERSIONS)
+                    remove(TmlVersionCatalog.ACTIVE)
+                }
             }
         if (!sameJson(previousOtherPackages, nextOtherPackages))
             throw IOException("Package transaction changes unrelated metadata")
@@ -469,6 +658,8 @@ class GamePackageInstaller(private val filesDir: File) {
             json,
             id,
             kind,
+            versionId,
+            removing,
             phase,
             hadDestination,
             hadStateFile,
@@ -500,10 +691,18 @@ class GamePackageInstaller(private val filesDir: File) {
         verifyTransactionDirectories(transaction)
         val state = readStateWithoutRecovery()
         if (transaction.phase == "prepared" && state.optString("_transaction") == transaction.id) {
-            if (
-                !sameJson(state, transaction.newState) ||
-                    installedLayout(transaction.kind, state) == null
-            ) {
+            val verified =
+                when {
+                    transaction.removing ->
+                        !packageDirectory(transaction.kind, transaction.versionId).exists()
+                    transaction.versionId != null ->
+                        versionLayout(
+                            transaction.versionId,
+                            TmlVersionCatalog(state).requireRecord(transaction.versionId),
+                        ) != null
+                    else -> installedLayout(transaction.kind, state) != null
+                }
+            if (!sameJson(state, transaction.newState) || !verified) {
                 throw IOException(
                     "Committed package transaction cannot be verified; recovery files retained"
                 )
@@ -529,7 +728,7 @@ class GamePackageInstaller(private val filesDir: File) {
         if (!gamesDir.isDirectory) throw IOException("Package transaction storage is missing")
         for (file in
             listOf(
-                packageDirectory(transaction.kind),
+                packageDirectory(transaction.kind, transaction.versionId),
                 File(gamesDir, ".import-${transaction.id}"),
                 File(gamesDir, ".backup-${transaction.id}"),
             )) {
@@ -542,7 +741,7 @@ class GamePackageInstaller(private val filesDir: File) {
     private fun rollbackTransaction(json: JSONObject) {
         val transaction = parseTransaction(json)
         verifyTransactionDirectories(transaction)
-        val destination = packageDirectory(transaction.kind)
+        val destination = packageDirectory(transaction.kind, transaction.versionId)
         val staging = File(gamesDir, ".import-${transaction.id}")
         val backup = File(gamesDir, ".backup-${transaction.id}")
         // Validate the entire recovery decision before changing any file. Without an
@@ -618,8 +817,17 @@ class GamePackageInstaller(private val filesDir: File) {
         }
     }
 
-    private fun packageDirectory(kind: PackageKind) =
-        File(gamesDir, if (kind == PackageKind.TERRARIA) "terraria" else "tmodloader")
+    private fun packageDirectory(kind: PackageKind, versionId: String? = null): File {
+        versionId?.let(TmlVersionCatalog::checkId)
+        return File(
+            gamesDir,
+            when {
+                kind == PackageKind.TERRARIA -> "terraria"
+                versionId == null || versionId == TmlVersionCatalog.LEGACY_ID -> "tmodloader"
+                else -> "tmodloader-$versionId"
+            },
+        )
+    }
 
     private fun relative(base: File, file: File) =
         base.toPath().relativize(file.toPath()).toString().replace('\\', '/')

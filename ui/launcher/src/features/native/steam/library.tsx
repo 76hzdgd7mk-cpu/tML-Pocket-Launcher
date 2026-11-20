@@ -4,8 +4,10 @@ import { nativeRequest } from '../../../native/bridge';
 import { useLauncher } from '../../../state/launcher';
 import { SteamBrand } from './brand';
 import { useSteam } from './state';
+import { useDownloads } from '../download-state';
 
 export function SteamLibraryPage() {
+  const downloads = useDownloads();
   const { nativeState, openWorkspace } = useLauncher();
   const {
     account,
@@ -145,7 +147,7 @@ export function SteamLibraryPage() {
             </div>
           </dl>
           {download?.status === 'running' ? (
-            <Button className="steam-primary" onClick={() => openWorkspace('downloads')}>
+            <Button className="steam-primary" onClick={downloads.show}>
               <Icon name="download" />
               查看下载进度
             </Button>

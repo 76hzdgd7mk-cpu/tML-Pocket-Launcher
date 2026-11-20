@@ -20,14 +20,25 @@ import { ModsPage } from './features/mods';
 import { PatchesPage } from './features/patches';
 import { SettingsPage } from './features/settings';
 import { useGameActions } from './features/game-actions';
-import { pageNames, profileTitle, useLauncher, workspaceNames } from './state/launcher';
+import {
+  isResourceWorkspace,
+  pageNames,
+  profileTitle,
+  resourceDestinations,
+  useLauncher,
+  workspaceNames,
+} from './state/launcher';
 import type { Page } from './domain/types';
-import { NativeHomePage, NativeGamesPage, NativePatchesPage } from './features/native/pages';
+import { NativeHomePage, NativePatchesPage } from './features/native/pages';
+import { NativeGamesPage } from './features/native/games';
 import { NativeModsPage } from './features/native/mods';
 import { SteamLoginPage } from './features/native/steam/login';
 import { SteamLibraryPage } from './features/native/steam/library';
 import { NativeDownloadsPage } from './features/native/steam/downloads';
 import { useLaunchTransition } from './features/launch/transition';
+import { NativeReleaseCatalog } from './features/native/release-catalog';
+import { NativeWorkshopCatalog } from './features/native/workshop';
+import { NativePacks } from './features/native/packs';
 
 const destinations: { id: Page; symbol: string }[] = [
   { id: 'home', symbol: 'home' },
@@ -49,7 +60,9 @@ export function App() {
   const { toast, motionEnabled, nativeWorkspace } = useLauncher();
   return (
     <>
-      <div className={`app-shell ${nativeWorkspace ? 'has-native-workspace' : ''}`}>
+      <div
+        className={`app-shell ${nativeWorkspace ? 'has-native-workspace' : ''} ${isResourceWorkspace(nativeWorkspace) ? 'resource-workspace' : ''}`}
+      >
         <Navigation />
         <main className={`main ${nativeWorkspace ? 'native-workspace' : ''}`}>
           <Header />
@@ -76,7 +89,16 @@ export function App() {
   );
 }
 function Navigation() {
-  const { state, navigate, tasks, nativeMode, nativeState } = useGameActions();
+  const { state, navigate, tasks, nativeMode, nativeState, nativeWorkspace, openWorkspace } =
+    useGameActions();
+  const resource = isResourceWorkspace(nativeWorkspace);
+  const items = resource
+    ? resourceDestinations.map((item) => ({ ...item, resource: true as const }))
+    : destinations.map((item) => ({
+        ...item,
+        label: pageNames[item.id],
+        resource: false as const,
+      }));
   return (
     <aside className="sidebar">
       <a
@@ -91,10 +113,14 @@ function Navigation() {
         <img src="/pocket-launcher.png" alt="" width="38" height="38" />
       </a>
       <BottomNavigation
-        value={state.page}
-        onValueChange={(page) => navigate(page as Page)}
+        value={resource ? nativeWorkspace : state.page}
+        onValueChange={(page) =>
+          resource
+            ? openWorkspace(page as (typeof resourceDestinations)[number]['id'])
+            : navigate(page as Page)
+        }
         className="launcher-navigation"
-        aria-label="主导航"
+        aria-label={resource ? '下载分类' : '主导航'}
       >
         <div className="nav-highlight-container">
           <BottomNavigationHighlight
@@ -103,18 +129,19 @@ function Navigation() {
             className="nav-lens animate-nav-lens"
           >
             <ul className="main-nav">
-              {destinations.map(({ id, symbol }) => (
+              {items.map(({ id, symbol, label, resource: resourceItem }) => (
                 <li key={id}>
                   <BottomNavigationHighlightItem value={id} asChild>
                     <BottomNavigationItem value={id} asChild>
                       <button
                         type="button"
-                        className={`nav-item ${state.page === id ? 'active' : ''}`}
-                        data-page={id}
+                        className={`nav-item ${(resource ? nativeWorkspace : state.page) === id ? 'active' : ''}`}
+                        data-page={resourceItem ? undefined : id}
+                        data-resource-page={resourceItem ? id : undefined}
                       >
                         <Icon name={symbol} />
                         <BottomNavigationLabel show="always" className="navigation-label">
-                          {pageNames[id]}
+                          {label}
                         </BottomNavigationLabel>
                       </button>
                     </BottomNavigationItem>
@@ -157,6 +184,7 @@ function Header() {
     notice,
     tasks,
     importInfo,
+    addMods,
     getTerraria,
     navigate,
     update,
@@ -166,12 +194,17 @@ function Header() {
     nativeWorkspace,
     closeWorkspace,
   } = useGameActions();
+  const resource = isResourceWorkspace(nativeWorkspace);
   const primary = nativeWorkspace
     ? null
-    : state.page === 'games'
+    : state.page === 'games' && !nativeMode
       ? { label: '导入资源', action: 'get-terraria', run: getTerraria }
       : state.page === 'mods'
-        ? { label: '导入模组', action: 'import-mod', run: () => importInfo('mod') }
+        ? nativeMode
+          ? state.modTab === 'packs'
+            ? { label: '导入 JSON', action: 'import-pack', run: () => importInfo('pack') }
+            : { label: '添加模组', action: 'add-mod', run: addMods }
+          : { label: '导入模组', action: 'import-mod', run: () => importInfo('mod') }
         : state.page === 'patches'
           ? { label: '导入补丁', action: 'import-patch', run: () => importInfo('patch') }
           : null;
@@ -182,6 +215,7 @@ function Header() {
           <Icon name="arrow" />
         </Button>
       )}
+      {resource && <IconButton symbol="house" label="返回首页" onClick={() => navigate('home')} />}
       <h1 className="screen-title" id="screen-title">
         {nativeWorkspace ? workspaceNames[nativeWorkspace] : pageNames[state.page]}
       </h1>
@@ -229,13 +263,13 @@ function Header() {
             }
           />
         )}
-        {!nativeWorkspace && (
+        {((!nativeWorkspace && (!nativeMode || state.page !== 'games')) || resource) && (
           <Button
             className="icon-button portrait-account"
             aria-label="管理 Steam 和 GOG 账户"
             data-action="accounts"
             onClick={() => {
-              update((current) => ({ ...current, gameTab: 'accounts' }));
+              update((current) => ({ ...current, gameTab: nativeMode ? 'sources' : 'accounts' }));
               navigate('games');
             }}
           >
@@ -243,16 +277,20 @@ function Header() {
           </Button>
         )}
         <Button
-          className="icon-button"
+          className={resource ? 'resource-download-action' : 'icon-button'}
           aria-label="打开下载任务"
           data-action="tasks"
           onClick={tasks}
         >
           <Icon name="download" />
+          {resource && <span>下载</span>}
           <span id="task-badge" hidden={nativeMode ? !nativeState?.busy : !state.task}>
             1
           </span>
         </Button>
+        {resource && (
+          <IconButton symbol="settings" label="打开设置" onClick={() => navigate('settings')} />
+        )}
       </div>
     </header>
   );
@@ -325,6 +363,12 @@ function PageContent() {
             <SteamLibraryPage />
           ) : nativeWorkspace === 'downloads' ? (
             <NativeDownloadsPage />
+          ) : nativeWorkspace === 'resource-versions' ? (
+            <NativeReleaseCatalog />
+          ) : nativeWorkspace === 'resource-mods' ? (
+            <NativeWorkshopCatalog />
+          ) : nativeWorkspace === 'resource-packs' ? (
+            <NativePacks catalog />
           ) : (
             pages[state.page]
           )}
@@ -338,22 +382,28 @@ function LaunchDock() {
   const { state, navigate, update, instances, notice, showInfo, nativeMode, nativeState } =
     useGameActions();
   const ready = nativeMode ? nativeState?.ready === true : state.demo;
+  const compact = nativeMode && state.page === 'games';
   const accounts = () => {
-    update((current) => ({ ...current, gameTab: 'accounts' }));
+    update((current) => ({ ...current, gameTab: nativeMode ? 'sources' : 'accounts' }));
     navigate('games');
   };
   return (
-    <aside className="game-dock" aria-label="当前游戏与启动操作">
-      <Button className="dock-account" data-action="accounts" onClick={accounts}>
-        <span className="dock-avatar">
-          <Icon name="user" />
-        </span>
-        <span>
-          <strong>{nativeMode ? '正版资源来源' : '未连接账户'}</strong>
-          <small>Steam / GOG</small>
-        </span>
-        <Icon name="chevron" />
-      </Button>
+    <aside
+      className={`game-dock ${compact ? 'game-library-dock' : ''}`}
+      aria-label="当前游戏与启动操作"
+    >
+      {!compact && (
+        <Button className="dock-account" data-action="accounts" onClick={accounts}>
+          <span className="dock-avatar">
+            <Icon name="user" />
+          </span>
+          <span>
+            <strong>{nativeMode ? '正版资源来源' : '未连接账户'}</strong>
+            <small>Steam / GOG</small>
+          </span>
+          <Icon name="chevron" />
+        </Button>
+      )}
       <footer className="launch-bar" id="launch-bar" aria-label="游戏启动控制">
         <Button
           className="instance-picker"

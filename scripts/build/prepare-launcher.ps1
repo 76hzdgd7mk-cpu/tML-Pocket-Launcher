@@ -28,7 +28,8 @@ if ($LASTEXITCODE -ne 0) { throw "Store service publish failed with exit code $L
 New-Item -ItemType Directory -Path $assetRoot -Force | Out-Null
 Copy-Item -Path (Join-Path $publishRoot '*') -Destination $assetRoot -Recurse -Force
 & (Join-Path $PSScriptRoot 'prepare-builtin-mods.ps1')
-dotnet build (Join-Path $repoRoot 'external/tML-Pocket-Patches/MobileLauncher.Patches.csproj') -c Release --nologo -p:LauncherRoot=$repoRoot
+dotnet build (Join-Path $repoRoot 'external/tML-Pocket-Patches/MobileLauncher.Patches.csproj') -c Release --nologo `
+    "-p:LauncherRoot=$repoRoot" "-p:DirectoryBuildPropsPath=$(Join-Path $repoRoot 'managed/Directory.Build.props')"
 if ($LASTEXITCODE -ne 0) { throw 'Built-in patches build failed' }
 Copy-Item -LiteralPath (Join-Path $repoRoot 'external/tML-Pocket-Patches/bin/Release/net10.0/MobileLauncher.Patches.dll') -Destination $assetRoot -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot 'external/tML-Pocket-Patches/LICENSE') -Destination (Join-Path $assetRoot 'RotatingartLauncher-LICENSE.txt') -Force
