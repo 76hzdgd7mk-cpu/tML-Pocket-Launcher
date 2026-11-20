@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 28" fill="none" shape-rendering="crispEdges">
+  <defs>
+    <path id="pocket" d="M7 8h10m-5 0v14m11 0V7l6 6 6-6v15m7-15v15h10m11 0V7h10v8H63m16-8h10v15H79zm26 0H95v15h10m6-15v15m10-15-10 8 10 7m15-15h-9v15h9m-9-8h7m9-7h9m-4.5 0v15"/>
+    <linearGradient id="stone" x2="0" y1="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#b8e087"/>
+      <stop offset=".28" stop-color="#76b75c"/>
+      <stop offset=".29" stop-color="#fff1c9"/>
+      <stop offset=".79" stop-color="#dfc590"/>
+      <stop offset=".8" stop-color="#ad865b"/>
+    </linearGradient>
+  </defs>
+  <use href="#pocket" transform="translate(0 1)" stroke="#0a1021" stroke-width="7"/>
+  <use href="#pocket" stroke="#172039" stroke-width="6"/>
+  <use href="#pocket" stroke="url(#stone)" stroke-width="2.8"/>
+</svg>

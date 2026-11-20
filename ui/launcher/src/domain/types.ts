@@ -16,7 +16,7 @@ export type Tool =
   | 'logs'
   | 'activity';
 export interface Preferences {
-  theme: 'dark' | 'light' | 'system';
+  theme: 'dark' | 'light' | 'system' | 'tml';
   orientation: 'landscape' | 'portrait';
   motion: boolean;
   glassEffects: boolean;

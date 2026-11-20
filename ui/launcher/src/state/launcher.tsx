@@ -17,6 +17,7 @@ import type { ActivityKind, LauncherState, Page, Preferences } from '../domain/t
 import { defaultFilters, demoMods } from '../domain/mods';
 import {
   defaultPreferences,
+  liquidGlassEnabled,
   normalizePreferences,
   readPreferences,
   savePreferences,
@@ -337,13 +338,18 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   }, []);
   useLayoutEffect(() => {
     const preferences = state.preferences;
-    const dark = preferences.theme === 'system' ? systemDark : preferences.theme === 'dark';
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    const classic = preferences.theme === 'tml';
+    const dark =
+      preferences.theme === 'system' ? systemDark : preferences.theme === 'dark' || classic;
+    const { dataset } = document.documentElement;
+    dataset.theme = dark ? 'dark' : 'light';
+    if (classic) dataset.skin = 'tml';
+    else delete dataset.skin;
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', dark ? '#0c0f14' : '#f5f6f3');
-    document.documentElement.dataset.motion = preferences.motion ? 'full' : 'reduced';
-    document.documentElement.dataset.glass = preferences.glassEffects ? 'on' : 'off';
+      ?.setAttribute('content', classic ? '#131b37' : dark ? '#0c0f14' : '#f5f6f3');
+    dataset.motion = preferences.motion ? 'full' : 'reduced';
+    dataset.glass = liquidGlassEnabled(preferences) ? 'on' : 'off';
     document.documentElement.style.setProperty('--glass', preferences.glass + '%');
     document.body.classList.toggle('has-background', preferences.background !== 'none');
     if (preferences.background === 'diy')

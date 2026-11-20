@@ -185,6 +185,15 @@ function Header() {
       <h1 className="screen-title" id="screen-title">
         {nativeWorkspace ? workspaceNames[nativeWorkspace] : pageNames[state.page]}
       </h1>
+      {!nativeWorkspace && state.page === 'home' && state.preferences.theme === 'tml' && (
+        <img
+          className="tml-wordmark"
+          src="/tml-pocket-wordmark.svg"
+          alt=""
+          width="160"
+          height="28"
+        />
+      )}
       <div className="topbar-actions" inert={navigationPending}>
         <span id="screen-action">
           {primary && (

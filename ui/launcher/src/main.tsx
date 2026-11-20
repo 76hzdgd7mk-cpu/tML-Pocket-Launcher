@@ -15,6 +15,7 @@ import './styles/native-workspace.css';
 import './styles/steam-workspace.css';
 import './styles/file-browser.css';
 import './styles/launch-transition.css';
+import './styles/tml-theme.css';
 import { SteamProvider } from './features/native/steam/state';
 import { LaunchTransitionProvider } from './features/launch/transition';
 

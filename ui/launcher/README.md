@@ -78,8 +78,13 @@ controls remain outside the snapshot. Keyboard/reduced-motion navigation and
 browsers without view transitions update immediately. Pending route commits make
 the old page and header actions inert to prevent stale-page clicks.
 
-Visual preferences retain the existing `tml-launcher-ui-v1` schema. Sample
-installations, tasks, account demonstrations and activity remain session-only.
+Visual preferences retain the existing `tml-launcher-ui-v1` schema.
+The optional tModLoader theme in Settings → Appearance applies an offline classic
+indigo skin inspired by tModLoader's `UICommon` and `UIPanel` menu colors, with an
+original pixel wordmark. It temporarily replaces liquid glass with opaque panels
+without changing the saved glass or background preferences.
+
+Sample installations, tasks, account demonstrations and activity remain session-only.
 In a regular browser, local mod-pack JSON import/export uses real browser files;
 other workflows are illustrative. Android mode uses actual installations, TMOD
 metadata, mod enable lists/packs, settings and tasks and never enables sample data.

@@ -1,0 +1,199 @@
+[data-skin='tml'] {
+  --bg: #131b37;
+  --surface: #212b4f;
+  --elevated: #2e3d70;
+  --nav: #171f3e;
+  --text: #e9edff;
+  --strong: #fff7e4;
+  --muted: #bec9ee;
+  --faint: #2b3864;
+  --line: #465889;
+  --subtle: #1a2446;
+  --accent: #ffe745;
+  --accent-hover: #fff093;
+  --accent-soft: #34477e;
+  --accent-ink: #fff08d;
+  --blue: #b5c7ff;
+  --warning: #ffdc99;
+  --warning-bg: #54394b;
+  --glass-edge: #090e21;
+  --glass-glint: #a8bbff42;
+  --glass-shadow: #080d2499;
+  --stage: #243362;
+  --stage-ink: var(--strong);
+  --launch-start: #495eab;
+  --launch-ink: #fff3b3;
+  --shadow: 0 8px 0 #090e2166;
+  --radius: 6px;
+  --tml-control: #354881;
+  --tml-control-hover: #495eab;
+  --tml-rim: inset 0 1px 0 #a9beff38, inset 0 -2px #0c143c55, 0 2px #090e2180;
+}
+
+[data-skin='tml'] body:not(.has-background) {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='188' height='132' fill='%23b1beef' fill-opacity='.26'%3E%3Cpath d='M17 31h2v2h-2zm68 73h2v2h-2zm78-55h2v2h-2zm-31-37h1v1h-1zM42 79h1v1h-1zM170 115h1v1h-1z'/%3E%3C/svg%3E"),
+    linear-gradient(155deg, #151c38, #131b37 45%, #202a4e);
+}
+
+[data-skin='tml'] .tml-wordmark {
+  width: clamp(82px, 28vw, 160px);
+  min-width: 0;
+  height: 28px;
+  margin-inline-end: auto;
+  object-fit: contain;
+  object-position: left center;
+}
+
+[data-skin='tml']
+  :is(.screen-title, .workspace-section h2, .settings-section h2, .dialog-header h2) {
+  color: var(--strong);
+  font-weight: 700;
+  text-shadow: 1px 2px #090e21;
+}
+
+:root[data-skin='tml']
+  :is(
+    .panel,
+    .source-card,
+    .instance-option,
+    .game-stage,
+    .game-dock,
+    .task-card,
+    .download-card,
+    .dialog,
+    .primitive-popup,
+    .resource-catalog-card,
+    .resource-filter-select,
+    .resource-source,
+    :where(.resource-browser-results) > .empty-state,
+    .native-resource-status
+  ) {
+  border: 2px solid var(--glass-edge);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--tml-rim);
+  backdrop-filter: none;
+}
+
+:root[data-skin='tml'] :is(.dialog, .primitive-popup) {
+  background: var(--elevated);
+  box-shadow: var(--tml-rim), var(--shadow);
+}
+
+:root[data-skin='tml'] .file-dialog.drawer {
+  border-radius: 0;
+}
+
+[data-skin='tml'] .overlay {
+  background: #080e25b8;
+}
+
+[data-skin='tml'] :is(.sidebar, .topbar) {
+  border-color: var(--glass-edge);
+}
+
+[data-skin='tml'] .launcher-navigation .nav-lens {
+  background: var(--tml-control);
+  border: 1px solid var(--accent);
+  box-shadow: var(--tml-rim);
+  border-radius: var(--radius);
+}
+
+[data-skin='tml'] .launcher-navigation .nav-item.active {
+  color: var(--accent-ink);
+}
+
+[data-skin='tml']
+  :is(
+    .setup-icon,
+    .resource-cover,
+    .resource-icon,
+    .resource-download-action,
+    .instance-icon,
+    .theme-choice,
+    .nav-item,
+    .screen-primary,
+    .select-trigger,
+    .search-field,
+    .resource-search,
+    .resource-channel,
+    .native-acquire-action,
+    .settings-nav button,
+    .filter,
+    .panel-note
+  ) {
+  border-radius: var(--radius);
+}
+
+[data-skin='tml']
+  :is(
+    .button:not(.ghost),
+    .theme-choice,
+    .screen-primary,
+    .instance-picker,
+    .launch-bar .launch-group,
+    .resource-channel,
+    .resource-download-action,
+    .select-trigger
+  ) {
+  background: var(--tml-control);
+  color: var(--text);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--tml-rim);
+  border-radius: var(--radius);
+}
+
+[data-skin='tml'] :is(.button.primary, .screen-primary, .launch-bar .launch-group) {
+  background: var(--tml-control-hover);
+  color: var(--strong);
+}
+
+[data-skin='tml'] .launch-group .launch-button {
+  color: var(--launch-ink);
+  --ripple-button-ripple-color: #ffe745;
+}
+
+[data-skin='tml']
+  :is(
+    .theme-choice.active,
+    .resource-channel.active,
+    .settings-nav button.active,
+    .select-trigger[data-state='open']
+  ) {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--tml-control-hover);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+[data-skin='tml'] .tabbar {
+  --tab-accent: var(--accent-ink);
+}
+
+[data-skin='tml'] .switch[aria-checked='true']:before {
+  background: var(--accent);
+}
+
+[data-skin='tml'] .switch-thumb[data-state='checked'] {
+  background: var(--bg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-skin='tml']
+    :is(
+      .button:not(.ghost),
+      .theme-choice,
+      .instance-picker,
+      .resource-channel,
+      .select-trigger
+    ):hover:not(:disabled) {
+    background: var(--tml-control-hover);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  [data-skin='tml'] .launch-bar .launch-group:hover {
+    border-color: var(--accent);
+  }
+}

@@ -1304,6 +1304,7 @@ h3 {
 }
 .theme-options {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 .theme-choice {
@@ -1315,6 +1316,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 7px;
+  white-space: nowrap;
 }
 .theme-choice svg {
   height: 15px;
@@ -2181,11 +2183,12 @@ body.has-background .panel {
     min-width: 100px;
   }
   .setting-row .theme-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
     margin-top: 4px;
   }
   .theme-choice {
-    flex: 1;
     font-size: 11px;
     justify-content: center;
   }

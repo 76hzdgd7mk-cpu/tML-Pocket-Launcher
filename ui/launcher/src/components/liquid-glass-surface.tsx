@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLauncher } from '../state/launcher';
+import { liquidGlassEnabled } from '../state/preferences';
 import { getGlassBackdrop, setGlassBackdropSource, subscribeGlassBackdrop } from './glass/backdrop';
 
 // 液态玻璃透镜：用 WebGL 重建壁纸、按高度场折射，取代原先的 SVG 位移贴图。
@@ -151,7 +152,7 @@ function buildProgram(gl: WebGLRenderingContext) {
 
 export function LiquidGlassSurface({ tone = 'glass' }: { tone?: 'glass' | 'launch' | 'panel' }) {
   const { state } = useLauncher();
-  const enabled = state.preferences.glassEffects;
+  const enabled = liquidGlassEnabled(state.preferences);
   const preferences = state.preferences;
   const host = useRef<HTMLSpanElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);

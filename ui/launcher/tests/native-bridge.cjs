@@ -747,6 +747,9 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.getByRole('option', { name: '75%', exact: true }).click();
     await page.waitForFunction(() => window.nativeFixture.preferences.renderScale === 75);
     await page.locator('#settings-tab-appearance').click();
+    await page.locator('[data-theme-choice=tml]').click();
+    await page.waitForFunction(() => window.nativeFixture.preferences.theme === 'tml');
+    assert.equal(await page.locator('html').getAttribute('data-skin'), 'tml');
     await page.getByRole('button', { name: '图片背景', exact: true }).click();
     const imageBrowser = page.getByRole('dialog', { name: '选择文件', exact: true });
     await imageBrowser.locator('.file-entry').filter({ hasText: 'forest.png' }).click();
@@ -760,6 +763,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     );
     await page.locator('[data-theme-choice=light]').click();
     await page.waitForFunction(() => window.nativeFixture.preferences.theme === 'light');
+    assert.equal(await page.locator('html').getAttribute('data-skin'), null);
     assert.equal(
       await page.evaluate(() => window.nativeFixture.preferences.renderScale),
       75,

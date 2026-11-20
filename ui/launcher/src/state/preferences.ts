@@ -25,6 +25,9 @@ export const defaultPreferences: Preferences = {
   backgroundTint: defaultBackgroundTint,
   quickTools: ['mods', 'patches', 'controls', 'storage'],
 };
+export function liquidGlassEnabled(preferences: Preferences): boolean {
+  return preferences.glassEffects && preferences.theme !== 'tml';
+}
 export function readPreferences(): Preferences {
   const result = { ...defaultPreferences, quickTools: [...defaultPreferences.quickTools] };
   try {
@@ -33,7 +36,7 @@ export function readPreferences(): Preferences {
       unknown
     > | null;
     if (saved?.version !== 1) return result;
-    if (['dark', 'light', 'system'].includes(String(saved.theme)))
+    if (['dark', 'light', 'system', 'tml'].includes(String(saved.theme)))
       result.theme = saved.theme as Preferences['theme'];
     if (saved.orientation === 'landscape' || saved.orientation === 'portrait')
       result.orientation = saved.orientation;

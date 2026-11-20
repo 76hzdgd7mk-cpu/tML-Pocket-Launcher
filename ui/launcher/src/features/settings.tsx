@@ -118,13 +118,14 @@ function Appearance() {
       <section className="settings-section">
         <h2>界面外观</h2>
         <div className="panel">
-          <SettingRow title="主题" description="选择浅色、深色，或跟随系统。">
+          <SettingRow title="主题" description="配色与经典游戏菜单风格。">
             <div className="theme-options">
               {(
                 [
                   ['light', '浅色', 'sun'],
                   ['dark', '深色', 'moon'],
                   ['system', '跟随系统', 'settings'],
+                  ['tml', 'tModLoader', 'game'],
                 ] as const
               ).map(([theme, label, symbol]) => (
                 <Button
@@ -239,19 +240,27 @@ function Appearance() {
       <section className="settings-section">
         <h2>前端风格</h2>
         <div className="panel">
-          <SettingRow title="前端样式" description="选择启动器使用的前端样式。">
-            <Select
-              label="前端样式"
-              action="glass-effects"
-              options={[
-                ['default', '默认'],
-                ['liquid', '液态玻璃'],
-              ]}
-              value={prefs.glassEffects ? 'liquid' : 'default'}
-              onChange={(value) => setPreferences({ glassEffects: value === 'liquid' })}
+          {prefs.theme === 'tml' ? (
+            <SettingRow
+              title="经典面板"
+              description="tModLoader 主题不使用液态玻璃。切换到其他主题时恢复原设置。"
+              children={null}
             />
-          </SettingRow>
-          {prefs.glassEffects && (
+          ) : (
+            <SettingRow title="前端样式" description="选择启动器使用的前端样式。">
+              <Select
+                label="前端样式"
+                action="glass-effects"
+                options={[
+                  ['default', '默认'],
+                  ['liquid', '液态玻璃'],
+                ]}
+                value={prefs.glassEffects ? 'liquid' : 'default'}
+                onChange={(value) => setPreferences({ glassEffects: value === 'liquid' })}
+              />
+            </SettingRow>
+          )}
+          {prefs.theme !== 'tml' && prefs.glassEffects && (
             <SettingRow title="面板透明度" description="保持文字与按钮清晰可读。">
               <Slider
                 id="glass-range"

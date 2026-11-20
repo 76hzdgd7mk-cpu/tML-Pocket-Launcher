@@ -19,7 +19,7 @@ class LauncherSettings(context: Context) {
         for (key in patch.keys()) {
             val value = patch.get(key)
             when (key) {
-                "theme" -> require(value in listOf("dark", "light", "system"))
+                "theme" -> require(value in listOf("dark", "light", "system", "tml"))
                 "orientation" -> require(value in listOf("landscape", "portrait"))
                 "motion",
                 "glassEffects",

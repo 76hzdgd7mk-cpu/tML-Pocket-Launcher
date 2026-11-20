@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { LiquidGlassSurface } from '../liquid-glass-surface';
 import { useLauncher } from '../../state/launcher';
+import { liquidGlassEnabled } from '../../state/preferences';
 
 type PanelEntry = { id: number; element: HTMLElement };
 
@@ -9,7 +10,7 @@ type PanelEntry = { id: number; element: HTMLElement };
 // 弹层自带玻璃样式，不再叠加，避免折射到被遮罩的壁纸上。
 export function PanelGlass() {
   const { state } = useLauncher();
-  const enabled = state.preferences.glassEffects;
+  const enabled = liquidGlassEnabled(state.preferences);
   const [panels, setPanels] = useState<PanelEntry[]>([]);
   const registry = useRef(new Map<HTMLElement, number>());
   const nextId = useRef(0);

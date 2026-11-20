@@ -63,6 +63,7 @@ const run = (args, env = process.env) =>
       'mods',
       'animate-ui',
       'primitives',
+      'tml-theme',
       'settings-navigation',
       'native-bridge',
       'launch-transition',
