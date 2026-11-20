@@ -11,13 +11,13 @@
 namespace {
 
 constexpr std::size_t kMaxEvents = 1024;
-static_assert(FNA_ANDROID_EVENT_LAUNCHER_ACTION == 7);
-static_assert(FNA_ANDROID_EVENT_IME_COMMIT == 8);
-static_assert(FNA_ANDROID_EVENT_IME_COMPOSITION == 9);
-static_assert(FNA_ANDROID_EVENT_IME_VISIBILITY == 10);
+static_assert(TML_POCKET_ANDROID_EVENT_LAUNCHER_ACTION == 7);
+static_assert(TML_POCKET_ANDROID_EVENT_IME_COMMIT == 8);
+static_assert(TML_POCKET_ANDROID_EVENT_IME_COMPOSITION == 9);
+static_assert(TML_POCKET_ANDROID_EVENT_IME_VISIBILITY == 10);
 
 struct QueuedAndroidEvent {
-    FnaAndroidEvent event;
+    TmlPocketAndroidEvent event;
     std::string text;
 };
 
@@ -170,7 +170,7 @@ int call_two_string_int(
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativeRegisterBridgeActivity(
+Java_app_com_tmlpocket_core_platform_NativeCoreClr_nativeRegisterBridgeActivity(
     JNIEnv* env,
     jclass,
     jobject activity) {
@@ -188,7 +188,7 @@ Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativeRegisterBridgeActi
     if (activity == nullptr) return;
 
     g_activity = env->NewGlobalRef(activity);
-    const jclass local_class = env->FindClass("dev/tml/mobilelauncher/core/platform/AndroidBridge");
+    const jclass local_class = env->FindClass("app/com/tmlpocket/core/platform/AndroidBridge");
     if (local_class != nullptr) {
         g_bridge_class = static_cast<jclass>(env->NewGlobalRef(local_class));
         env->DeleteLocalRef(local_class);
@@ -197,7 +197,7 @@ Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativeRegisterBridgeActi
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativeClearBridgeActivity(
+Java_app_com_tmlpocket_core_platform_NativeCoreClr_nativeClearBridgeActivity(
     JNIEnv* env,
     jclass) {
     std::lock_guard lock(g_bridge_mutex);
@@ -213,7 +213,7 @@ Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativeClearBridgeActivit
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativePostAndroidEvent(
+Java_app_com_tmlpocket_core_platform_NativeCoreClr_nativePostAndroidEvent(
     JNIEnv* env,
     jclass,
     jint kind,
@@ -242,7 +242,7 @@ Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativePostAndroidEvent(
     if (g_queued_events.size() >= kMaxEvents) {
         g_queued_events.pop_front();
     }
-    FnaAndroidEvent event{
+    TmlPocketAndroidEvent event{
         .kind = kind,
         .action = action,
         .timestamp_nanos = timestamp_nanos,
@@ -260,11 +260,11 @@ Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativePostAndroidEvent(
     g_queued_events.push_back(QueuedAndroidEvent{event, std::move(text_value)});
 }
 
-extern "C" int fna_android_bridge_open_url(const char* url) {
+extern "C" int tml_pocket_bridge_open_url(const char* url) {
     return call_string_int("openUrl", "(Ljava/lang/String;)I", url, 0);
 }
 
-extern "C" const char* fna_android_bridge_get_clipboard_text() {
+extern "C" const char* tml_pocket_bridge_get_clipboard_text() {
     JNIEnv* env = mobile_launcher_get_env();
     if (env == nullptr) return nullptr;
 
@@ -300,11 +300,11 @@ extern "C" const char* fna_android_bridge_get_clipboard_text() {
     return g_last_clipboard_text.empty() ? nullptr : g_last_clipboard_text.c_str();
 }
 
-extern "C" int fna_android_bridge_set_clipboard_text(const char* text) {
+extern "C" int tml_pocket_bridge_set_clipboard_text(const char* text) {
     return call_string_int("setClipboardText", "(Ljava/lang/String;)I", text, 0);
 }
 
-extern "C" int fna_android_bridge_set_orientation(int landscape) {
+extern "C" int tml_pocket_bridge_set_orientation(int landscape) {
     JNIEnv* env = mobile_launcher_get_env();
     if (env == nullptr) return -1;
     jvalue arguments[1]{};
@@ -314,7 +314,7 @@ extern "C" int fna_android_bridge_set_orientation(int landscape) {
     return result;
 }
 
-extern "C" std::int64_t fna_android_bridge_get_display_size() {
+extern "C" std::int64_t tml_pocket_bridge_get_display_size() {
     JNIEnv* env = mobile_launcher_get_env();
     if (env == nullptr) return 0;
     const std::int64_t result = call_long(env, "getDisplaySize", "()J", nullptr);
@@ -322,7 +322,7 @@ extern "C" std::int64_t fna_android_bridge_get_display_size() {
     return result;
 }
 
-extern "C" int fna_android_bridge_set_fullscreen(int fullscreen) {
+extern "C" int tml_pocket_bridge_set_fullscreen(int fullscreen) {
     JNIEnv* env = mobile_launcher_get_env();
     if (env == nullptr) return -1;
     jvalue arguments[1]{};
@@ -332,7 +332,7 @@ extern "C" int fna_android_bridge_set_fullscreen(int fullscreen) {
     return result;
 }
 
-extern "C" int fna_android_bridge_set_ime_visible(int visible) {
+extern "C" int tml_pocket_bridge_set_ime_visible(int visible) {
     JNIEnv* env = mobile_launcher_get_env();
     if (env == nullptr) return -1;
     jvalue arguments[1]{};
@@ -342,11 +342,11 @@ extern "C" int fna_android_bridge_set_ime_visible(int visible) {
     return result;
 }
 
-extern "C" int fna_android_bridge_show_toast(const char* message, int long_duration) {
+extern "C" int tml_pocket_bridge_show_toast(const char* message, int long_duration) {
     return call_string_int("showToast", "(Ljava/lang/String;I)I", message, long_duration);
 }
 
-extern "C" int fna_android_bridge_set_startup_status(
+extern "C" int tml_pocket_bridge_set_startup_status(
     const char* title,
     const char* detail,
     int progress_percent) {
@@ -358,7 +358,7 @@ extern "C" int fna_android_bridge_set_startup_status(
         progress_percent);
 }
 
-extern "C" int fna_android_bridge_hide_startup_status() {
+extern "C" int tml_pocket_bridge_hide_startup_status() {
     JNIEnv* env = mobile_launcher_get_env();
     if (env == nullptr) return -1;
     const int result = call_int(env, "hideStartupStatus", "()I", nullptr);
@@ -366,7 +366,7 @@ extern "C" int fna_android_bridge_hide_startup_status() {
     return result;
 }
 
-extern "C" int fna_android_bridge_has_permission(const char* permission) {
+extern "C" int tml_pocket_bridge_has_permission(const char* permission) {
     JNIEnv* env = mobile_launcher_get_env();
     if (env == nullptr) return 0;
     jstring java_permission = make_string(env, permission);
@@ -382,11 +382,11 @@ extern "C" int fna_android_bridge_has_permission(const char* permission) {
     return granted ? 1 : 0;
 }
 
-extern "C" int fna_android_bridge_request_permission(const char* permission, int request_code) {
+extern "C" int tml_pocket_bridge_request_permission(const char* permission, int request_code) {
     return call_string_int("requestPermission", "(Ljava/lang/String;I)I", permission, request_code);
 }
 
-extern "C" int fna_android_bridge_begin_text_prompt(
+extern "C" int tml_pocket_bridge_begin_text_prompt(
     const char* title,
     int password,
     int request_code) {
@@ -398,7 +398,7 @@ extern "C" int fna_android_bridge_begin_text_prompt(
         request_code);
 }
 
-extern "C" int fna_android_bridge_poll_event(FnaAndroidEvent* event) {
+extern "C" int tml_pocket_bridge_poll_event(TmlPocketAndroidEvent* event) {
     if (event == nullptr) return 0;
     std::lock_guard lock(g_bridge_mutex);
     if (g_queued_events.empty()) return 0;

@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "dev.tml.mobilelauncher.rendererfixture"
+    namespace = "app.com.tmlpocket.rendererfixture"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "dev.tml.mobilelauncher.rendererfixture"
+        applicationId = "app.com.tmlpocket.rendererfixture"
         minSdk = 28
         targetSdk = 37
         versionCode = 1

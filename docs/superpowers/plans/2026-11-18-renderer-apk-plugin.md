@@ -24,16 +24,16 @@
 
 ## File Map
 
-- `android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererBackend.kt`: backend allowlist and required native library names.
-- `android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererPluginDescriptor.kt`: immutable plugin/library models, stable identity, JSON parser, and per-entry diagnostics.
-- `android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererPluginPackageSource.kt`: package/assets source interface and Android PackageManager implementation.
-- `android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererPluginAssetStager.kt`: private, atomic, digest-checked library staging.
-- `android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererPluginRepository.kt`: catalog discovery, compatibility filtering, cache reuse, and launch-time revalidation.
+- `android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererBackend.kt`: backend allowlist and required native library names.
+- `android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererPluginDescriptor.kt`: immutable plugin/library models, stable identity, JSON parser, and per-entry diagnostics.
+- `android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererPluginPackageSource.kt`: package/assets source interface and Android PackageManager implementation.
+- `android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererPluginAssetStager.kt`: private, atomic, digest-checked library staging.
+- `android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererPluginRepository.kt`: catalog discovery, compatibility filtering, cache reuse, and launch-time revalidation.
 - `android/app/src/main/AndroidManifest.xml`: package visibility query for the renderer service action.
-- `android/app/src/main/java/dev/tml/mobilelauncher/feature/launcher/LauncherController.kt`: asynchronous catalog refresh, snapshot serialization, and preference validation.
-- `android/app/src/main/java/dev/tml/mobilelauncher/feature/launcher/LauncherSettings.kt`: backward-compatible selected renderer preference.
-- `android/app/src/main/java/dev/tml/mobilelauncher/core/runtime/GameRuntime.kt`: launch-time resolver and renderer environment setup/fallback.
-- `android/app/src/test/java/dev/tml/mobilelauncher/feature/renderers/`: parser, repository, cache, and staging unit tests.
+- `android/app/src/main/java/app/com/tmlpocket/feature/launcher/LauncherController.kt`: asynchronous catalog refresh, snapshot serialization, and preference validation.
+- `android/app/src/main/java/app/com/tmlpocket/feature/launcher/LauncherSettings.kt`: backward-compatible selected renderer preference.
+- `android/app/src/main/java/app/com/tmlpocket/core/runtime/GameRuntime.kt`: launch-time resolver and renderer environment setup/fallback.
+- `android/app/src/test/java/app/com/tmlpocket/feature/renderers/`: parser, repository, cache, and staging unit tests.
 - `ui/launcher/src/native/models.ts`: optional renderer option model and preference key.
 - `ui/launcher/src/features/native/settings.tsx`: real renderer selector in the Android runtime settings.
 - `ui/launcher/tests/`: native fixture and selector interaction assertions.
@@ -44,9 +44,9 @@
 ### Task 1: Define and Validate the Plugin Descriptor
 
 **Files:**
-- Create: `android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererBackend.kt`
-- Create: `android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererPluginDescriptor.kt`
-- Create: `android/app/src/test/java/dev/tml/mobilelauncher/feature/renderers/RendererPluginDescriptorTest.kt`
+- Create: `android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererBackend.kt`
+- Create: `android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererPluginDescriptor.kt`
+- Create: `android/app/src/test/java/app/com/tmlpocket/feature/renderers/RendererPluginDescriptorTest.kt`
 
 **Interfaces:**
 - `RendererBackend` is an enum with `GL4ES`, `ANGLE`, and `MOBILEGLUES`, each returning its exact required library filename set. `fromId(value: String): RendererBackend?` returns `null` for unsupported values.
@@ -82,7 +82,7 @@ fun validGl4esEntryHasPackageScopedIdentityAndFixedLibraries() {
 Run from `android/`:
 
 ```powershell
-.\gradlew.bat :app:testDebugUnitTest --tests "dev.tml.mobilelauncher.feature.renderers.RendererPluginDescriptorTest" --console=plain
+.\gradlew.bat :app:testDebugUnitTest --tests "app.com.tmlpocket.feature.renderers.RendererPluginDescriptorTest" --console=plain
 ```
 
 Expected: compilation fails on the new parser/model references.
@@ -98,19 +98,19 @@ Run the focused Gradle command from Step 2. Expected: all parser cases pass, inc
 - [ ] **Step 5: Commit the descriptor boundary**
 
 ```powershell
-git add android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererBackend.kt android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererPluginDescriptor.kt android/app/src/test/java/dev/tml/mobilelauncher/feature/renderers/RendererPluginDescriptorTest.kt
+git add android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererBackend.kt android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererPluginDescriptor.kt android/app/src/test/java/app/com/tmlpocket/feature/renderers/RendererPluginDescriptorTest.kt
 git commit -m "feat(renderers): define plugin descriptor v1"
 ```
 
 ### Task 2: Discover Installed Plugins and Stage Libraries
 
 **Files:**
-- Create: `android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererPluginPackageSource.kt`
-- Create: `android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererPluginAssetStager.kt`
-- Create: `android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererPluginRepository.kt`
+- Create: `android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererPluginPackageSource.kt`
+- Create: `android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererPluginAssetStager.kt`
+- Create: `android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererPluginRepository.kt`
 - Modify: `android/app/src/main/AndroidManifest.xml`
-- Create: `android/app/src/test/java/dev/tml/mobilelauncher/feature/renderers/RendererPluginRepositoryTest.kt`
-- Create: `android/app/src/test/java/dev/tml/mobilelauncher/feature/renderers/RendererPluginAssetStagerTest.kt`
+- Create: `android/app/src/test/java/app/com/tmlpocket/feature/renderers/RendererPluginRepositoryTest.kt`
+- Create: `android/app/src/test/java/app/com/tmlpocket/feature/renderers/RendererPluginAssetStagerTest.kt`
 
 **Interfaces:**
 - `InstalledRendererPackage(packageName: String, versionName: String?, versionCode: Long, openAsset: (String) -> InputStream)` gives the repository package identity and a scoped asset reader.
@@ -145,7 +145,7 @@ Use JUnit `TemporaryFolder`. Verify exact output bytes and cache path on success
 Run from `android/`:
 
 ```powershell
-.\gradlew.bat :app:testDebugUnitTest --tests "dev.tml.mobilelauncher.feature.renderers.RendererPluginRepositoryTest" --tests "dev.tml.mobilelauncher.feature.renderers.RendererPluginAssetStagerTest" --console=plain
+.\gradlew.bat :app:testDebugUnitTest --tests "app.com.tmlpocket.feature.renderers.RendererPluginRepositoryTest" --tests "app.com.tmlpocket.feature.renderers.RendererPluginAssetStagerTest" --console=plain
 ```
 
 Expected: compilation fails until the repository and stager are implemented.
@@ -165,17 +165,17 @@ Run the focused Gradle command from Step 3. Expected: valid staging succeeds, an
 - [ ] **Step 7: Commit discovery and staging**
 
 ```powershell
-git add android/app/src/main/AndroidManifest.xml android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers android/app/src/test/java/dev/tml/mobilelauncher/feature/renderers
+git add android/app/src/main/AndroidManifest.xml android/app/src/main/java/app/com/tmlpocket/feature/renderers android/app/src/test/java/app/com/tmlpocket/feature/renderers
 git commit -m "feat(renderers): discover and stage APK plugins"
 ```
 
 ### Task 3: Persist Selection and Publish the Catalog
 
 **Files:**
-- Modify: `android/app/src/main/java/dev/tml/mobilelauncher/feature/launcher/LauncherSettings.kt`
-- Modify: `android/app/src/main/java/dev/tml/mobilelauncher/feature/launcher/LauncherController.kt`
-- Modify: `android/app/src/main/java/dev/tml/mobilelauncher/feature/launcher/ui/MainActivity.kt`
-- Create: `android/app/src/test/java/dev/tml/mobilelauncher/feature/renderers/RendererSelectionTest.kt`
+- Modify: `android/app/src/main/java/app/com/tmlpocket/feature/launcher/LauncherSettings.kt`
+- Modify: `android/app/src/main/java/app/com/tmlpocket/feature/launcher/LauncherController.kt`
+- Modify: `android/app/src/main/java/app/com/tmlpocket/feature/launcher/ui/MainActivity.kt`
+- Create: `android/app/src/test/java/app/com/tmlpocket/feature/renderers/RendererSelectionTest.kt`
 
 **Interfaces:**
 - `LauncherSettings.read().optString("rendererPlugin", "native")` is the backward-compatible preference read.
@@ -203,7 +203,7 @@ fun selectionMustBePresentInCompatibleCatalog() {
 Run from `android/`:
 
 ```powershell
-.\gradlew.bat :app:testDebugUnitTest --tests "dev.tml.mobilelauncher.feature.renderers.RendererSelectionTest" --console=plain
+.\gradlew.bat :app:testDebugUnitTest --tests "app.com.tmlpocket.feature.renderers.RendererSelectionTest" --console=plain
 ```
 
 Expected: missing selection helper causes compilation failure.
@@ -223,16 +223,16 @@ Run the focused Gradle command from Step 2 and assert the serialized snapshot co
 - [ ] **Step 6: Commit catalog and preference bridge**
 
 ```powershell
-git add android/app/src/main/java/dev/tml/mobilelauncher/feature/launcher/LauncherSettings.kt android/app/src/main/java/dev/tml/mobilelauncher/feature/launcher/LauncherController.kt android/app/src/main/java/dev/tml/mobilelauncher/feature/launcher/ui/MainActivity.kt android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererSelection.kt android/app/src/test/java/dev/tml/mobilelauncher/feature/renderers/RendererSelectionTest.kt
+git add android/app/src/main/java/app/com/tmlpocket/feature/launcher/LauncherSettings.kt android/app/src/main/java/app/com/tmlpocket/feature/launcher/LauncherController.kt android/app/src/main/java/app/com/tmlpocket/feature/launcher/ui/MainActivity.kt android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererSelection.kt android/app/src/test/java/app/com/tmlpocket/feature/renderers/RendererSelectionTest.kt
 git commit -m "feat(renderers): expose and persist renderer choices"
 ```
 
 ### Task 4: Apply the Selected Backend Before CoreCLR
 
 **Files:**
-- Modify: `android/app/src/main/java/dev/tml/mobilelauncher/core/runtime/GameRuntime.kt`
-- Create: `android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererLaunchEnvironment.kt`
-- Create: `android/app/src/test/java/dev/tml/mobilelauncher/feature/renderers/RendererLaunchEnvironmentTest.kt`
+- Modify: `android/app/src/main/java/app/com/tmlpocket/core/runtime/GameRuntime.kt`
+- Create: `android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererLaunchEnvironment.kt`
+- Create: `android/app/src/test/java/app/com/tmlpocket/feature/renderers/RendererLaunchEnvironmentTest.kt`
 
 **Interfaces:**
 - `RendererLaunchEnvironment.forRenderer(renderer: StagedRenderer?): Map<String, String>` returns an empty map for `native`; for a staged plugin it returns `FNA3D_OPENGL_DRIVER=<backend id>` and `RALCORE_NATIVEDIR=<libraryDirectory>`.
@@ -259,7 +259,7 @@ fun gl4esUsesSdlRendererNameAndStagedLibraryDirectory() {
 Run from `android/`:
 
 ```powershell
-.\gradlew.bat :app:testDebugUnitTest --tests "dev.tml.mobilelauncher.feature.renderers.RendererLaunchEnvironmentTest" --console=plain
+.\gradlew.bat :app:testDebugUnitTest --tests "app.com.tmlpocket.feature.renderers.RendererLaunchEnvironmentTest" --console=plain
 ```
 
 Expected: compilation fails before the helper exists.
@@ -275,7 +275,7 @@ Run the focused Gradle command from Step 2. Expected: environment tests pass; in
 - [ ] **Step 5: Commit runtime selection**
 
 ```powershell
-git add android/app/src/main/java/dev/tml/mobilelauncher/core/runtime/GameRuntime.kt android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/RendererLaunchEnvironment.kt android/app/src/test/java/dev/tml/mobilelauncher/feature/renderers/RendererLaunchEnvironmentTest.kt
+git add android/app/src/main/java/app/com/tmlpocket/core/runtime/GameRuntime.kt android/app/src/main/java/app/com/tmlpocket/feature/renderers/RendererLaunchEnvironment.kt android/app/src/test/java/app/com/tmlpocket/feature/renderers/RendererLaunchEnvironmentTest.kt
 git commit -m "feat(renderers): select plugin before game startup"
 ```
 
@@ -352,7 +352,7 @@ git commit -m "feat(renderers): add plugin selector and author guide"
 - Modify: `android/settings.gradle.kts` to include the test-only fixture module
 
 **Interfaces:**
-- Fixture application ID is `dev.tml.mobilelauncher.rendererfixture`; its service exports only the v1 renderer action and never needs to be bound.
+- Fixture application ID is `app.com.tmlpocket.rendererfixture`; its service exports only the v1 renderer action and never needs to be bound.
 - `prepare-renderer-fixture.ps1 -LibraryDirectory <arm64 directory>` accepts `libGL_gl4es.so` and `libEGL_gl4es.so`, copies them into ignored generated assets, computes lowercase SHA-256 with `Get-FileHash`, and writes the v1 descriptor with backend `gl4es`.
 - The fixture APK is installed separately and is never a dependency of `:app` packaging.
 
@@ -392,7 +392,7 @@ Expected: all managed/JVM/native-runtime checks pass, `:app:assembleDebug` succe
 
 - [ ] **Step 5: Install both APKs and verify detection, persistence, and native load**
 
-Install the fixture and rebuilt launcher APK on a connected arm64 Android 9+ device. Open Settings and confirm the fixture appears with package/version, select GL4ES, leave and reopen the launcher, and confirm the choice remains. Launch the installed tML game; use `adb logcat -s SDL_Renderer FnaAndroidCoreClr` to confirm `FNA3D_OPENGL_DRIVER=gl4es`, the private `RALCORE_NATIVEDIR`, successful EGL/GLES library loading, and game first-frame completion. Uninstall the fixture and repeat launch; confirm native OpenGL ES 3 fallback and a diagnostic reason.
+Install the fixture and rebuilt launcher APK on a connected arm64 Android 9+ device. Open Settings and confirm the fixture appears with package/version, select GL4ES, leave and reopen the launcher, and confirm the choice remains. Launch the installed tML game; use `adb logcat -s SDL_Renderer tMLPocketCoreClr` to confirm `FNA3D_OPENGL_DRIVER=gl4es`, the private `RALCORE_NATIVEDIR`, successful EGL/GLES library loading, and game first-frame completion. Uninstall the fixture and repeat launch; confirm native OpenGL ES 3 fallback and a diagnostic reason.
 
 - [ ] **Step 6: Commit the fixture and final verification support**
 

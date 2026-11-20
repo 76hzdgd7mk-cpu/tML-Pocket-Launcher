@@ -22,7 +22,7 @@ void* read_stream(void* argument) {
     std::string line;
     auto emit = [&]() {
         if (!line.empty()) {
-            __android_log_write(reader.priority, "FnaAndroidNative", line.c_str());
+            __android_log_write(reader.priority, "tMLPocketNative", line.c_str());
             line.clear();
         }
     };

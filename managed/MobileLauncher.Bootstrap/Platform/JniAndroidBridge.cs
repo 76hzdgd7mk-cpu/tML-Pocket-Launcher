@@ -280,54 +280,54 @@ public sealed class JniAndroidBridge : IAndroidBridge
 
     private static class NativeMethods
     {
-        [DllImport("main", EntryPoint = "fna_android_bridge_open_url")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_open_url")]
         public static extern int OpenUrl([MarshalAs(UnmanagedType.LPUTF8Str)] string url);
 
-        [DllImport("main", EntryPoint = "fna_android_bridge_get_clipboard_text")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_get_clipboard_text")]
         public static extern IntPtr GetClipboardText();
 
-        [DllImport("main", EntryPoint = "fna_android_bridge_set_clipboard_text")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_set_clipboard_text")]
         public static extern int SetClipboardText([MarshalAs(UnmanagedType.LPUTF8Str)] string text);
 
-        [DllImport("main", EntryPoint = "fna_android_bridge_set_orientation")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_set_orientation")]
         public static extern int SetOrientation(int landscape);
 
-        [DllImport("main", EntryPoint = "fna_android_bridge_get_display_size")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_get_display_size")]
         public static extern long GetDisplaySize();
 
-        [DllImport("main", EntryPoint = "fna_android_bridge_set_fullscreen")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_set_fullscreen")]
         public static extern int SetFullscreen(int fullscreen);
 
-        [DllImport("main", EntryPoint = "fna_android_bridge_set_ime_visible")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_set_ime_visible")]
         public static extern int SetImeVisible(int visible);
 
-        [DllImport("main", EntryPoint = "fna_android_bridge_show_toast")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_show_toast")]
         public static extern int ShowToast([MarshalAs(UnmanagedType.LPUTF8Str)] string message, int longDuration);
 
-        [DllImport("main", EntryPoint = "fna_android_bridge_set_startup_status")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_set_startup_status")]
         public static extern int SetStartupStatus(
             [MarshalAs(UnmanagedType.LPUTF8Str)] string title,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string detail,
             int progressPercent);
 
-        [DllImport("main", EntryPoint = "fna_android_bridge_hide_startup_status")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_hide_startup_status")]
         public static extern int HideStartupStatus();
 
-        [DllImport("main", EntryPoint = "fna_android_bridge_has_permission")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_has_permission")]
         public static extern int HasPermission([MarshalAs(UnmanagedType.LPUTF8Str)] string permission);
 
-        [DllImport("main", EntryPoint = "fna_android_bridge_request_permission")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_request_permission")]
         public static extern int RequestPermission(
             [MarshalAs(UnmanagedType.LPUTF8Str)] string permission,
             int requestCode);
 
-        [DllImport("main", EntryPoint = "fna_android_bridge_begin_text_prompt")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_begin_text_prompt")]
         public static extern int BeginTextPrompt(
             [MarshalAs(UnmanagedType.LPUTF8Str)] string title,
             int password,
             int requestCode);
 
-        [DllImport("main", EntryPoint = "fna_android_bridge_poll_event")]
+        [DllImport("main", EntryPoint = "tml_pocket_bridge_poll_event")]
         public static extern int TryDequeueEvent(out NativeAndroidEvent value);
     }
 }

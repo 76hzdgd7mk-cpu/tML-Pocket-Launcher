@@ -113,7 +113,7 @@ std::string last_error() {
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativeChdir(JNIEnv* env, jclass, jstring path) {
+Java_app_com_tmlpocket_core_platform_NativeCoreClr_nativeChdir(JNIEnv* env, jclass, jstring path) {
     if (path == nullptr) return -1;
     const char* chars = env->GetStringUTFChars(path, nullptr);
     if (chars == nullptr) return -1;
@@ -123,7 +123,7 @@ Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativeChdir(JNIEnv* env,
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativeSetEnv(
+Java_app_com_tmlpocket_core_platform_NativeCoreClr_nativeSetEnv(
     JNIEnv* env,
     jclass,
     jstring name,
@@ -144,12 +144,12 @@ Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativeSetEnv(
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativeLastError(JNIEnv* env, jclass) {
+Java_app_com_tmlpocket_core_platform_NativeCoreClr_nativeLastError(JNIEnv* env, jclass) {
     return env->NewStringUTF(mobile_launcher::dotnet::last_error().c_str());
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_dev_tml_mobilelauncher_core_platform_NativeCoreClr_nativeLaunch(
+Java_app_com_tmlpocket_core_platform_NativeCoreClr_nativeLaunch(
     JNIEnv* env,
     jclass,
     jstring assembly_path,

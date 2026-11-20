@@ -11,7 +11,9 @@
 
 ## 1. 安装启动器
 
-使用自行构建或项目发布的 APK。开发调试构建的路径为 `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk`。同应用 ID 和兼容签名的覆盖安装通常保留应用数据；更换签名或卸载前请先备份。当前应用 ID 为 `com.example.fnatemplate`，用于保留既有安装身份。
+使用自行构建或项目发布的 APK。开发调试构建的路径为 `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk`。当前应用 ID 为 `app.com.tmlpocket`，外部应用专属目录为 `Android/data/app.com.tmlpocket/`。同应用 ID 和兼容签名的覆盖安装通常保留应用数据；更换签名或卸载前请先备份。
+
+旧模板包名 `com.example.fnatemplate` 与当前版本属于两个独立应用，安装新版不会自动迁移旧版的游戏资源、存档、模组或设置。完成备份和迁移前请保留旧版。
 
 ## 2. 添加 Terraria
 

@@ -15,8 +15,14 @@ FetchContent_Declare(
     URL https://codeload.github.com/RotatingArtDev/SDL/zip/8cddfc209463f76072304c0425024fed47c69361
     URL_HASH SHA256=0eb11d4e57e48d4fdf595849f80b5a669369e3c1c6f1235546c67cc366f734db
 )
-if(DEFINED ENV{TML_SDL3_SOURCE_DIR} AND EXISTS "$ENV{TML_SDL3_SOURCE_DIR}/CMakeLists.txt")
-    set(FETCHCONTENT_SOURCE_DIR_SDL3 "$ENV{TML_SDL3_SOURCE_DIR}" CACHE PATH "Local SDL3 source override")
+if(DEFINED ENV{TML_SDL3_SOURCE_DIR} AND NOT "$ENV{TML_SDL3_SOURCE_DIR}" STREQUAL "")
+    if(NOT EXISTS "$ENV{TML_SDL3_SOURCE_DIR}/CMakeLists.txt")
+        message(FATAL_ERROR "TML_SDL3_SOURCE_DIR must point to an SDL source tree")
+    endif()
+    set(FETCHCONTENT_SOURCE_DIR_SDL3 "$ENV{TML_SDL3_SOURCE_DIR}" CACHE PATH "Local SDL3 source override" FORCE)
+else()
+    # An old local override must not silently replace the pinned source on later builds.
+    unset(FETCHCONTENT_SOURCE_DIR_SDL3 CACHE)
 endif()
 set(SDL_SHARED ON CACHE BOOL "" FORCE)
 set(SDL_STATIC OFF CACHE BOOL "" FORCE)
@@ -28,6 +34,27 @@ set(SDL_VIDEO_OPENGL_ES ON CACHE BOOL "" FORCE)
 set(SDL_VIDEO_OPENGL_EGL ON CACHE BOOL "" FORCE)
 set(SDL_OPENGLES ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(SDL3)
+
+set(SDL_JNI_CHECK "${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/checks/check-sdl-jni.ps1")
+file(GLOB SDL_JAVA_BINDINGS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../app/src/main/java/org/libsdl/app/*.java")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${SDL_JNI_CHECK}"
+    "${SDL3_SOURCE_DIR}/src/core/android/SDL_android.c"
+    "${SDL3_SOURCE_DIR}/src/hidapi/android/hid.cpp"
+    "${SDL3_SOURCE_DIR}/include/SDL3/SDL_version.h"
+    ${SDL_JAVA_BINDINGS}
+)
+execute_process(
+    COMMAND powershell -NoProfile -ExecutionPolicy Bypass -File "${SDL_JNI_CHECK}" -SdlSourcePath "${SDL3_SOURCE_DIR}"
+    RESULT_VARIABLE SDL_JNI_CHECK_RESULT
+    OUTPUT_VARIABLE SDL_JNI_CHECK_OUTPUT
+    ERROR_VARIABLE SDL_JNI_CHECK_ERROR
+)
+if(NOT SDL_JNI_CHECK_RESULT EQUAL 0)
+    message(FATAL_ERROR "SDL JNI compatibility check failed:\n${SDL_JNI_CHECK_OUTPUT}${SDL_JNI_CHECK_ERROR}")
+endif()
+message(STATUS "SDL source: ${SDL3_SOURCE_DIR}")
+message(STATUS "${SDL_JNI_CHECK_OUTPUT}")
 
 set(SDL3_INCLUDE_DIRS "${SDL3_SOURCE_DIR}/include")
 set(SDL3_LIBRARIES SDL3-shared)
@@ -61,12 +88,14 @@ target_include_directories(main PRIVATE
 target_link_libraries(main PRIVATE
     dotnethost
     SDL3-shared
-    FAudio-shared
-    FNA3D
     ${ANDROID_LOG_LIB}
     ${ANDROID_LIB}
     ${CXX_SHARED_LIB}
 )
+
+# The stores process also loads main, before any game-library preloads. Keep the
+# game's libraries as build dependencies, not DT_NEEDED entries on libmain.
+add_dependencies(main FAudio-shared FNA3D SDL2)
 
 set_target_properties(FNA3D PROPERTIES OUTPUT_NAME "FNA3D_sdl3" NO_SONAME TRUE)
 target_link_options(FNA3D PRIVATE "-Wl,-soname,libFNA3D.so")

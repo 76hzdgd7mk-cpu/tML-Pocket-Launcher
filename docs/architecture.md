@@ -7,7 +7,7 @@ tML Pocket Launcher installs precompiled game packages and hosts them on Android
 ```text
 android/                         Android Gradle project
   app/src/main/java/
-    dev/tml/mobilelauncher/
+    app/com/tmlpocket/
       feature/launcher/          Offline WebView host, restricted bridge and operation state
       feature/installation/      ZIP validation, transactional installation
       feature/files/             Restricted external file browser, export and image decoding
@@ -82,7 +82,7 @@ Launcher updates must never merge packaged game binaries over imported packages.
 
 SDL2 owns rendering and native input. The JNI bridge provides Android clipboard, IME, display, lifecycle and input events. `NativeCoreClr` package names, JNI entry symbols and native class lookups must change together. Numeric input event IDs and C ABI struct layout are versioned contracts; do not reorder enum members.
 
-The Android application ID remains the existing installation identity; the source namespace is `dev.tml.mobilelauncher`. Manifest activity names use complete source class names. This allows structural refactoring without treating an app update as a different installed app.
+The Android application ID and source namespace are `app.com.tmlpocket`. Manifest activity names use complete source class names. Android creates the external application directory under `Android/data/app.com.tmlpocket/`; private runtime and game data remain under the application's internal files directory. The former template application ID is a separate installation and its data is not automatically migrated. The published renderer-discovery action stays `dev.tml.mobilelauncher.action.RENDERER_PLUGIN` so existing renderer APKs remain discoverable.
 
 FNA.dll comes from the selected tML release. SDL2/FNA3D/FAudio are Android native libraries built by the launcher. Windows/Linux native libraries included in release ZIPs cannot replace the APK's Android libraries.
 

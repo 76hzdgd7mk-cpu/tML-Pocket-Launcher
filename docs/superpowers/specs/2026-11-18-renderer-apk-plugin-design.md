@@ -110,9 +110,9 @@ native 插件代码会在启动器的 `:game` 进程中执行，并拥有该进�
 ## 计划涉及的代码
 
 - `android/app/src/main/AndroidManifest.xml`：声明包可见性查询 action。
-- `android/app/src/main/java/dev/tml/mobilelauncher/feature/renderers/`：描述符模型、插件发现、兼容性检查和私有缓存暂存。
-- `android/app/src/main/java/dev/tml/mobilelauncher/feature/launcher/LauncherController.kt` 与 `LauncherSettings.kt`：状态选项、刷新和选择校验。
-- `android/app/src/main/java/dev/tml/mobilelauncher/core/runtime/GameRuntime.kt`：在 CoreCLR 启动前解析选择并设置 backend/缓存环境。
+- `android/app/src/main/java/app/com/tmlpocket/feature/renderers/`：描述符模型、插件发现、兼容性检查和私有缓存暂存。
+- `android/app/src/main/java/app/com/tmlpocket/feature/launcher/LauncherController.kt` 与 `LauncherSettings.kt`：状态选项、刷新和选择校验。
+- `android/app/src/main/java/app/com/tmlpocket/core/runtime/GameRuntime.kt`：在 CoreCLR 启动前解析选择并设置 backend/缓存环境。
 - `ui/launcher/src/native/models.ts` 与 `ui/launcher/src/features/native/settings.tsx`：renderer 状态模型和选择控件。
 - `docs/renderer-plugin.md`：v1 制作协议、Manifest 示例、JSON schema、ABI 资源布局和最小插件示例。
 - Android 测试：描述符/schema 校验、兼容性过滤、摘要/暂存失败、保存/回退，以及验证包发现和跨应用资源访问的插件 fixture APK。

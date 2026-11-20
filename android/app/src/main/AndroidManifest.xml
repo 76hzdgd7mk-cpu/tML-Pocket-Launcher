@@ -27,11 +27,11 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"
         android:theme="@style/Theme.MobileLauncher">
-        <activity android:name="dev.tml.mobilelauncher.feature.stores.GogLoginActivity"
+        <activity android:name="app.com.tmlpocket.feature.stores.GogLoginActivity"
             android:exported="false" android:theme="@style/Theme.MobileLauncher"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode" />
         <activity
-            android:name="dev.tml.mobilelauncher.feature.game.GameActivity"
+            android:name="app.com.tmlpocket.feature.game.GameActivity"
             android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:exported="false"
             android:hardwareAccelerated="true"
@@ -48,7 +48,7 @@
         </activity>
 
         <activity
-            android:name="dev.tml.mobilelauncher.feature.launcher.ui.MainActivity"
+            android:name="app.com.tmlpocket.feature.launcher.ui.MainActivity"
             android:enableOnBackInvokedCallback="true"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:exported="true"

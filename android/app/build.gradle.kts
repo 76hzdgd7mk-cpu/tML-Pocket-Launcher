@@ -42,12 +42,12 @@ tasks.named("preBuild") {
 }
 
 android {
-    namespace = "dev.tml.mobilelauncher"
+    namespace = "app.com.tmlpocket"
     compileSdk = 37
     ndkVersion = "30.0.14904198 rc1"
 
     defaultConfig {
-        applicationId = "com.example.fnatemplate"
+        applicationId = "app.com.tmlpocket"
         minSdk = 28
         targetSdk = 37
         versionCode = 1040422

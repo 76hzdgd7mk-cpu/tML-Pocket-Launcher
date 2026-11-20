@@ -62,7 +62,7 @@ internal sealed class AndroidLogTextWriter(int priority) : TextWriter
     private void Emit()
     {
         if (_line.Length == 0) return;
-        NativeWrite(priority, "FnaAndroidCoreClr", _line.ToString().TrimEnd('\r'));
+        NativeWrite(priority, "tMLPocketCoreClr", _line.ToString().TrimEnd('\r'));
         _line.Clear();
     }
 

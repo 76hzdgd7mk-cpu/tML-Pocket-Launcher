@@ -61,7 +61,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     private static final String TAG = "SDL";
     private static final int SDL_MAJOR_VERSION = 3;
     private static final int SDL_MINOR_VERSION = 2;
-    private static final int SDL_MICRO_VERSION = 30;
+    private static final int SDL_MICRO_VERSION = 31;
 /*
     // Display InputType.SOURCE/CLASS of events and devices
     //
@@ -1069,6 +1069,15 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     public static native boolean onNativeSoftReturnKey();
     public static native void onNativeKeyboardFocusLost();
     public static native void onNativeMouse(int button, int action, float x, float y, boolean relative);
+    // Registered by the pinned Android SDL fork during JNI_OnLoad, even when unused.
+    public static native void onNativeMouseDirect(int button, int action, float x, float y, boolean relative);
+    public static native void onNativeMouseButton(int sdlButton, int pressed, float x, float y);
+    public static native void onNativeMouseButtonOnly(int sdlButton, int pressed);
+    public static native int nativeGetMouseStateX();
+    public static native int nativeGetMouseStateY();
+    public static native void nativeConsumeFingerTouch(int fingerId);
+    public static native void nativeReleaseFingerTouch(int fingerId);
+    public static native void nativeClearConsumedFingers();
     public static native void onNativeTouch(int touchDevId, int pointerFingerId,
                                             int action, float x,
                                             float y, float p);

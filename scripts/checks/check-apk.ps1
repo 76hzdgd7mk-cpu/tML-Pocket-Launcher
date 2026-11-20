@@ -62,3 +62,75 @@ Write-Output 'Verified launcher-only APK: no game assemblies, managed FNA, or ga
 if ($entries -contains 'assets/ui/preview.html' -or @($entries | Where-Object { $_ -like 'assets/ui/*.map' -or $_ -like 'assets/ui/assets/*.map' }).Count -gt 0) {
     throw 'Production UI must not contain development previews or source maps'
 }
+
+# The stores host loads libmain directly, without the game's SDL preloads.
+# Validate its transitive DT_NEEDED entries against actual APK filenames.
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path -LiteralPath $ApkPath))
+try {
+    $prefix = 'lib/arm64-v8a/'
+    $systemLibraries = @('libc.so', 'libm.so', 'libdl.so', 'liblog.so', 'libandroid.so', 'libOpenSLES.so', 'libGLESv1_CM.so', 'libGLESv2.so', 'libGLESv3.so', 'libEGL.so', 'libvulkan.so', 'libz.so', 'libjnigraphics.so', 'libaaudio.so')
+    $pending = [Collections.Generic.Queue[string]]::new()
+    $visited = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    $pending.Enqueue('libmain.so')
+    while ($pending.Count -gt 0) {
+        $name = $pending.Dequeue()
+        if (-not $visited.Add($name)) { continue }
+        $entry = $archive.GetEntry($prefix + $name)
+        if ($null -eq $entry) { throw "APK is missing native dependency $name" }
+        $stream = $entry.Open()
+        $memory = [IO.MemoryStream]::new()
+        try {
+            $stream.CopyTo($memory)
+            $elf = $memory.ToArray()
+        } finally {
+            $memory.Dispose()
+            $stream.Dispose()
+        }
+        if ($elf.Length -lt 64 -or [BitConverter]::ToUInt32($elf, 0) -ne 0x464c457f -or $elf[4] -ne 2 -or $elf[5] -ne 1) {
+            throw "Expected a little-endian ELF64 native library: $name"
+        }
+        $sectionOffset = [BitConverter]::ToUInt64($elf, 40)
+        $sectionSize = [BitConverter]::ToUInt16($elf, 58)
+        $sectionCount = [BitConverter]::ToUInt16($elf, 60)
+        if ($sectionSize -lt 64 -or $sectionCount -eq 0 -or $sectionOffset + $sectionSize * $sectionCount -gt $elf.Length) {
+            throw "Invalid ELF section headers: $name"
+        }
+        $foundDynamic = $false
+        for ($index = 0; $index -lt $sectionCount; $index++) {
+            $section = [int]($sectionOffset + $index * $sectionSize)
+            if ([BitConverter]::ToUInt32($elf, $section + 4) -ne 6) { continue } # SHT_DYNAMIC
+            $foundDynamic = $true
+            $offset = [BitConverter]::ToUInt64($elf, $section + 24)
+            $size = [BitConverter]::ToUInt64($elf, $section + 32)
+            $link = [BitConverter]::ToUInt32($elf, $section + 40)
+            $stride = [BitConverter]::ToUInt64($elf, $section + 56)
+            if ($link -ge $sectionCount -or $stride -lt 16 -or $offset + $size -gt $elf.Length) { throw "Invalid ELF dynamic table: $name" }
+            $strings = [int]($sectionOffset + $link * $sectionSize)
+            $stringOffset = [BitConverter]::ToUInt64($elf, $strings + 24)
+            $stringSize = [BitConverter]::ToUInt64($elf, $strings + 32)
+            if ($stringOffset + $stringSize -gt $elf.Length) { throw "Invalid ELF string table: $name" }
+            for ($position = $offset; $position + 16 -le $offset + $size; $position += $stride) {
+                $tag = [BitConverter]::ToInt64($elf, [int]$position)
+                if ($tag -eq 0) { break } # DT_NULL
+                if ($tag -ne 1) { continue } # DT_NEEDED
+                $value = [BitConverter]::ToUInt64($elf, [int]($position + 8))
+                if ($value -ge $stringSize) { throw "Invalid ELF dependency name: $name" }
+                $start = [int]($stringOffset + $value)
+                $end = $start
+                while ($end -lt $stringOffset + $stringSize -and $elf[$end] -ne 0) { $end++ }
+                if ($end -eq $stringOffset + $stringSize) { throw "Unterminated ELF dependency name: $name" }
+                $needed = [Text.Encoding]::UTF8.GetString($elf, $start, $end - $start)
+                if ($systemLibraries -ccontains $needed) { continue }
+                if ($null -eq $archive.GetEntry($prefix + $needed)) {
+                    throw "APK cannot load $name directly: dependency $needed is not packaged (game preloading must not be required by the stores host)"
+                }
+                $pending.Enqueue($needed)
+            }
+        }
+        if (-not $foundDynamic) { throw "ELF dynamic table not found: $name" }
+    }
+    Write-Output 'Verified libmain native dependency closure without game preloads'
+} finally {
+    $archive.Dispose()
+}

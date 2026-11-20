@@ -2,7 +2,7 @@
 
 ## Names and file ownership
 
-- Kotlin packages follow their directory under `dev.tml.mobilelauncher`. Keep feature code under `feature/<feature>` and shared runtime/platform adapters under `core`.
+- Kotlin packages follow their directory under `app.com.tmlpocket`. Keep feature code under `feature/<feature>` and shared runtime/platform adapters under `core`.
 - Kotlin classes use PascalCase, methods/properties use camelCase, enum constants and immutable compile-time constants use UPPER_SNAKE_CASE.
 - C# source, tests and build settings live under `managed/`; Android source sets live under `android/app/src/`. Managed projects and namespaces use `MobileLauncher.<Component>`. Use one main public class per file and file-scoped namespaces.
 - Use names that describe behavior: `importPackage`, `loadReleases`, `prepareLauncher`. Avoid template names, numbered variants, generic helpers, and parallel implementations.

@@ -10,6 +10,8 @@
 
 Configure `JAVA_HOME` and `ANDROID_HOME` locally, or use an ignored `android/local.properties` with `sdk.dir`. Do not embed developer machine paths in committed files. Native dependency sources live under `external/`; managed game sources are not build inputs.
 
+SDL3 is fetched at the commit pinned in `android/native/CMakeLists.txt`. An explicit `TML_SDL3_SOURCE_DIR` overrides it. When CMake is configured without that variable, the previous override is cleared and the pinned source is restored. CMake checks the SDL version and every JNI registration against the launcher's Java declarations and stops before compiling incompatible bindings. For a standalone check, run `scripts/checks/check-sdl-jni.ps1 -SdlSourcePath <SDL3 source directory>`.
+
 ## Commands
 
 ```powershell
@@ -58,8 +60,8 @@ and publish the same projects and must not run concurrently against the same obj
 
 ```powershell
 adb install -r android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
-adb shell am start -n com.example.fnatemplate/dev.tml.mobilelauncher.feature.launcher.ui.MainActivity
-adb logcat -v time MobileLauncher:I FnaAndroidCoreClr:I FnaAndroidNative:I FnaAndroidStatus:I RendererPlugins:I SDL:I TmlAndroidIme:I libc:F DEBUG:F AndroidRuntime:E "*:S"
+adb shell am start -n app.com.tmlpocket/app.com.tmlpocket.feature.launcher.ui.MainActivity
+adb logcat -v time tMLPocketLauncher:I tMLPocketCoreClr:I tMLPocketNative:I tMLPocketStatus:I tMLPocketRenderers:I SDL:I tMLPocketIme:I libc:F DEBUG:F AndroidRuntime:E "*:S"
 ```
 
 ## Windows Java socket issue
