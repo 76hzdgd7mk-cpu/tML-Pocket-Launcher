@@ -20,42 +20,49 @@ export interface DownloadTask extends DownloadRequest {
   progress: number;
   error?: string;
   cancelling: boolean;
+  installedModId?: string;
 }
 interface DownloadsContextValue {
-  task: DownloadTask | null;
+  tasks: DownloadTask[];
+  focusedTask: DownloadTask | undefined;
   start: (request: DownloadRequest) => void;
   cancel: () => void;
-  retry: () => void;
-  show: () => void;
+  retry: (id: number) => void;
+  show: (id: number) => void;
   minimize: () => void;
 }
 const DownloadsContext = createContext<DownloadsContextValue | null>(null);
 
 export function DownloadsProvider({ children }: { children: ReactNode }) {
   const { nativeState, dialog, openDialog, closeDialog, notify } = useLauncher();
-  const [task, setTask] = useState<DownloadTask | null>(null);
-  const active = useRef(false);
+  const [tasks, setTasks] = useState<DownloadTask[]>([]);
+  const [focusedId, setFocusedId] = useState<number>();
+  const activeId = useRef<number | undefined>(undefined);
   const cancelRequested = useRef(false);
   const sequence = useRef(0);
-  const show = () =>
+  const show = (id: number) => {
+    setFocusedId(id);
     openDialog({
       title: '下载与安装',
-      description: '下载完成后自动校验并安装；最小化后可在下载任务中查看。',
+      description: '最小化后可在下载任务中查看进度。',
       surface: 'download',
     });
-  const start = (request: DownloadRequest) => {
-    if (active.current) {
-      show();
+  };
+  const saveTask = (task: DownloadTask) =>
+    setTasks((current) => [task, ...current.filter((entry) => entry.id !== task.id)]);
+  const start = (request: DownloadRequest, retryId?: number) => {
+    if (activeId.current !== undefined) {
+      show(activeId.current);
       return;
     }
     if (nativeState?.busy) {
       notify('已有任务正在进行，请先完成或取消。');
       return;
     }
-    active.current = true;
+    const id = retryId ?? ++sequence.current;
+    activeId.current = id;
     cancelRequested.current = false;
-    const id = ++sequence.current;
-    setTask({
+    saveTask({
       ...request,
       id,
       status: 'running',
@@ -63,16 +70,17 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       progress: -1,
       message: '正在准备下载…',
     });
-    show();
-    void nativeRequest(request.method, request.params)
-      .then(() => {
-        setTask({
+    show(id);
+    void nativeRequest<{ modId?: string | null } | boolean>(request.method, request.params)
+      .then((result) => {
+        saveTask({
           ...request,
           id,
           status: 'completed',
           cancelling: false,
           progress: 100,
           message: '下载、校验与安装已完成。',
+          installedModId: typeof result === 'object' ? (result?.modId ?? undefined) : undefined,
         });
         notify(`${request.name} 已下载、校验并安装。`, '任务');
       })
@@ -82,7 +90,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
             ? failure.message
             : '下载未完成，请重试。';
         const cancelled = cancelRequested.current;
-        setTask({
+        saveTask({
           ...request,
           id,
           status: cancelled ? 'cancelled' : 'failed',
@@ -94,33 +102,42 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
         if (!cancelled) notify(`${request.name} 下载未完成，可在下载任务中查看原因。`, '任务');
       })
       .finally(() => {
-        active.current = false;
+        activeId.current = undefined;
       });
   };
   const cancel = () => {
-    if (!active.current || cancelRequested.current) return;
+    const id = activeId.current;
+    if (id === undefined || cancelRequested.current) return;
+    const setCancelling = (cancelling: boolean) =>
+      setTasks((current) => current.map((task) =>
+        task.id === id && task.status === 'running' ? { ...task, cancelling } : task,
+      ));
     cancelRequested.current = true;
-    setTask((current) => (current ? { ...current, cancelling: true } : current));
+    setCancelling(true);
     void nativeRequest('cancel').catch((failure: Error) => {
+      if (activeId.current !== id) return;
       cancelRequested.current = false;
-      setTask((current) => (current ? { ...current, cancelling: false } : current));
+      setCancelling(false);
       notify(failure.message);
     });
   };
-  const progressTask =
-    task?.status === 'running' && nativeState?.operation === task.method
+  const currentTasks = tasks.map((task) =>
+    task.status === 'running' && nativeState?.busy && nativeState.operation === task.method
       ? { ...task, message: nativeState.message, progress: nativeState.progress }
-      : task;
+      : task,
+  );
   return (
     <DownloadsContext.Provider
       value={{
-        task: progressTask,
+        tasks: currentTasks,
+        focusedTask: currentTasks.find((task) => task.id === focusedId),
         start,
         cancel,
-        retry: () => {
-          if (task && task.status !== 'running') {
+        retry: (id) => {
+          const task = tasks.find((entry) => entry.id === id);
+          if (task && (task.status === 'failed' || task.status === 'cancelled')) {
             const { method, params, name, source } = task;
-            start({ method, params, name, source });
+            start({ method, params, name, source }, id);
           }
         },
         show,

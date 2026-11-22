@@ -19,7 +19,7 @@ export const tools: { id: Tool; title: string; detail: string; symbol: string }[
 ];
 export function useWorkspaceActions() {
   const actions = useGameActions();
-  const { openDialog, navigate, update, tasks, showInfo } = actions;
+  const { openDialog, navigate, update, tasks, showInfo, nativeMode } = actions;
   const customize = () =>
     openDialog({
       title: '自定义常用工具',
@@ -40,7 +40,10 @@ export function useWorkspaceActions() {
       update((current) => ({ ...current, modTab: id }));
       navigate('mods');
     } else if (id === 'controls' || id === 'storage') {
-      update((current) => ({ ...current, settingsTab: id }));
+      update((current) => ({
+        ...current,
+        settingsTab: id === 'controls' && nativeMode ? 'control-management' : id,
+      }));
       navigate('settings');
     } else if (id === 'tasks') tasks();
     else if (id === 'accounts') {

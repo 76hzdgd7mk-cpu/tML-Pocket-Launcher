@@ -1,0 +1,1024 @@
+Configs: {
+	MobileJoystickConfig: {
+		DisplayName: 手机版摇杆设置
+
+		Headers: {
+			General: 基本设置
+			Layout: 界面布局
+			Touch: 触摸设置
+			Text: 文字设置
+		}
+
+		EnableMobileControls: {
+			Label: 启用手机版控制
+			// Tooltip: ""
+		}
+
+		UseMobileInventory: {
+			Label: 手机版背包
+			Tooltip: 使用移动端背包、制作、装备、房屋和 PvP 页面。特殊编辑器与原版扩展入口继续保留。
+		}
+
+		EnableTouchInput: {
+			Label: 启用触摸输入
+			// Tooltip: ""
+		}
+
+		EnableMouseFallback: {
+			Label: 允许鼠标操作按钮
+			// Tooltip: ""
+		}
+
+		EnablePinchZoom: {
+			Label: 双指缩放
+			Tooltip: 在游戏画面空白处用两根手指张开或捏合，放大或缩小视野。
+		}
+
+		HideGameControls: {
+			Label: 隐藏游戏控制
+			Tooltip: 隐藏摇杆、快捷栏和游戏操作按钮，可通过自定义控件重新显示。
+		}
+
+		HotbarOrientation: {
+			Label: 快捷栏方向
+			Tooltip: 选择竖向两列或横向一列快捷栏。
+		}
+
+		JoystickUpJumps: {
+			Label: 摇杆上推跳跃
+			// Tooltip: ""
+		}
+
+		ShowTopButtons: {
+			Label: 显示右上角工具栏
+			// Tooltip: ""
+		}
+
+		UseMobileMinimap: {
+			Label: 手机版小地图
+			Tooltip: 控制界面启用时，将小地图改为横向金色边框布局。
+		}
+
+		ControlScale: {
+			Label: 控件大小
+			// Tooltip: ""
+		}
+
+		Opacity: {
+			Label: 控件不透明度
+			// Tooltip: ""
+		}
+
+		EdgePadding: {
+			Label: 左右侧边距
+			// Tooltip: ""
+		}
+
+		JoystickDeadzone: {
+			Label: 摇杆死区
+			// Tooltip: ""
+		}
+
+		AimDistance: {
+			Label: 初始瞄准距离
+			// Tooltip: ""
+		}
+
+		LeftStickOffsetX: {
+			Label: 左摇杆水平偏移
+			// Tooltip: ""
+		}
+
+		LeftStickOffsetY: {
+			Label: 左摇杆垂直偏移
+			// Tooltip: ""
+		}
+
+		RightStickOffsetX: {
+			Label: 右摇杆水平偏移
+			// Tooltip: ""
+		}
+
+		RightStickOffsetY: {
+			Label: 右摇杆垂直偏移
+			// Tooltip: ""
+		}
+
+		ControlLayout: {
+			Label: 控件布局
+			// Tooltip: ""
+		}
+
+		ActiveCustomPresetIndex: {
+			Label: 当前自定义方案
+			// Tooltip: ""
+		}
+
+		CustomPresets: {
+			Label: 自定义方案
+			// Tooltip: ""
+		}
+
+		QuickStackToNearbyChests: {
+			Label: 快速堆叠至附近宝箱
+			// Tooltip: ""
+		}
+
+		UIFontScale: {
+			Label: 界面字体大小
+			// Tooltip: ""
+		}
+
+		CursorSensitivity: {
+			Label: 光标灵敏度
+			Tooltip: 调整瞄准摇杆和交互轮盘拖动时的光标移动速度，不改变轮盘大小。
+		}
+
+		CursorOpacity: {
+			Label: 光标不透明度
+			Tooltip: 单独调整触控准星和精确放置网格的可见度，不受控件透明度影响。
+		}
+
+		InterfaceLayout: {
+			Label: 界面布局
+			// Tooltip: ""
+		}
+
+		AimReticleSize: {
+			Label: 光圈大小
+			// Tooltip: ""
+		}
+
+		AimCrosshairSize: {
+			Label: 十字准心大小
+			// Tooltip: ""
+		}
+	}
+
+	MobileControlLayoutMode: {
+		// Tooltip: ""
+
+		Simple: {
+			Label: 简单
+			// Tooltip: ""
+		}
+
+		Advanced: {
+			Label: 高级
+			// Tooltip: ""
+		}
+
+		Custom: {
+			Label: 自定义
+			// Tooltip: ""
+		}
+	}
+
+	MobileCustomPreset: {
+		// Tooltip: ""
+
+		Name: {
+			Label: 名称
+			// Tooltip: ""
+		}
+
+		Controls: {
+			Label: 控件
+			// Tooltip: ""
+		}
+	}
+
+	MobileCustomControl: {
+		// Tooltip: ""
+
+		Id: {
+			Label: 标识
+			// Tooltip: ""
+		}
+
+		Kind: {
+			Label: 类型
+			// Tooltip: ""
+		}
+
+		JoystickRole: {
+			Label: 摇杆用途
+			// Tooltip: ""
+		}
+
+		Action: {
+			Label: 操作
+			// Tooltip: ""
+		}
+
+		TextureName: {
+			Label: 纹理名称
+			// Tooltip: ""
+		}
+
+		X: {
+			Label: 水平位置
+			// Tooltip: ""
+		}
+
+		Y: {
+			Label: 垂直位置
+			// Tooltip: ""
+		}
+
+		Size: {
+			Label: 大小
+			// Tooltip: ""
+		}
+
+		Multitouch: {
+			Label: 多点触控
+			// Tooltip: ""
+		}
+
+		RadialActions: {
+			Label: 径向菜单操作
+			// Tooltip: ""
+		}
+
+		RadialModKeybinds: {
+			// Tooltip: ""
+			Label: 径向菜单模组按键
+		}
+
+		ModKeybind: {
+			// Tooltip: ""
+			Label: 模组按键
+		}
+
+		Launcher: {
+			Label: 启动器控件
+			// Tooltip: ""
+		}
+
+		KeyboardKey: {
+			Label: 键盘按键
+			// Tooltip: ""
+		}
+
+		RadialKeyboardKeys: {
+			Label: 轮盘键盘按键
+			// Tooltip: ""
+		}
+	}
+
+	MobileCustomControlKind: {
+		// Tooltip: ""
+
+		Joystick: {
+			Label: 摇杆
+			// Tooltip: ""
+		}
+
+		Button: {
+			Label: 按钮
+			// Tooltip: ""
+		}
+
+		RadialMenu: {
+			Label: 径向菜单
+			// Tooltip: ""
+		}
+
+		DPad: {
+			Label: 十字键
+			// Tooltip: ""
+		}
+
+		Touchpad: {
+			Label: 触控板
+			// Tooltip: ""
+		}
+
+		Mousewheel: {
+			Label: 滚轮
+			// Tooltip: ""
+		}
+
+		Text: {
+			Label: 文本
+			// Tooltip: ""
+		}
+	}
+
+	MobileJoystickRole: {
+		// Tooltip: ""
+
+		Move: {
+			Label: 移动
+			// Tooltip: ""
+		}
+
+		Aim: {
+			Label: 瞄准
+			// Tooltip: ""
+		}
+
+		Unbound: {
+			// Tooltip: ""
+			Label: 未绑定
+		}
+
+		Grapple: {
+			// Tooltip: ""
+			Label: 抓钩
+		}
+	}
+
+	MobileControlAction: {
+		// Tooltip: ""
+
+		Jump: {
+			Label: 跳跃
+			// Tooltip: ""
+		}
+
+		Grapple: {
+			Label: 抓钩
+			// Tooltip: ""
+		}
+
+		Heal: {
+			Label: 快速治疗
+			// Tooltip: ""
+		}
+
+		Mana: {
+			Label: 快速回魔
+			// Tooltip: ""
+		}
+
+		Buff: {
+			Label: 快速增益
+			// Tooltip: ""
+		}
+
+		Mount: {
+			Label: 坐骑
+			// Tooltip: ""
+		}
+
+		SmartInteract: {
+			Label: 智能交互
+			// Tooltip: ""
+		}
+
+		SmartCursor: {
+			Label: 智能光标
+			// Tooltip: ""
+		}
+
+		AimModeToggle: {
+			Label: 切换瞄准模式
+			// Tooltip: ""
+		}
+
+		TargetLockToggle: {
+			Label: 切换目标锁定
+			// Tooltip: ""
+		}
+
+		Interact: {
+			Label: 鼠标右键
+			// Tooltip: ""
+		}
+
+		UseItem: {
+			Label: 使用物品
+			// Tooltip: ""
+		}
+
+		Inventory: {
+			Label: 背包
+			// Tooltip: ""
+		}
+
+		Map: {
+			Label: 地图
+			// Tooltip: ""
+		}
+
+		MapStyle: {
+			Label: 地图样式
+			// Tooltip: ""
+		}
+
+		Settings: {
+			Label: 设置
+			// Tooltip: ""
+		}
+
+		Chat: {
+			Label: 聊天
+			// Tooltip: ""
+		}
+
+		ZoomIn: {
+			Label: 放大
+			// Tooltip: ""
+		}
+
+		ZoomOut: {
+			Label: 缩小
+			// Tooltip: ""
+		}
+
+		Zoom: {
+			Label: 缩放
+			// Tooltip: ""
+		}
+
+		QuickPotions: {
+			Label: 快捷药水
+			// Tooltip: ""
+		}
+
+		RadialMenu: {
+			Label: 径向菜单
+			// Tooltip: ""
+		}
+
+		Unbound: {
+			Label: 未绑定
+			// Tooltip: ""
+		}
+
+		SwapUseInteract: {
+			Label: 切换使用/交互
+			// Tooltip: ""
+		}
+
+		CycleUseProfile: {
+			Label: 切换使用配置
+			// Tooltip: ""
+		}
+
+		QuickMount: {
+			Label: 快速坐骑
+			// Tooltip: ""
+		}
+
+		AutoSelect: {
+			Label: 自动选择
+			// Tooltip: ""
+		}
+
+		Loadout1: {
+			Label: 配装 1
+			// Tooltip: ""
+		}
+
+		Loadout2: {
+			Label: 配装 2
+			// Tooltip: ""
+		}
+
+		Loadout3: {
+			Label: 配装 3
+			// Tooltip: ""
+		}
+
+		SwitchLoadout: {
+			Label: 切换配装
+			// Tooltip: ""
+		}
+
+		ModKeybind: {
+			// Tooltip: ""
+			Label: 模组按键
+		}
+
+		LauncherControl: {
+			Label: 启动器控件操作
+			// Tooltip: ""
+		}
+
+		KeyboardKey: {
+			Label: 键盘按键
+			// Tooltip: ""
+		}
+
+		MapAlphaCycle: {
+			Label: 循环地图样式
+			Tooltip: 在关闭、框架小地图和透明叠加地图间切换。
+		}
+
+		ToggleGameControls: {
+			Label: 切换游戏控制显示
+			// Tooltip: ""
+		}
+	}
+
+	MobileInterfaceLayoutProfile: {
+		// Tooltip: ""
+
+		FormatVersion: {
+			Label: 格式版本
+			// Tooltip: ""
+		}
+
+		Regions: {
+			Label: 区域
+			// Tooltip: ""
+		}
+	}
+
+	MobileLauncherControl: {
+		// Tooltip: ""
+
+		Data: {
+			Label: 控件属性
+			// Tooltip: ""
+		}
+
+		Assets: {
+			Label: 图片资源
+			// Tooltip: ""
+		}
+	}
+
+	MobileHotbarOrientation: {
+		// Tooltip: ""
+
+		Vertical: {
+			Label: 竖向
+			// Tooltip: ""
+		}
+
+		Horizontal: {
+			Label: 横向
+			// Tooltip: ""
+		}
+	}
+}
+
+UI: {
+	RecipeBrowserPanel: 合成表 · 主面板
+	RecipeBrowserFavorites: 合成表 · 收藏配方
+	GuideQuery: 查询
+	RequiredCraftingStation: 所需制作站：{0}
+	PlaceGuideQueryItem: 将物品放入向导查询格，查看以它为材料的配方。
+	SwitchToCrafting: 查询 → 切换到制作
+	SwitchToGuideQuery: 制作 → 切换到向导查询
+	RalDefaultAppearance: RAL 默认（代码绘制）
+	PackNextSources: 下一页来源文件
+	LauncherFieldmultitouch: 允许多控件同时触摸
+	PackUnboundKey: "{0} 在客户端当前按键设置中没有绑定操作。"
+	LauncherGroupGeneral: 布局与外观（点击切换）
+	LauncherGroupBindings: 按键与扇区（点击切换）
+	LauncherGroupTextures: 纹理图层（点击切换）
+	LauncherRecordKey: 录入键盘按键
+	LauncherPressKey: 请按下键盘按键…
+	LauncherLayerNormal: 普通
+	LauncherLayerPressed: 按下
+	LauncherLayerToggled: 切换启用
+	LauncherLayerDisabled: 禁用
+	LauncherLayerBackground: 背景
+	LauncherLayerKnob: 摇杆头
+	LauncherLayerBackgroundPressed: 按下背景
+	LauncherLayerKnobPressed: 按下摇杆头
+	LauncherLayerExpanded: 展开背景
+	LauncherLayerSector: 扇区
+	LauncherLayerSectorSelected: 选中扇区
+	LauncherLayerIndicator: 触摸指示器
+	LauncherControlPacks: 启动器控件包
+	PackOpenFolder: 打开控件包文件夹
+	PackRefresh: 刷新来源列表
+	PackSource: 控件包 ZIP / 布局 JSON
+	PackNoSources: 请先将 ZIP 或 JSON 放入文件夹
+	PackTarget: 要替换的自定义预设
+	PackPreview: 检查兼容性
+	PackReport: 查看兼容性报告
+	PackImportReplace: 替换所选预设并启用
+	PackSummary: "{0} 个控件，{1} 张贴图，{2} 项提示"
+	PackImported: 已导入预设 {0}
+	PackFailed: 控件包操作失败
+	PackPassThroughWarning: 已关闭向游戏世界传递触摸，避免同时触发操作。
+	PackOpenAssets: 打开 PNG 文件夹
+	LauncherAdvancedProperties: 高级控件属性
+	LauncherPolygonPoints: 编辑多边形顶点
+	LauncherDuplicate: 复制控件
+	LauncherPropertyHint: 输入属性值；箭头切换选项。PNG 路径来自原控件包或 UserAssets 文件夹。
+	LauncherUnsupportedKey: 不支持的按键，请使用 KEYBOARD_*、ACTION_* 或 TRIGGER_*。
+	LauncherInvalidPosition: X 和 Y 必须在 0 到 1 之间。
+	LauncherKindDPad: 十字键
+	LauncherKindTouchpad: 触控板
+	LauncherKindMousewheel: 滚轮
+	LauncherKindText: 文本
+	Save: 保存
+	LauncherFieldtype: 控件类型
+	LauncherFieldname: 名称
+	LauncherFieldwidth: 宽度 / 屏幕高度
+	LauncherFieldheight: 高度 / 屏幕高度
+	LauncherFieldx: X / 屏幕宽度
+	LauncherFieldy: Y / 屏幕高度
+	LauncherFieldrotation: 旋转角度
+	LauncherFieldopacity: 透明度
+	LauncherFieldborderOpacity: 边框透明度
+	LauncherFieldtextOpacity: 文字透明度
+	LauncherFieldbgColor: 背景 ARGB
+	LauncherFieldtextColor: 文字 ARGB
+	LauncherFieldstrokeColor: 边框 ARGB
+	LauncherFieldstrokeWidth: 边框宽度
+	LauncherFieldcornerRadius: 圆角半径
+	LauncherFieldisVisible: 显示控件
+	LauncherFieldisPassThrough: 触摸穿透
+	LauncherFieldisSizeRatioLocked: 锁定宽高比
+	LauncherFieldmode: 输入模式
+	LauncherFieldkeycode: 按键绑定
+	LauncherFieldisToggle: 切换按钮
+	LauncherFieldshape: 形状
+	LauncherFielduseTextureAlphaHitTest: 按 PNG 透明度判定点击
+	LauncherFieldstickKnobSize: 摇杆头大小比例
+	LauncherFieldstickOpacity: 摇杆头透明度
+	LauncherFieldjoystickKeys: 上 / 右 / 下 / 左按键
+	LauncherFieldupKeycode: 上方向按键
+	LauncherFieldrightKeycode: 右方向按键
+	LauncherFielddownKeycode: 下方向按键
+	LauncherFieldleftKeycode: 左方向按键
+	LauncherFieldstyle: 十字键样式
+	LauncherFieldbuttonSpacing: 方向键间距
+	LauncherFieldbuttonSize: 方向键大小
+	LauncherFielddeadZone: 中心死区
+	LauncherFieldallowDiagonal: 允许斜向
+	LauncherFieldactiveColor: 激活 ARGB
+	LauncherFieldshowLabels: 显示方向标签
+	LauncherFieldsectorCount: 扇区数量（4–12）
+	LauncherFieldexpandedScale: 展开倍率
+	LauncherFielddeadZoneRatio: 中心死区比例
+	LauncherFieldexpandDuration: 展开时长（毫秒）
+	LauncherFieldshowDividers: 显示分隔线
+	LauncherFielddividerColor: 分隔线 ARGB
+	LauncherFieldselectedColor: 选中 ARGB
+	LauncherFieldlabel: 扇区文字
+	LauncherFieldiconPath: 扇区 PNG 图标
+	LauncherFielddisplayText: 显示文本
+	LauncherFieldisDoubleClickSimulateJoystick: 双击模拟瞄准拖动
+	LauncherFieldorientation: 滚轮方向
+	LauncherFieldreverseDirection: 反转方向
+	LauncherFieldscrollSensitivity: 每格滚动所需像素
+	LauncherFieldscrollRatio: 滚动倍率
+	LauncherFieldpath: PNG 路径
+	LauncherFieldenabled: 启用图层
+	LauncherFieldscaleMode: 图像缩放方式
+	LauncherFieldtintColor: 染色 ARGB（0 为关闭）
+	LauncherFieldpadding: 图像内边距比例
+	LauncherFieldflipHorizontal: 水平翻转
+	LauncherFieldflipVertical: 垂直翻转
+	LauncherFieldclipToShape: 裁剪到控件形状
+	LauncherFieldnativeTexture: 内置贴图
+	LauncherFieldholdAction: 持续触发原生操作
+	LauncherFieldpolygonPoints: 多边形顶点 JSON
+	Accessories: 配饰
+	Achievements: 成就
+	Add: 添加
+	Advanced: 高级
+	Aim: 瞄准
+	AimAndUse: 瞄准并使用
+	MouseRightClick: 右键
+	AimDistance: 瞄准距离
+	AimMode: 瞄准模式
+	AimOnly: 仅瞄准
+	All: 全部
+	AllInputs: 所有输入
+	Ambient: 环境
+	Ammo: 弹药
+	Apply: 应用
+	Armor: 盔甲
+	Audio: 声音
+	AudioHeading: 音效
+	Auto: 自动
+	AutoSelect: 自动选择
+	Autofire: 自动使用物品
+	AutopauseWithInventory: 背包和菜单自动暂停
+	Autosave: 自动保存
+	Back: 返回
+	Background: 背景
+	BasicActions: 基础操作
+	FullKeyboard: 全键盘
+	Bestiary: 图鉴
+	BlockSwap: 物块替换
+	Blocks: 物块
+	BloodAndGore: 血液和尸块
+	BorderHue: 边框色相
+	BorderLightness: 边框亮度
+	BorderOpacity: 边框不透明度
+	BorderSaturation: 边框饱和度
+	BossBarStyle: Boss 血条样式
+	BossHealthText: 显示 Boss 血量文字
+	Brightness: 亮度
+	BuildingGrid: 建筑网格
+	Button: 按钮
+	Buy: 购买
+	Cancel: 取消
+	CancelSplit: 取消拆分
+	CharacterJourney: 旅途
+	CharacterVoicesAreUnavailableInThisVersion: 此版本不支持角色声音
+	Chat: 聊天
+	Chest: 宝箱
+	ChooseAction: 选择操作
+	ChooseTexture: 选择纹理
+	Classic: 经典
+	Close: 关闭
+	CloseShop: 关闭商店
+	Coins: 钱币
+	CoinsAndAmmo: 钱币与弹药
+	ColorHue: 色调
+	ColorSaturation: 饱和度
+	Connect: 连接
+	Consumables: 消耗品
+	Container: 容器
+	ControlOpacity: 按钮不透明度
+	ControlSize: 按钮大小
+	ControlTexturePack: 触控纹理包
+	Controls: 游戏控制
+	CopyToPreset: 复制到方案
+	Corruption: 腐化
+	CouldNotLoadTexturePackCurrentArtworkWasKept: 纹理包加载失败，已保留当前样式。
+	CouldNotOpenTheTexturePackFolder: 无法打开纹理包目录。
+	Craft: 制造
+	Crafting: 制作
+	CraftingArea: 制作区
+	CraftingIsProvidedByTheNativeInterface: 制作功能由原版界面提供
+	Create: 创建
+	CreateASaveToStart: 点击新建开始游戏
+	CreatedOn: 创建日期: {0}
+	Crimson: 猩红
+	CrossPlatform: 跨平台：
+	CrosshairSize: 十字准心大小
+	CursorAndBorderColors: 光标和边框颜色
+	CursorColors: 光标颜色
+	CursorHue: 光标色相
+	CursorLightness: 光标亮度
+	CursorOpacity: 光标不透明度
+	CursorSaturation: 光标饱和度
+	CursorSensitivity: 光标灵敏度
+	PinchZoom: 双指缩放
+	Custom: 自定义
+	CustomFirst: 自定义 1
+	CustomMode: 自定义模式
+	CustomPresetName: 自定义 {0}
+	MobileDefaultPresetTarget: 移动版默认（保存到方案 {0}）
+	CycleUseProfile: 循环使用配置
+	Defaults: 恢复默认
+	DeleteControl: 删除控制
+	DepositAll: 全部存入
+	Difficulty: 难度
+	DisableQuickStackToNearbyChests: 关闭相似堆叠至附近的宝箱
+	Disabled: 关
+	Discard: 放弃
+	DisplayConditionsNotMet: （未满足显示条件）
+	EdgePadding: 边缘间距
+	Edit: 编辑
+	Edit3: 编辑…
+	EditEllipsis: 编辑……
+	Emotes: 表情
+	EnableMap: 启用地图
+	EnableQuickStackToNearbyChests: 开启相似堆叠至附近的宝箱
+	Enabled: 开
+	EnterAValidIPAddressOrHostName: 请输入有效的 IP 地址或主机名。
+	EnterYourName: 输入您的名称……
+	Equip: 装备
+	Equipment: 装备
+	EquipmentAndLoadouts: 装备与配装
+	Evil: 邪恶环境
+	Expert: 专家
+	ExtraSlotsPrefix: "扩展装备 "
+	Eyes: 眼睛
+	Favorite: 收藏
+	FrameSkip: 跳帧
+	Free: 免费
+	Fullscreen: 全屏
+	Furniture: 家具
+	GameControls: 游戏控制
+	GameControlsHidden: 游戏控制已隐藏
+	GameControlsShown: 游戏控制已显示
+	GameZoom: 画面缩放
+	General: 常规
+	Grapple: 抓钩
+	GrappleAim: 抓钩瞄准
+	Hair: 头发
+	HairColor: 头发颜色
+	Hardcore: 硬核
+	HealthAndManaStyle: 生命与魔力样式
+	HeatDistortion: 热浪扭曲
+	HiddenSuffix: （已隐藏）
+	Hide: 隐藏
+	HideGameControls: 隐藏游戏控制
+	High: 高
+	HighlightNewItems: 突出新物品
+	Hold: 按住
+	Host: 主机
+	HostLaunchFailedSeeTheLog: 启动失败，请查看日志。
+	Hotbar: 快捷栏
+	HotbarOrientation: 快捷栏方向
+	MobileMinimap: 手机版小地图
+	Horizontal: 横向
+	Housing: 房屋
+	HoverControl: 悬停控制
+	IPAddress: IP 地址：
+	Interact: 交互
+	Interface: 界面
+	InterfaceLayoutCouldNotBeSavedCheckFilePermissionsAndRetry: 界面布局保存失败，请检查文件权限后重试。
+	InterfaceLayoutEditor: 界面布局编辑器
+	InvasionProgress: 入侵进度条
+	Inventory: 背包
+	InventoryControls: 背包操作
+	InventorySlots: 物品栏
+	ToggleGameControls: 隐藏/显示游戏控制
+	Invite: 邀请
+	InviteFriends: 邀请好友
+	InviteOnly: 仅限邀请
+	InviteOnlyRequiresSteamNetworking: 仅限邀请需要启用 Steam 联机。
+	ItemGrid: 物品栏
+	ItemNames: 物品名称
+	Join: 加入
+	Journey: 旅行
+	Joystick: 摇杆
+	JoystickRole: 摇杆类型
+	Jump: 跳跃
+	KeyBindings: 键位设置
+	LabelSeparator: ：
+	Large: 大
+	LeftStickUpToJump: 左摇杆上推跳跃
+	LightingMode: 照明模式
+	Loadout1: 配装 1
+	Loadout2: 配装 2
+	Loadout3: 配装 3
+	Local: 本地
+	Lock: 锁定
+	LockCalamityMeters: 锁定灾厄状态条位置
+	LootAll: 全部取出
+	Low: 低
+	Map: 地图
+	MapStyle: 地图样式
+	Master: 大师
+	Materials: 材料
+	MaxPlayers: 最大玩家数：
+	Medium: 中
+	Mediumcore: 中核
+	Menu: 菜单
+	MinimapScale: 小地图比例
+	MobileCrossPlatformSessionsAreUnavailableInTModLoader: 当前 tModLoader 不支持手机版跨平台会话。
+	Mod: 模组
+	ModConfiguration: 模组配置
+	ModConfigurationAllMods: 模组配置（全部模组）
+	ModKeybind: 模组按键
+	ModKeybinds: 模组按键
+	ModUI: 模组 UI
+	CalamityDifficulty: 灾厄 · 难度切换
+	CalamityFlightBar: 灾厄 · 剩余飞行
+	ModdedEquipmentExtensionsAreUnavailable: 模组装备扩展暂不可用
+	MouseTouchSimulation: 鼠标模拟触摸
+	Move: 移动
+	MoveOnly: 仅移动
+	Multiplayer: 多人模式
+	MultitouchLabel: 多点触控：
+	Music: 音乐
+	Name: 名字
+	NativeMinimapBorder: 原版小地图边框
+	New: 新建
+	NewPlayer: 新玩家
+	NewWorld: 新世界
+	NoCompatibleExternalModUIIsAvailable: 当前没有可编辑的外部模组 UI。
+	NoCompatibleModUI: 无兼容的模组 UI
+	NoMatchingRecipes: 暂无可制作物品
+	NoModKeybindsAreLoaded: 当前没有已加载的模组按键
+	NoSavedSessionsTapAdd: 暂无已保存会话，点击“添加”
+	NoValue: 无价值
+	None: 无
+	Normal: 普通
+	Off: 关闭
+	On: 开启
+	Opacity: 按钮不透明度
+	OpaqueTooltips: 不透明提示框
+	Open: 打开
+	OpenTexturePackFolder: 打开纹理包目录
+	OpenUse: 打开 / 使用
+	Other: 其他
+	Pants: 裤子
+	Parallax: 背景视差
+	Password: 密码：
+	PlaceZipTexturePacksHereThenSelectTheControlTexturePackAbove: 将 .zip 纹理包放入此目录后，再点击上方触控纹理包切换：
+	PlacementPreview: 方块放置预览
+	Play: 开始游戏
+	Port: 端口：
+	PortMustBeBetween1And65535: 端口必须为 1 到 65535。
+	Price: 价格
+	Quality: 画质
+	QuickBuff: 快速增益
+	QuickHeal: 快速治疗
+	QuickMana: 快速回蓝
+	QuickMount: 快速坐骑
+	QuickPotions: 快速药水
+	QuickStack: 快速堆叠
+	QuickStackInventory: 快速整理
+	RadialMenu: 径向菜单
+	RadialMenuAction: 径向菜单
+	Random: 随机
+	Randomize: 随机化
+	Remember: 记住：
+	Remote: 远程
+	Rename: 重命名
+	ResetRegion: 重置区域
+	ResolutionClickToCycle: 分辨率（点击切换）
+	Restock: 补充物品
+	Resume: 回到游戏
+	ReticleSize: 光圈大小
+	ReverseArmorSetKey: 反转套装效果按键
+	Ruler: 标尺
+	SaveExit: 保存并离开
+	SavedSessions: 已保存的会话
+	SavedWhenYouReturn: 返回时保存更改
+	SaySomething: 说点啥话……
+	Search: 搜索
+	Seed: 种子
+	SelectAHeadThenClickARoom: 选择头像后，点击房间分配住房
+	SelectPlayer: 选择玩家
+	SelectWorld: 选择世界
+	Sell: 出售
+	Send: 发送
+	Settings: 设置
+	SettingsCouldNotBeSavedCheckFilePermissionsAndRetry: 设置保存失败，请检查文件权限后重试。
+	Shirt: 上衣
+	Shoes: 鞋子
+	Show: 显示
+	ShownSuffix: （显示）
+	Simple: 简单
+	Size: 大小
+	SizeLabel: 大小：
+	Skin: 肤色
+	Small: 小
+	SmartAxeAfterPickaxe: 挖掘后智能砍树
+	SmartBlockPlacement: 智能方块放置
+	SmartCursor: 智能光标
+	SmartCursorDisabled: 智能光标关闭
+	SmartCursorEnabled: 智能光标开启
+	SmartDoors: 自动开门
+	SmartInteract: 智能交互
+	Softcore: 软核
+	Sort: 排序
+	SortContainer: 整理容器
+	Sound: 音效
+	SplitStack: 拆分物品
+	StickDeadzone: 摇杆死区
+	StormEffects: 暴风雨效果
+	Style: 类型
+	SwapUseInteract: 切换使用/交互
+	SwitchEquipmentLoadout: 切换装备方案
+	SwitchLoadout: 切换配装
+	TapAnyControlToEditItOrHoldAndDragToMoveIt: 点按任意控制键即可进行编辑，或者按住并拖拽来令它移动
+	TapAnywhereToAddANewButton: 点击任意位置添加新按钮
+	TapAnywhereToAddANewJoystick: 点击任意位置添加新摇杆
+	TapAnywhereToAddANewRadialMenu: 点击任意位置添加新径向菜单
+	TargetLockDisabled: 目标锁定关闭
+	TargetLockEnabled: 目标锁定开启
+	TargetLockMode: 锁定目标方式
+	Team: 队伍
+	Texture: 纹理
+	TexturePackFailedToLoadDetailsWereWrittenToTheClientLog: 纹理包加载失败，详细原因已写入客户端日志。
+	TheActiveTexturePackHasNoAvailableTextures: 当前纹理包没有可用纹理。
+	TheHostLauncherIsUnavailableInThisVersion: 无法调用当前版本的主机启动接口。
+	Toggle: 切换
+	TogglePvP: 切换 PvP
+	ToggleSmartCursor: 智能光标切换
+	Tools: 工具
+	TopShortcuts: 显示顶部快捷按钮
+	Touch: 触摸
+	TouchControls: 触摸控件
+	TouchInput: 触摸输入
+	TryTheseControlsAndMoveThemWhereTheyFeelComfortableOrEditYourOwnCustomLayout:
+		'''
+		试试这些控制键吧，哪里舒服挪到哪里，
+		或者编辑一套只属于你的定制方案
+		'''
+	UIFontSize: 界面字体大小
+	UIScale: 界面比例
+	UnableToSaveSettings: 无法保存设置
+	Unbind: 取消绑定
+	Unbound: 未绑定
+	Vertical: 竖向
+	Undershirt: 内衣
+	Unfavorite: 取消收藏
+	Use: 使用
+	UseAddToJoinALocalTModLoaderSessionByIP: 使用“添加”通过 IP 加入本地 tModLoader 会话
+	UseItem: 使用物品
+	UseTwoSticksToMoveAndAimSuitableForAdvancedPlay: 使用双摇杆进行移动和瞄准。适合专家和高阶玩法。
+	UseTwoSticksToMoveAndAimWithSeparateShortcutButtons: 使用双摇杆移动和瞄准，快捷功能使用独立按钮。
+	Vacuum: 自动收纳
+	Vanity: 时装
+	Video: 视频
+	Voice: 声音
+	Waves: 波浪质量
+	Weapons: 武器
+	WindSway: 风中摇摆
+	WorldGeneral: 通用
+	Zoom: 缩放
+	ZoomIn: 放大
+	ZoomOut: 缩小
+}

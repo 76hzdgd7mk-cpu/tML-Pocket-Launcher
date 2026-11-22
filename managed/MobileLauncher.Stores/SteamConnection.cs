@@ -25,6 +25,7 @@ internal interface ISteamConnection : IDisposable
     Task ConnectAsync(CancellationToken ct);
     Task<SteamTokens> AuthenticateAsync(string username, string password, IAuthenticator authenticator, CancellationToken ct);
     Task LogOnAsync(string username, string token, CancellationToken ct);
+    Task LogOnAnonymousAsync(CancellationToken ct);
     Task<bool> OwnsTerrariaAsync(CancellationToken ct);
 }
 
@@ -131,6 +132,14 @@ internal sealed class SteamConnection : ISteamConnection, IDebugListener
         var result = await loggedOn.Task.WaitAsync(TimeSpan.FromSeconds(35), ct);
         if (result.Result != EResult.OK)
             throw new SteamConnectionException($"Steam 会话登录失败：{result.Result} / {result.ExtendedResult}", CanRetry(result.Result));
+    }
+
+    public async Task LogOnAnonymousAsync(CancellationToken ct)
+    {
+        user.LogOnAnonymous();
+        var result = await loggedOn.Task.WaitAsync(TimeSpan.FromSeconds(35), ct);
+        if (result.Result != EResult.OK)
+            throw new SteamConnectionException($"Steam 匿名会话登录失败：{result.Result}", CanRetry(result.Result));
     }
 
     public async Task<bool> OwnsTerrariaAsync(CancellationToken ct)

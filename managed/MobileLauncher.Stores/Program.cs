@@ -56,12 +56,35 @@ async Task HandleAsync(TcpClient socket)
                 case "steam.probe": result = await steam.ProbeAsync(ct); break;
                 case "steam.verify": result = await steam.VerifyOwnershipAsync(ct); break;
                 case "steam.logout": steam.Logout(); result = true; break;
+                case "workshop.query":
+                    result = await steam.WithWorkshopConnectionAsync((connection, token) => WorkshopService.QueryAsync(
+                        connection.Client,
+                        new WorkshopQuery(
+                            data["appId"]!.GetValue<uint>(),
+                            data["sort"]?.GetValue<string>() ?? "popular",
+                            data["page"]?.GetValue<uint>() ?? 1,
+                            data["pageSize"]?.GetValue<uint>() ?? 20,
+                            data["search"]?.GetValue<string>(),
+                            data["category"]?.GetValue<string>(),
+                            data["version"]?.GetValue<string>(),
+                            data["language"]?.GetValue<string>(),
+                            data["days"]?.GetValue<uint>() ?? 90),
+                        token), ct);
+                    break;
+                case "workshop.details":
+                    result = await steam.WithWorkshopConnectionAsync((connection, token) => WorkshopService.DetailsAsync(
+                        connection.Client,
+                        data["appId"]!.GetValue<uint>(),
+                        ulong.Parse(data["id"]!.GetValue<string>()),
+                        token), ct);
+                    break;
                 case "gog.auth": result = new { url = gog.AuthorizationUrl(data["state"]!.GetValue<string>()) }; break;
                 case "gog.login": await gog.LoginAsync(data["code"]!.GetValue<string>(), false, ct); result = gog.Snapshot(true); break;
                 case "gog.restore": await gog.LoginAsync(data["refreshToken"]!.GetValue<string>(), true, ct); result = gog.Snapshot(true); break;
                 case "gog.logout": gog.Logout(); result = true; break;
                 case "gog.installers": result = await gog.InstallersAsync(ct); break;
                 case "steam.download":
+                case "workshop.download":
                 case "gog.download":
                 case "gog.import":
                     using (var task = new CancellationTokenSource(TimeSpan.FromHours(2)))
@@ -76,10 +99,17 @@ async Task HandleAsync(TcpClient socket)
                         }
                         try
                         {
-                            var archive = method == "steam.download" ? await steam.DownloadAsync(root, Progress, task.Token)
-                                : method == "gog.import" ? await GogSession.ImportAsync(root, data["file"]!.GetValue<string>(), Progress, task.Token)
-                                : await gog.DownloadAsync(data["id"]!.ToString(), root, Progress, task.Token);
-                            result = new { archive };
+                            if (method == "workshop.download")
+                            {
+                                result = await DownloadWorkshopAsync(data, Progress, task.Token);
+                            }
+                            else
+                            {
+                                var archive = method == "steam.download" ? await steam.DownloadAsync(root, Progress, task.Token)
+                                    : method == "gog.import" ? await GogSession.ImportAsync(root, data["file"]!.GetValue<string>(), Progress, task.Token)
+                                    : await gog.DownloadAsync(data["id"]!.ToString(), root, Progress, task.Token);
+                                result = new { archive };
+                            }
                         }
                         finally { download = null; }
                     }
@@ -108,4 +138,15 @@ async Task HandleAsync(TcpClient socket)
             ["data"] = System.Text.Json.JsonSerializer.SerializeToNode(result)
         }.ToJsonString());
     }
+}
+
+async Task<JsonObject> DownloadWorkshopAsync(JsonObject data, Action<string, int> progress, CancellationToken ct)
+{
+    return await steam.WithWorkshopConnectionAsync((connection, token) => WorkshopService.DownloadAsync(
+        connection.Client,
+        data["appId"]!.GetValue<uint>(),
+        ulong.Parse(data["id"]!.GetValue<string>()),
+        root,
+        progress,
+        token), ct);
 }

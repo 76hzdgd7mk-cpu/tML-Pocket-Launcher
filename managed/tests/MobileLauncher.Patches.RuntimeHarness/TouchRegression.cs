@@ -26,15 +26,92 @@ internal static class TouchRegression
         catch (Exception e) { failures++; Console.WriteLine("FAIL " + name + ": " + (e.InnerException ?? e).ToString()); }
     }
     static void Equal(bool good, string message) { if (!good) throw new Exception(message); }
+    static void SetAimAndUse(bool enabled) =>
+        Set(Input, null, "aimStickMode", Enum.Parse(Input.GetNestedType("AimStickMode", All), enabled ? "LeftClick" : "AimOnly"));
     internal static void RunEntry()
     {
         Console.WriteLine("Loading native tML input fixture");
+        Check("Embedded touch patch attaches and detaches against the game assembly", () =>
+        {
+            using (MobileControlsSession.Initialize()) { }
+            using (MobileControlsSession.Initialize()) { }
+        });
+        Check("Embedded patch contains texture metadata and localization without images", () =>
+        {
+            string[] names = Product.GetManifestResourceNames().Select(name => name.Replace('\\', '/')).ToArray();
+            Equal(names.Contains("Assets/TexturePacks/AndroidMobileControls.json"), "missing control texture metadata");
+            Equal(names.Contains("Assets/asset-aliases.json"), "missing UI texture aliases");
+            Equal(!names.Any(name => name.EndsWith(".png") || name.EndsWith(".zip") || name.EndsWith(".rawimg")), "embedded texture art");
+            foreach (string culture in new[] { "en-US", "zh-Hans" })
+            {
+                var text = Product.GetType("MobileJoystick.MobileControlsText");
+                Equal(Call(text, null, "Load", culture) != null, $"failed to parse {culture} UI text");
+            }
+        });
+        Check("Launcher profile configures both game controls and interface", () =>
+        {
+            var previousPath = Terraria.Program.SavePath;
+            var directory = Directory.CreateTempSubdirectory("mobile-controls-fixture-");
+            try
+            {
+                Terraria.Program.SavePath = directory.FullName;
+                File.WriteAllText(Path.Combine(directory.FullName, "MobileControls.json"), """
+                    {
+                      "ControlLayout": 2,
+                      "HotbarOrientation": 1,
+                      "CustomPresets": [{ "Name": "Test", "Controls": [{
+                        "Id": "fixture-dpad", "Kind": 3, "Action": 32, "X": 0.4, "Y": 0.5, "Size": 1,
+                        "Launcher": { "Data": { "type": "dpad", "style": "ROUND" }, "Assets": {} }
+                      }] }],
+                      "InterfaceLayout": { "FormatVersion": 1, "Regions": {
+                        "Hotbar": { "CenterX": 0.4, "CenterY": 0.3, "Scale": 0.8 }
+                      } }
+                    }
+                    """);
+                Call(typeof(MobileJoystickConfig), null, "Load");
+                var profile = MobileJoystickConfig.Instance;
+                Equal(profile.ControlLayout == MobileControlLayoutMode.Custom, "custom mode was not loaded");
+                Equal(profile.CustomPresets[0].Controls.Single().Kind == MobileCustomControlKind.DPad, "custom control was rejected");
+                Equal(profile.HotbarOrientation == MobileHotbarOrientation.Horizontal, "hotbar orientation was not loaded");
+                Equal(Math.Abs(profile.InterfaceLayout.Get(MobileInterfaceRegion.Hotbar).CenterY - .3f) < .001f, "hotbar position was not loaded");
+            }
+            finally
+            {
+                Terraria.Program.SavePath = previousPath;
+                directory.Delete(recursive: true);
+            }
+        });
+        Check("Built-in mobile layout matches the control preview", () =>
+        {
+            var config = new MobileJoystickConfig();
+            var layoutType = Product.GetType("MobileJoystick.MobileJoystickLayout");
+            foreach (var (width, height) in new[] { (1280, 576), (2400, 1080) })
+            {
+                var layout = Call(layoutType, null, "CreateControlsLayout", config, width, height, null);
+                var type = layout.GetType();
+                var move = (Vector2)type.GetProperty("JoystickCenter", All).GetValue(layout);
+                var aim = (Vector2)type.GetProperty("AttackCenter", All).GetValue(layout);
+                float scale = (float)type.GetProperty("Scale", All).GetValue(layout);
+                float radius = (float)type.GetProperty("JoystickRadius", All).GetValue(layout);
+                var buttons = ((Array)type.GetProperty("Buttons", All).GetValue(layout)).Cast<object>().ToArray();
+                var buttonType = buttons[0].GetType();
+                object FindButton(string action) =>
+                    buttons.Single(button => buttonType.GetProperty("Action", All).GetValue(button).ToString() == action);
+                Vector2 Center(string action) => (Vector2)buttonType.GetProperty("Center", All).GetValue(FindButton(action));
+                Equal(Math.Abs(move.X - width * .203125f) < .01f && Math.Abs(aim.X - width * .85f) < .01f, "wrong joystick centers");
+                Equal(Math.Abs(radius - 66 * scale) < .01f, "wrong joystick radius");
+                Equal(Vector2.Distance(Center("Jump"), aim + new Vector2(122, -84) * scale) < .01f, "wrong jump center");
+                Equal(Center("Inventory").X == (int)(width * .056f) + Math.Max(16, (int)(38 * scale)) / 2, "wrong backpack center");
+                Equal(Center("QuickPotions").X > move.X, "default layout lacks the advanced potion button");
+            }
+        });
         Terraria.Program.SavePath = Path.GetTempPath();
         TMain.dedServ = true;
         TMain.screenWidth = 1280; TMain.screenHeight = 720;
         TMain.myPlayer = 0;
         TMain.player[0] = new Player();
         TMain.LocalPlayer.active = true; TMain.LocalPlayer.position = new Vector2(1000, 1000);
+        Set(typeof(Player), TMain.LocalPlayer, "talkNPC", -1);
         TMain.screenPosition = new Vector2(400, 700);
         TMain.GameViewMatrix = new Terraria.Graphics.SpriteViewMatrix(null);
         PlayerInput.Initialize();
@@ -42,7 +119,11 @@ internal static class TouchRegression
         PlayerInput.CacheZoomableValues();
         var config = new MobileJoystickConfig { EnableMobileControls = true, UseMobileInventory = true, EnableTouchInput = true, EnableMouseFallback = false, ControlScale = 1.8f, JoystickDeadzone = .25f };
         Set(typeof(MobileJoystickConfig), null, "Instance", config);
-        ContentInstance.Register(new MobileInventorySystem()); ContentInstance.Register(new MobileMenuSystem());
+        var inventorySystem = new MobileInventorySystem();
+        using var session = (MobileControlsSession)MobileControlsSession.Initialize();
+        var instances = (Dictionary<Type, MobileSystem>)typeof(MobileControlsSession).GetField("instances", All).GetValue(session);
+        instances.Add(typeof(MobileInventorySystem), inventorySystem);
+        instances.Add(typeof(MobileMenuSystem), new MobileMenuSystem());
         Check("Aim uses inverse game zoom", () =>
         {
             Set(Input, null, "hasTouchAimPosition", true); Set(Input, null, "touchAimPosition", new Vector2(1000, 500));
@@ -55,18 +136,33 @@ internal static class TouchRegression
             TMain.LocalPlayer.releaseJump = false;
             Set(Input, null, "EnabledThisFrame", true); Set(Input, null, "JoystickVector", new Vector2(0, -1));
             foreach (string name in new[] { "CurrentActions", "PressedActions" }) ((HashSet<MobileControlAction>)Input.GetField(name, All).GetValue(null)).Add(MobileControlAction.Jump);
-            var mp = new MobileJoystickPlayer(); typeof(ModPlayer).GetProperty("Entity").SetValue(mp, TMain.LocalPlayer);
-            mp.SetControls();
+
+            MobileJoystickPlayer.SetControls(TMain.LocalPlayer);
             Equal(TMain.LocalPlayer.releaseJump, "independent jump press stayed latched behind stick jump");
         });
         Check("Autopause drains existing attack before freezing inventory", () =>
         {
             TMain.gameMenu = false; TMain.playerInventory = true; TMain.autoPause = true;
             TMain.LocalPlayer.itemAnimation = 15; TMain.LocalPlayer.itemTime = 10;
-            var inventory = ModContent.GetInstance<MobileInventorySystem>();
+            var inventory = inventorySystem;
             On_Main.orig_CanPauseGame orig = () => true;
-            bool pause = (bool)Call(typeof(MobileInventorySystem), inventory, "CanPauseInventoryUse", orig);
-            Equal(!pause, "attack animation would freeze while IgnoreMouseInterface blocks the entire inventory");
+            const string variable = "TML_MOBILE_CONTROL_ART";
+            string previous = Environment.GetEnvironmentVariable(variable);
+            var art = Directory.CreateTempSubdirectory("touch-fixture-");
+            try
+            {
+                Environment.SetEnvironmentVariable(variable, art.FullName);
+                bool pause = (bool)Call(typeof(MobileInventorySystem), inventory, "CanPauseInventoryUse", orig);
+                Equal(!pause, "attack animation would freeze while IgnoreMouseInterface blocks the entire inventory");
+                Environment.SetEnvironmentVariable(variable, null);
+                Equal((bool)Call(typeof(MobileInventorySystem), inventory, "CanPauseInventoryUse", orig),
+                    "vanilla inventory did not retain its native autopause behavior");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(variable, previous);
+                art.Delete();
+            }
         });
         Check("Releasing the aim stick clears its stale ring and drag origin", () =>
         {
@@ -121,11 +217,11 @@ internal static class TouchRegression
         {
             TMain.playerInventory = false; TMain.LocalPlayer.SetTalkNPC(-1); TMain.LocalPlayer.itemAnimation = 0; TMain.LocalPlayer.itemTime = 0;
             ((HashSet<MobileControlAction>)Input.GetField("CurrentActions", All).GetValue(null)).Clear();
-            Set(Input, null, "EnabledThisFrame", true); Set(Input, null, "HasAnyControlTouch", true); Set(Input, null, "AttackHeld", true); Set(Input, null, "AimAndUseMode", false);
+            Set(Input, null, "EnabledThisFrame", true); Set(Input, null, "HasAnyControlTouch", true); Set(Input, null, "AttackHeld", true); SetAimAndUse(false);
             TMain.LocalPlayer.controlUseItem = true;
-            var mp = new MobileJoystickPlayer(); typeof(ModPlayer).GetProperty("Entity").SetValue(mp, TMain.LocalPlayer); mp.SetControls();
+            MobileJoystickPlayer.SetControls(TMain.LocalPlayer);
             Equal(!TMain.LocalPlayer.controlUseItem, "only-aim still attacks through synthetic mouse");
-            Set(Input, null, "AimAndUseMode", true); mp.SetControls(); Equal(TMain.LocalPlayer.controlUseItem, "aim-and-use did not attack");
+            SetAimAndUse(true); MobileJoystickPlayer.SetControls(TMain.LocalPlayer); Equal(TMain.LocalPlayer.controlUseItem, "aim-and-use did not attack");
         });
         Check("Smart block aim beyond reach still finds the forward surface", () =>
         {
@@ -139,6 +235,8 @@ internal static class TouchRegression
             TMain.tileSolid[Terraria.ID.TileID.Stone] = true;
             for (int x = 90; x <= 110; x++) { var tile = TMain.tile[x, 103]; tile.HasTile = true; tile.TileType = Terraria.ID.TileID.Stone; }
             TMain.LocalPlayer.inventory[0] = new Item { type = Terraria.ID.ItemID.StoneBlock, createTile = Terraria.ID.TileID.Stone, stack = 999 };
+            TMain.LocalPlayer.selectedItem = 0; Set(typeof(Player), TMain.LocalPlayer, "talkNPC", -1);
+            TMain.playerInventory = false; TMain.mapFullscreen = false;
             TMain.LocalPlayer.selectedItem = 0; Player.SmartCursorSettings.SmartBlocksEnabled = true;
             TMain.SmartCursorWanted_Mouse = true; Set(Input, null, "SmartCursorEnabled", true);
             Set(Input, null, "previousAimOrigin", null); Set(Input, null, "hasTouchAimPosition", true);
@@ -182,12 +280,12 @@ internal static class TouchRegression
         {
             TMain.playerInventory = true; TMain.autoPause = true; TMain.LocalPlayer.SetTalkNPC(-1);
             TMain.LocalPlayer.controlUseItem = true; TMain.LocalPlayer.itemAnimation = 5;
-            Set(Input, null, "EnabledThisFrame", true); Set(Input, null, "HasAnyControlTouch", true); Set(Input, null, "AttackHeld", true); Set(Input, null, "AimAndUseMode", true);
+            Set(Input, null, "EnabledThisFrame", true); Set(Input, null, "HasAnyControlTouch", true); Set(Input, null, "AttackHeld", true); SetAimAndUse(true);
             ((HashSet<MobileControlAction>)Input.GetField("CurrentActions", All).GetValue(null)).Clear();
-            var mp = new MobileJoystickPlayer(); typeof(ModPlayer).GetProperty("Entity").SetValue(mp, TMain.LocalPlayer); mp.SetControls();
+            MobileJoystickPlayer.SetControls(TMain.LocalPlayer);
             Equal(!TMain.LocalPlayer.controlUseItem, "held attack restarted while inventory opens");
             TMain.LocalPlayer.itemAnimation = TMain.LocalPlayer.itemTime = 0;
-            var inventory = ModContent.GetInstance<MobileInventorySystem>();
+            var inventory = inventorySystem;
             Equal((bool)Call(typeof(MobileInventorySystem), inventory, "CanPauseInventoryUse", (On_Main.orig_CanPauseGame)(() => true)), "autopause did not resume after attack ended");
             TMain.playerInventory = false;
         });
@@ -264,19 +362,19 @@ internal static class TouchRegression
             TMain.playerInventory = TMain.mapFullscreen = TMain.ingameOptionsWindow = TMain.inFancyUI = false;
             TMain.LocalPlayer.SetTalkNPC(-1); TMain.mouseItem = new Item(); TMain.gameMenu = false;
             TMain.LocalPlayer.inventory[0] = new Item { type = 1, stack = 1, channel = true, shoot = 1 };
-            Set(Input, null, "EnabledThisFrame", true); Set(Input, null, "HasAnyControlTouch", true); Set(Input, null, "AttackHeld", true); Set(Input, null, "AttackJustPressed", true); Set(Input, null, "AimAndUseMode", true);
+            Set(Input, null, "EnabledThisFrame", true); Set(Input, null, "HasAnyControlTouch", true); Set(Input, null, "AttackHeld", true); Set(Input, null, "AttackJustPressed", true); SetAimAndUse(true);
             TMain.mouseLeft = false; PlayerInput.Triggers.Current.MouseLeft = false;
             Call(Input, null, "ApplyGameplayTriggers");
             Equal(PlayerInput.Triggers.Current.MouseLeft && PlayerInput.Triggers.JustPressed.MouseLeft, "ranged mod sees no initial hold");
             Equal(!TMain.mouseLeft, "gameplay trigger leaked into UI mouse clicks");
             Set(Input, null, "AttackJustPressed", false);
-            var mp = new MobileJoystickPlayer(); typeof(ModPlayer).GetProperty("Entity").SetValue(mp, TMain.LocalPlayer);
+
             for (int frame = 0; frame < 90; frame++)
             {
                 PlayerInput.Triggers.Current.MouseLeft = false; PlayerInput.Triggers.JustPressed.MouseLeft = false;
                 Set(Input, null, "hasTouchAimPosition", true); Set(Input, null, "previousAimOrigin", null);
                 Set(Input, null, "touchAimPosition", new Vector2(800 + frame, 300 + frame * .5f));
-                Call(Input, null, "ApplyGameplayTriggers"); mp.SetControls();
+                Call(Input, null, "ApplyGameplayTriggers"); MobileJoystickPlayer.SetControls(TMain.LocalPlayer);
                 Equal(PlayerInput.Triggers.Current.MouseLeft && TMain.LocalPlayer.controlUseItem, $"hold lost while dragging frame {frame}");
                 Equal(!PlayerInput.Triggers.JustPressed.MouseLeft, "drag repeatedly re-pressed attack");
                 Equal(TMain.mouseX == 800 + frame && TMain.mouseY == (int)(300 + frame * .5f), "ranged aim stopped following the drag");
@@ -288,7 +386,7 @@ internal static class TouchRegression
         Check("Native ranged hold respects aim-only, UI and explicit Use", () =>
         {
             var actions = (HashSet<MobileControlAction>)Input.GetField("CurrentActions", All).GetValue(null); actions.Clear();
-            Set(Input, null, "AttackHeld", true); Set(Input, null, "AimAndUseMode", false);
+            Set(Input, null, "AttackHeld", true); SetAimAndUse(false);
             PlayerInput.Triggers.Current.MouseLeft = false; Call(Input, null, "ApplyGameplayTriggers");
             Equal(!PlayerInput.Triggers.Current.MouseLeft, "aim-only fires native ranged mods");
             actions.Add(MobileControlAction.UseItem); Call(Input, null, "ApplyGameplayTriggers");
@@ -314,18 +412,18 @@ internal static class TouchRegression
             TouchCollection sample = default;
             var touchType = Product.GetType("MobileJoystick.MobileTouchInput");
             using var hook = new Hook(touchType.GetMethod("GetState", All), (Func<TouchCollection>)(() => sample));
-            var mp = new MobileJoystickPlayer(); typeof(ModPlayer).GetProperty("Entity").SetValue(mp, TMain.LocalPlayer);
+
             for (int frame = 0; frame < 120; frame++)
             {
                 sample = new TouchCollection(new[] { new TouchLocation(77, frame == 0 ? TouchLocationState.Pressed : TouchLocationState.Moved, center + new Vector2(frame * .65f, -frame * .3f)) });
                 TMain.mouseLeft = false; PlayerInput.Triggers.Current.MouseLeft = false; PlayerInput.Triggers.JustPressed.MouseLeft = false;
                 TMain.LocalPlayer.controlUseItem = false;
-                Call(Input, null, "Update"); Call(world, null, "UpdateInput"); Call(Input, null, "ApplyGameplayTriggers"); mp.SetControls();
+                Call(Input, null, "Update"); Call(world, null, "UpdateInput"); Call(Input, null, "ApplyGameplayTriggers"); MobileJoystickPlayer.SetControls(TMain.LocalPlayer);
                 Equal((bool)Input.GetProperty("AttackHeld", All).GetValue(null) && PlayerInput.Triggers.Current.MouseLeft && TMain.LocalPlayer.controlUseItem, $"real drag lost fire at frame {frame}");
             }
             sample = new TouchCollection(new[] { new TouchLocation(77, TouchLocationState.Released, center + new Vector2(78, -36)) });
             PlayerInput.Triggers.Current.MouseLeft = false; TMain.LocalPlayer.controlUseItem = false;
-            Call(Input, null, "Update"); Call(world, null, "UpdateInput"); Call(Input, null, "ApplyGameplayTriggers"); mp.SetControls();
+            Call(Input, null, "Update"); Call(world, null, "UpdateInput"); Call(Input, null, "ApplyGameplayTriggers"); MobileJoystickPlayer.SetControls(TMain.LocalPlayer);
             Equal(!(bool)Input.GetProperty("AttackHeld", All).GetValue(null) && !PlayerInput.Triggers.Current.MouseLeft && !TMain.LocalPlayer.controlUseItem, "actual release leaves ranged fire stuck");
             TMain.dedServ = true;
         });
@@ -357,7 +455,7 @@ internal static class TouchRegression
         {
             var inno = Assembly.LoadFrom(Path.GetFullPath(innoPath));
             var press = inno.GetType("InnoVault.VaultUtils").GetMethod("PressKey");
-            Set(Input, null, "EnabledThisFrame", true); Set(Input, null, "AttackHeld", true); Set(Input, null, "AimAndUseMode", true);
+            Set(Input, null, "EnabledThisFrame", true); Set(Input, null, "AttackHeld", true); SetAimAndUse(true);
             Call(Input, null, "ApplyGameplayTriggers");
             Equal((bool)press.Invoke(null, new object[] { TMain.LocalPlayer, true, true }), "actual InnoVault rejected mobile hold");
             Set(Input, null, "AttackHeld", false); PlayerInput.Triggers.Current.MouseLeft = false; Call(Input, null, "ApplyGameplayTriggers");

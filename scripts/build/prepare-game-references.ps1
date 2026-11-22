@@ -14,7 +14,7 @@ if (-not $TmlRoot -or -not (Test-Path -LiteralPath (Join-Path $TmlRoot 'tMLMod.t
 $TmlRoot = (Resolve-Path -LiteralPath $TmlRoot).Path
 New-Item -ItemType Directory -Path $references -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $TmlRoot 'tModLoader.dll') -Destination $references -Force
-foreach ($name in @('FNA', 'ReLogic', 'TerrariaHooks', 'Newtonsoft.Json', 'log4net')) {
+foreach ($name in @('FNA', 'ReLogic', 'TerrariaHooks', 'Newtonsoft.Json', 'log4net', 'Hjson')) {
     $matches = @(Get-ChildItem -LiteralPath (Join-Path $TmlRoot 'Libraries') -Recurse -File -Filter "$name.dll" |
         Where-Object { $_.FullName -notmatch '[\\/](runtime[^\\/]*|BuildHost-netcore)[\\/]' })
     if ($matches.Count -ne 1) { throw "Expected one precompiled reference for $name; found $($matches.Count)" }

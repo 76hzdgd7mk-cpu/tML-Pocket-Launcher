@@ -19,8 +19,8 @@ export function NativeHomePage() {
     {
       title: 'Terraria',
       detail: status?.terraria
-        ? `${status.terraria} · ${status.terrariaSource === 'gog' ? 'GOG' : 'Steam'}`
-        : '导入 Steam ZIP 或 GOG .sh',
+        ? `${status.terraria} · ${status.terrariaSource === 'android' ? 'Android 版' : status.terrariaSource === 'gog' ? 'GOG' : 'Steam'}`
+        : '添加 Steam、GOG 或 Android 版资源',
       ready: !!status?.terraria,
       icon: <img src="/terraria.png" alt="" />,
       action: getTerraria,

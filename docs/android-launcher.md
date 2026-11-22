@@ -95,10 +95,11 @@ official page. Refresh replaces the list only after a successful response, and
 Retry repeats the failed request. Installed-version management and ZIP import
 remain available in the filter column.
 
-Workshop keyword search opens Steam's website. Entering a numeric project ID reads
-real metadata; a public file can download through the same foreground progress
-window and minimized task flow as game resources. Viewing installed resources
-after a Workshop download returns to installed mods. Mod packs support name search,
+The Workshop workspace provides separate Terraria and tModLoader catalogs with
+search, official tag filters, sort modes, project details, and staged download/install
+flows. Downloads share the foreground progress window and minimized task flow.
+Viewing installed resources after a Workshop download returns to installed mods.
+Mod packs support name search,
 sorting, saving the enabled-mod list, JSON import/export, apply and delete. These
 presets do not bundle or automatically download missing mods.
 
@@ -140,15 +141,18 @@ responses before they reach the UI. Logout deletes the respective saved token;
 GOG logout also clears the login cookies. Downloads support cancellation and
 retry from the account panel, without resumable transfer across process death.
 
-Workshop browsing opens the official public site. A numeric project ID can query
-public Steam metadata and download an offered HTTPS Steam CDN file; its TMOD is
-verified before installation. Many modern UGC items do not offer anonymous file
-URLs and need Steam's authenticated UGC transport. These items show an explicit
-limitation and can be imported after obtaining their .tmod files through Steam.
+The Workshop workspace separates Terraria (app 105600) from tModLoader (app
+1281930), with search, category filters, sorting, item details, and staged downloads.
+The tModLoader catalog filters by its official mod tags, supported version tags, and
+language tags. Terraria worlds and resource packs are installed into their respective
+user-data locations; tModLoader packages are validated and imported as mods. Existing
+Steam sessions are reused; when signed out, public content is requested anonymously.
+Steam may deny individual items. The native browser fixture and automated tests do not
+replace a real-device download check.
 
 The installer selects one active tML release from the independently installed
 versions described above. There is no resumable
-download/pause engine. MobileJoystick supplies its in-game drag-and-drop control editor;
+download/pause engine. Launcher settings provide fullscreen control and interface editors;
 the Android joystick overlay has been removed. Rendering uses OpenGL ES with
 50%/75%/100% backbuffer scaling through the migrated patch.
 
@@ -436,6 +440,6 @@ data and demonstration controls do not appear when Android supplies the bridge.
 
 ## MobileJoystick migration (0.1.10)
 
-The launcher embeds the supplied MobileJoystick 0.1.4 client mod and installs/enables it before launch. Existing differing copies are backed up, other mods/packs/configurations are preserved, and launcher management protects the built-in mod from disabling or removal. SDL supplies all raw contacts directly to FNA; no second JNI pointer stream or native joystick remains.
+The original migration used a bundled MobileJoystick client mod. The launcher now loads `MobileLauncher.Controls.dll` at startup, backs up legacy copies under `userdata/Mods/.launcher-backup`, and shares `userdata/MobileControls.json` between the editors and the game. SDL supplies raw contacts directly to FNA.
 
 RotatingartLauncher tML touch/fullscreen/scale/frame-rate/FPS/console/hosting patches were adapted into the APK-owned MobileLauncher.Patches assembly, with source and GPL text retained. Base resource/platform behavior reuses Bootstrap. Optional frame-rate/FPS/hosting features default off. Host support retains the exact 2026.09.3.1 MVID guard. No server starts at launcher startup. Real-device verification reached the MobileJoystick settings/menu on tML 2026.09.3.1 with GOG resources. Runtime harnesses exercise synthetic tap/multitouch/attack, hook reload and native accumulator behavior. In-world touch, sustained hardware 120 FPS and real multiplayer connections remain separate verification work.

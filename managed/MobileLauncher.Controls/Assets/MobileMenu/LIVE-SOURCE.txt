@@ -1,0 +1,6 @@
+Source: user-provided tailaruiya.apk, decoded Unity UI atlases at native resolution.
+Canonical sprite hashes, subregions and compositions: ../APK-SPRITES.json.
+Rebuild: python tools/sync_apk_assets.py <extracted-directory> --apply
+See ../APK-SOURCE.md for extraction, audit and ownership information.
+RGB is premultiplied by alpha (integer floor) for tModLoader AlphaBlend.
+Screenshot crops and pre-enlarged artwork are no longer used.

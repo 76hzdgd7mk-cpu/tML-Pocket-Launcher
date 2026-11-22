@@ -1,12 +1,12 @@
 <Solution>
   <Folder Name="/managed/">
     <Project Path="managed/MobileLauncher.Bootstrap/MobileLauncher.Bootstrap.csproj" />
+    <Project Path="managed/MobileLauncher.Controls/MobileLauncher.Controls.csproj" />
     <Project Path="managed/MobileLauncher.Host/MobileLauncher.Host.csproj" />
     <Project Path="managed/MobileLauncher.Stores/MobileLauncher.Stores.csproj" />
   </Folder>
   <Folder Name="/external/">
     <Project Path="external/tML-Pocket-Patches/MobileLauncher.Patches.csproj" />
-    <Project Path="external/tML-Pocket-Mods/MobileJoystick/MobileJoystick.csproj" />
   </Folder>
   <Folder Name="/managed/tests/">
     <Project Path="managed/tests/MobileLauncher.Bootstrap.Tests/MobileLauncher.Bootstrap.Tests.csproj" />

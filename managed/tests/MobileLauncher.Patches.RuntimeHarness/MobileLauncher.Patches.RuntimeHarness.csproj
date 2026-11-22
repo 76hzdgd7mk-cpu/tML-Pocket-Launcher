@@ -6,8 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../../external/tML-Pocket-Patches/MobileLauncher.Patches.csproj" />
+    <ProjectReference Include="../../MobileLauncher.Controls/MobileLauncher.Controls.csproj" />
     <Reference Include="../../../build/game-references/*.dll" Private="true" />
     <Reference Include="../../../external/monomod/*.dll" Private="true" />
-    <Reference Include="../../../external/tML-Pocket-Mods/MobileJoystick/bin/Release/net10.0/MobileJoystick.dll" Private="true" />
   </ItemGroup>
 </Project>

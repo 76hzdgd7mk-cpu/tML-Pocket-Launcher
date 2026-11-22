@@ -23,6 +23,8 @@ Preserve upstream copyright, license and notice files when distributing this pro
 | Inspira UI LiquidGlass | [Upstream source](https://github.com/unovue/inspira-ui/blob/main/app/components/inspira/ui/liquid-glass/LiquidGlass.vue), `ui/launcher/public/inspira-ui-license.txt` | Legacy SVG backdrop-refraction notice retained with the Web assets; the current control lens is a WebGL reimplementation; MIT |
 | Lucide icons | [Lucide](https://lucide.dev), `ui/launcher/public/lucide-license.txt` | Menu, LayoutTemplate, Cog and Settings from Animate UI's official icon registry, Wallpaper from Lucide; ISC/MIT |
 | Terraria icon | Windows Steam release, `Terraria.exe` icon resource; `ui/launcher/public/terraria.png` | Terraria identification in the launcher UI; artwork by Re-Logic |
+| LZ4 1.10.0 | [LZ4](https://github.com/lz4/lz4) | UnityFS block decompression in the optional Android converter; BSD-2-Clause |
+| vgmstream, libogg, libvorbis | [vgmstream](https://github.com/vgmstream/vgmstream), [Xiph.Org](https://www.xiph.org/) | FSB5 Vorbis decoding in the optional Android converter |
 
 The Animate UI launcher workspace consumes the official `@animate-ui/react` package.
 Its copyright and full MIT + Commons Clause notice accompany the built Web assets
@@ -32,8 +34,10 @@ assets and accompanying notices into the Android application under `assets/ui`.
 
 Android MonoMod binaries were already present in this checkout's previous launcher output and were preserved during restructuring. Their original source is RotatingArtLauncher's MonoMod archive (`sha256:690aa28beee8a877d40af5d344f13e8c5d3b1e3fe1737027418058db68018c7c`). The launcher prioritizes these Android detour libraries over desktop versions shipped in an imported game. Record any future replacement source and digest here.
 
-tModLoader, managed FNA and Terraria Content are supplied by user-selected release/resource packages. They are not compiled or bundled by the launcher build.
+The APK includes the unmodified [tModLoader 2026.09.3.1 release ZIP](https://github.com/tModLoader/tModLoader/releases/tag/v2026.09.3.1), including its managed FNA dependencies. Vanilla Terraria resources are supplied separately.
 
 tML-specific patches from the user-supplied `D:\RotatingartLauncher\patches` are adapted in the external [tML-Pocket-Patches](https://github.com/FireworkSky/tML-Pocket-Patches) project: touch input, fullscreen presentation, render scale, frame pacing, FPS measurement, console compatibility and integrated hosting. The upstream GPL-3.0 text is retained in that repository and distributed in the APK as `launcher/RotatingartLauncher-LICENSE.txt`. See its README for versions, changes and exclusions. The source project remains unchanged.
 
-MobileJoystick 0.1.4, author **yu**, was supplied from the user's `Terraria/tModLoader/ModSources/MobileJoystick` directory. Its curated source, localization and assets are maintained in the external [tML-Pocket-Mods](https://github.com/FireworkSky/tML-Pocket-Mods) project under `MobileJoystick/`; the build embeds only the client `.tmod`. Original asset notices, including `Assets/**/SOURCE.txt`, are retained. No mod license file was present in the supplied source; this notice does not assign it a new license. The Android build uses .NET 10 reference assemblies to match the launcher's existing Android runtime and MonoMod dependencies. See `MobileJoystick/UPSTREAM.md` in that repository.
+MobileJoystick, by **yu**, was supplied from the user's `Terraria/tModLoader/ModSources/MobileJoystick` directory. The adapted source, localization and texture metadata live in `managed/MobileLauncher.Controls`. The Android converter generates UI textures from the installed Terraria APK. The supplied source retains its original asset notices and has no separate license file. The launcher editors follow the editing workflow and control schema in RotatingartLauncher and use the launcher's existing React components.
+
+The layout editor backdrop uses the Terraria screenshot from `UIGenerator/Content/Background/Idle.png` in [UIGenerator](https://github.com/NotLe0n/UIGenerator) by NotLe0n. The upstream project's MIT notice ships as `uigenerator-license.txt`. Terraria imagery belongs to its respective rights holders.

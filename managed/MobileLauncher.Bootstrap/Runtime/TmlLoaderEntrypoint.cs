@@ -40,6 +40,7 @@ public sealed class TmlLoaderEntrypoint
             ApplyAndroidCompatibilityPatch(assembly);
             using var platformServices = AndroidPlatformServiceProxy.TryConfigure(assembly, androidBridge);
             using var mobilePatches = IsAndroidRuntime() ? LoadBundledPatches(assembly, androidBridge) : null;
+            using var mobileControls = IsAndroidRuntime() ? LoadBundledControls() : null;
             using var importedCompatibility = IsAndroidRuntime()
                 ? new ImportedGameCompatibility(assembly, androidBridge, platformServices is null)
                 : null;
@@ -69,6 +70,15 @@ public sealed class TmlLoaderEntrypoint
         var entry = patches.GetType("MobileLauncher.Patches.PatchSession", true)!
             .GetMethod("Initialize", BindingFlags.Public | BindingFlags.Static)!;
         return (IDisposable)entry.Invoke(null, new object[] { game, bridge })!;
+    }
+
+    private static IDisposable LoadBundledControls()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "MobileLauncher.Controls.dll");
+        var controls = AssemblyLoadContext.Default.LoadFromAssemblyPath(path);
+        var initialize = controls.GetType("MobileJoystick.MobileControlsSession", true)!
+            .GetMethod("Initialize", BindingFlags.Public | BindingFlags.Static)!;
+        return (IDisposable)initialize.Invoke(null, null)!;
     }
 
     private static void LogPlatformConfiguration(IAndroidBridge bridge, bool servicesConfigured)

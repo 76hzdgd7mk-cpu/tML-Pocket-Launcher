@@ -2,7 +2,13 @@ export type Page = 'home' | 'games' | 'mods' | 'patches' | 'settings';
 export type Profile = 'stable' | 'preview';
 export type ModTab = 'installed' | 'browse' | 'packs';
 export type GameTab = 'installed' | 'sources' | 'accounts';
-export type SettingsTab = 'appearance' | 'runtime' | 'controls' | 'storage' | 'about';
+export type SettingsTab =
+  | 'appearance'
+  | 'runtime'
+  | 'controls'
+  | 'control-management'
+  | 'storage'
+  | 'about';
 export type ActivityKind = '配置' | '任务' | '提示';
 export type Tool =
   | 'mods'

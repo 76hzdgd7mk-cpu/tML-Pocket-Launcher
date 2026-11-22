@@ -34,6 +34,7 @@ import app.com.tmlpocket.feature.files.FileBrowserAccess
 import app.com.tmlpocket.feature.game.GameActivity
 import app.com.tmlpocket.feature.game.GameCrashReports
 import app.com.tmlpocket.feature.launcher.LauncherController
+import app.com.tmlpocket.feature.launcher.MobileControlsSettings
 import app.com.tmlpocket.feature.mods.ModRepository.Companion.strings
 import app.com.tmlpocket.feature.stores.GogLoginActivity
 import org.json.JSONObject
@@ -44,6 +45,8 @@ class MainActivity : Activity() {
     private lateinit var web: WebView
     private var channel: JavaScriptReplyProxy? = null
     private var gogRequestId: String? = null
+    private var textureRequestId: String? = null
+    private val mobileControls by lazy { MobileControlsSettings(java.io.File(filesDir, "userdata")) }
     private var launchPending = false
     private var returningFromGame = false
     private val crashWorker = java.util.concurrent.Executors.newSingleThreadExecutor()
@@ -242,6 +245,9 @@ class MainActivity : Activity() {
         val assets = WebViewAssetLoader.AssetsPathHandler(this)
         val loader =
             WebViewAssetLoader.Builder()
+                .addPathHandler("/controls-textures/") { name ->
+                    mobileControls.texture(name)?.let { WebResourceResponse("image/png", null, it.inputStream()) }
+                }
                 .addPathHandler("/") { path -> assets.handle("ui/$path") }
                 .build()
         web =
@@ -284,6 +290,12 @@ class MainActivity : Activity() {
                             request: WebResourceRequest,
                         ): WebResourceResponse? {
                             if (request.url.toString().startsWith("data:image/")) return null
+                            if (!request.isForMainFrame && request.method == "GET" &&
+                                SteamWorkshopPreview.isAllowed(request.url.toString()))
+                                return SteamWorkshopPreview.load(request.url.toString())
+                                    ?: WebResourceResponse(
+                                        "text/plain", "UTF-8", 404, "Not Found", emptyMap(), ByteArray(0).inputStream(),
+                                    )
                             if (request.url.scheme != "https" || request.url.host != HOST)
                                 return WebResourceResponse(
                                     "text/plain",
@@ -446,6 +458,21 @@ class MainActivity : Activity() {
                 openExternal(params.getString("url"))
                 respond(id, Result.success(true))
             }
+            "controls.editor" -> {
+                editingControls = params.getBoolean("active")
+                applyOrientation()
+                enterImmersiveMode()
+                respond(id, Result.success(true))
+            }
+            "controls.texture.pick" -> {
+                check(editingControls && textureRequestId == null) { "贴图选择器不可用" }
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+                    .addCategory(Intent.CATEGORY_OPENABLE)
+                    .setType("image/png")
+                @Suppress("DEPRECATION")
+                startActivityForResult(intent, CONTROL_TEXTURE)
+                textureRequestId = id
+            }
             "finish" -> {
                 respond(id, Result.success(true))
                 finish()
@@ -477,10 +504,12 @@ class MainActivity : Activity() {
 
     private fun applyOrientation() {
         requestedOrientation =
-            if (controller.settings.read().optString("orientation", "landscape") == "portrait")
+            if (!editingControls && controller.settings.read().optString("orientation", "landscape") == "portrait")
                 ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
             else ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
     }
+
+    private var editingControls = false
 
     private fun openExternal(address: String) {
         val uri = Uri.parse(address)
@@ -501,6 +530,21 @@ class MainActivity : Activity() {
     @Deprecated("GOG authorization Activity callback")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == CONTROL_TEXTURE) {
+            val id = textureRequestId ?: return
+            textureRequestId = null
+            val uri = data?.data
+            if (resultCode != RESULT_OK || uri == null) respond(id, Result.success(JSONObject.NULL))
+            else crashWorker.execute {
+                val result = runCatching {
+                    val hash = contentResolver.openInputStream(uri)?.use(mobileControls::importTexture)
+                        ?: error("无法读取控件贴图")
+                    JSONObject().put("hash", hash)
+                }
+                runOnUiThread { respond(id, result) }
+            }
+            return
+        }
         if (requestCode == GOG_LOGIN) {
             val id = gogRequestId
             gogRequestId = null
@@ -547,5 +591,6 @@ class MainActivity : Activity() {
         private const val ORIGIN = "https://appassets.androidplatform.net"
         private const val GOG_LOGIN = 103
         private const val FILE_ACCESS = 104
+        private const val CONTROL_TEXTURE = 105
     }
 }

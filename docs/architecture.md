@@ -27,7 +27,7 @@ managed/
   MobileLauncher.Bootstrap/      Assembly loading and Android compatibility
   MobileLauncher.Stores/         SteamKit2/GOG authentication and resource transport
   MobileLauncher.Patches/        Bundled tML touch/rendering/optional hosting adapters
-  mods/MobileJoystick/           Curated client touch-mod sources and assets
+  MobileLauncher.Controls/       Embedded touch patch, localization and texture metadata
   tests/
     MobileLauncher.Bootstrap.Tests/ Managed compatibility tests
     MobileLauncher.Stores.Tests/   Store archive, path and integrity tests
@@ -95,9 +95,9 @@ Keep only the current launcher implementation and its dependencies in the workin
 
 ## Touch system and bundled patches
 
-SDL forwards raw contacts directly to FNA. `MobileLauncher.Patches` adapts FNA polling and the Terraria menu pointer; the embedded MobileJoystick client mod owns in-game dual joysticks, menus, inventory and the layout editor. There is no Android joystick or second key overlay. JNI lifecycle/IME events continue to be drained by the bootstrap adapter. Contact edges are retained by MobileJoystick across touch polling and its hooks unload with the mod.
+SDL forwards raw contacts directly to FNA. `MobileLauncher.Patches` adapts FNA polling and the Terraria menu pointer. `MobileLauncher.Controls` provides in-game dual joysticks, menus and inventory. Bootstrap loads both APK assemblies before the game entry point. The touch patch attaches and releases its systems on tML content load and unload.
 
-`BundledModInstaller` validates the embedded TMOD before replacing anything, backs up differing files under `userdata/Mods/.launcher-backup/*.tmod.bak`, atomically installs the shipped copy, and merges `MobileJoystick` into `enabled.json`. It retains other mod selections, packs and mod configuration; packs and bulk disable operations cannot disable the built-in control system. Imported files cannot overwrite its reserved internal name. Repeated installation is idempotent.
+`LegacyTouchMod` moves previous MobileJoystick files to `userdata/Mods/.launcher-backup` and removes the old entry from the enabled list. The launcher editors and patch share `userdata/MobileControls.json`. On first use they can read the previous MobileJoystick settings from `userdata/ModConfigs`.
 
 Only the fixed APK-owned `MobileLauncher.Patches.dll` can execute patches. Required adapters are installed once per game process; optional FPS display, 120 FPS and integrated hosting default off. Optional flags and render scale are read when the game process starts. Hosting retains its upstream exact assembly MVID guard and requires tML 2026.09.3.1. An unsupported host version rolls back hooks. No room starts until requested in game. The existing resource/social/logging/URL adapters cover the upstream base patch without installing a competing base DLL. The successful final buffer swap owns the startup overlay's first-frame signal.
 

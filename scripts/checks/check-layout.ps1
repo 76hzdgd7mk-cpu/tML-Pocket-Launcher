@@ -24,7 +24,8 @@ Get-ChildItem -LiteralPath $managedRoot -Recurse -File -Filter '*.cs' |
         $declaration = [regex]::Match($text, '(?m)^namespace\s+([\w.]+);')
         if ($declaration.Success) {
             $expected = $_.DirectoryName.Substring($managedRoot.Length + 1).Replace('\', '.').Replace('/', '.')
-            if ($declaration.Groups[1].Value -ne $expected) { throw "Managed namespace does not match directory: $($_.FullName)" }
+            $vendoredControls = $expected -match '^MobileLauncher\.Controls(\.|$)' -and $declaration.Groups[1].Value -eq 'MobileJoystick'
+            if ($declaration.Groups[1].Value -ne $expected -and -not $vendoredControls) { throw "Managed namespace does not match directory: $($_.FullName)" }
         }
         if ($text -match 'TmlAndroidBootstrap|TmlAndroidHost|FnaTemplate') { throw "Retired managed namespace: $($_.FullName)" }
     }

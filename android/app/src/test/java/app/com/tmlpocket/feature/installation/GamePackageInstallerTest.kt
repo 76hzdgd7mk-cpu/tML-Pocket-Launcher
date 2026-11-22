@@ -30,6 +30,32 @@ class GamePackageInstallerTest {
     private val installer by lazy { GamePackageInstaller(filesDir) }
 
     @Test
+    fun defaultTmlInstallsOnceAndRespectsExplicitUninstall() {
+        val cache = temporary.newFolder("cache")
+        val archive = zip(tml())
+        installer.installDefaultTml(cache, { false }, { _, _ -> }) { archive.copyTo(it, overwrite = true) }
+        val installed = installer.installedVersions().single()
+        assertTrue(installed.active && installed.available)
+        assertEquals("2026.9.1", installed.version)
+        assertTrue(cache.listFiles().orEmpty().isEmpty())
+
+        installer.uninstallVersion(installed.id)
+        val reopened = GamePackageInstaller(filesDir)
+        reopened.installDefaultTml(cache, { false }, { _, _ -> }) { error("Default should not reinstall") }
+        assertTrue(reopened.installedVersions().isEmpty())
+    }
+
+    @Test
+    fun existingTmlSelectionTakesPrecedenceOverTheDefault() {
+        installer.importPackage(PackageKind.TMODLOADER, zip(tml()), "2026.10.1")
+        val versions = installer.installedVersions()
+        installer.installDefaultTml(temporary.newFolder("cache"), { false }, { _, _ -> }) {
+            error("Existing installations should not extract the default")
+        }
+        assertEquals(versions, installer.installedVersions())
+    }
+
+    @Test
     fun differentVersionsInstallIndependentlyAndSelectionSurvivesRestart() {
         installBoth()
         val oldRoot = installer.installation()!!.tmlRoot
@@ -381,6 +407,47 @@ class GamePackageInstallerTest {
         assertEquals(TerrariaSource.GOG, installer.terrariaSource())
         installer.importPackage(PackageKind.TERRARIA, zip(terraria()))
         assertEquals(TerrariaSource.STEAM, installer.terrariaSource())
+    }
+
+    @Test
+    fun mobileTerrariaKeepsDesktopResourcesAndRequiresItsTargetVersion() {
+        installer.importPackage(PackageKind.TERRARIA, zip(terraria()), source = TerrariaSource.GOG)
+        installer.importPackage(PackageKind.TMODLOADER, zip(tml()))
+        val target = requireNotNull(installer.packageStatus(PackageKind.TMODLOADER))
+        val profileFiles = listOf(
+            "Images/Tiles_0.xnb", "PixelShader.xnb", "ScreenShader.xnb", "TileShader.xnb",
+            "Wave Bank.xwb", "Sound Bank.xsb", "TerrariaMusic.xgs",
+        )
+        installer.installMobileTerraria("1.4.5.8.6", "301720:1", target, { false }, { _, _ -> }) { staging ->
+            for (name in profileFiles) {
+                File(staging, "Content/$name").apply {
+                    parentFile?.mkdirs()
+                    writeText("resource")
+                }
+            }
+            File(staging, "conversion-report.json").writeText(
+                JSONObject().put("complete", true).put("missing", org.json.JSONArray())
+                    .put("required_files", profileFiles.size).toString()
+            )
+        }
+        assertEquals(TerrariaSource.GOG, installer.terrariaSource())
+        installer.selectTerraria(android = true)
+        val reopened = GamePackageInstaller(filesDir)
+        assertEquals(TerrariaSource.ANDROID, reopened.installation()!!.terrariaSource)
+        assertEquals("1.4.5.8.6", reopened.selectedTerrariaStatus())
+        assertEquals(File(filesDir, "games/terraria-android/Content"), reopened.installation()!!.contentRoot)
+
+        expectFailure {
+            reopened.installMobileTerraria("1.4.5.8.7", "301721:2", target, { false }, { _, _ -> }) {
+                it.mkdirs()
+            }
+        }
+        assertTrue(reopened.mobileTerrariaIsCurrent("301720:1", target))
+        reopened.importPackage(PackageKind.TMODLOADER, zip(tml()), version = "2026.10.1")
+        assertNull(reopened.installation())
+        reopened.selectTerraria(android = false)
+        assertEquals(TerrariaSource.GOG, reopened.installation()!!.terrariaSource)
+        assertEquals(File(filesDir, "games/terraria/Content"), reopened.installation()!!.contentRoot)
     }
 
     @Test

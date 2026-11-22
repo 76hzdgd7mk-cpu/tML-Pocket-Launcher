@@ -23,7 +23,7 @@
 
 tML Pocket Launcher 为桌面版 tModLoader 提供 Android 启动环境。游戏通过 SDL、FNA 原生后端和 Android CoreCLR 运行，启动器提供资源安装、账号授权、版本获取、模组管理和移动端适配。
 
-**构建本项目会编译启动器、自有补丁和内置触控模组；不会编译 tModLoader 或托管 FNA。** tML 与 `FNA.dll` 来自用户下载或导入的预编译发行包，Terraria 游戏资源单独获取。APK 不包含 Terraria Content、`tModLoader.dll` 或托管 `FNA.dll`。
+APK 内置官方预编译的 tModLoader `2026.09.3.1` 发行 ZIP，首次打开时自动离线安装。其他 tML 版本仍可下载或导入，Terraria 原版资源单独获取。
 
 ## 功能概览
 
@@ -35,8 +35,8 @@ tML Pocket Launcher 为桌面版 tModLoader 提供 Android 启动环境。游戏
 | GOG      | 官方网页登录授权、资源版本选择与 Linux 安装包下载                          |
 | 模组管理 | 读取 `.tmod` 元信息、搜索、启停、依赖检查、删除和批量管理；无需加载游戏    |
 | 模组包   | 保存启用清单、导入／导出 JSON、应用预设与缺失依赖检查                      |
-| 模组获取 | 浏览官方创意工坊；按项目编号获取公开元信息和可用 CDN 文件                  |
-| 触控     | 内置 MobileJoystick `0.1.4`；双摇杆、触摸菜单、物品栏和游戏内布局编辑      |
+| 模组获取 | 分开浏览 Terraria 与 tModLoader 创意工坊，筛选、查看详情并下载安装 |
+| 触控     | 内嵌 MobileJoystick 补丁，提供双摇杆、触摸菜单、物品栏和全屏布局编辑      |
 | 补丁     | 内置触摸、全屏、渲染缩放与兼容补丁；可选帧率显示、120 FPS 和实验性房间托管 |
 | 外观     | 默认横屏、可选竖屏；主题、玻璃效果、自定义背景、动效和减少动态效果         |
 | 启动诊断 | 分阶段启动动画、首帧反馈、启动日志与错误提示                               |
@@ -48,8 +48,8 @@ Steam 登录已获真机验证；**GOG 登录与完整付费资源传输尚未�
 1. 准备 **Android 9 / API 28 及以上的 arm64-v8a 设备**，安装 APK。硬件和 GPU 兼容性仍取决于实际设备。
 2. 在“游戏”页导入 Steam Terraria ZIP 或 GOG Linux `.sh`，也可通过商店账号获取资源。请使用自己拥有的游戏。
 3. 从官方发行列表下载 tModLoader，或导入包含依赖及 Content 的完整发行 ZIP。GitHub 的源码 ZIP 不能作为游戏发行包。
-4. 检查资源和版本，按需导入其他 `.tmod` 模组。MobileJoystick 由启动器维护并保持启用。
-5. 点击“启动游戏”。触控布局在游戏内的 MobileJoystick 设置中调整。
+4. 检查资源和版本，按需导入 `.tmod` 模组。启动游戏时会加载内嵌触控补丁。
+5. 在“设置 → 控制管理”全屏编辑游戏布局，从悬浮菜单切换游戏控制和游戏界面。保存后点击“启动游戏”应用。
 
 Steam 资源在**每次启动前需要联网登录并验证 Terraria 所有权**；GOG 资源导入后启动无需登录。更详细的步骤、包结构和数据保护建议见 [安装使用指南](docs/getting-started.md)。
 
@@ -59,7 +59,7 @@ APK 构建产物位于 `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.
 
 - 当前管理一个活动 tML 发行版；切换安装会事务性替换发行文件，并保留独立的用户数据。
 - 下载支持取消与重试，暂不支持跨进程的断点续传。
-- 创意工坊中需要认证 UGC 传输的模组暂不能直接下载，可从 Steam 获取后导入 `.tmod`。
+- 创意工坊下载支持匿名公开访问或复用已登录 Steam 会话；受 Steam 项目权限限制，下载能力尚待真机验证。
 - GOG 分卷安装包暂不支持。
 - 120 FPS 和实验性房间托管默认关闭；启用选项不保证设备持续达到目标帧率或实际联网兼容性。
 - 浏览器普通模式是交互预览，包含示例数据；Android 模式使用设备真实状态。
@@ -131,6 +131,7 @@ tML-Pocket-Launcher/
 │   └── app/src/              Android Kotlin/Java 源码与 JVM 测试
 ├── managed/                  C# 宿主、平台兼容、Steam/GOG 服务与测试
 │   ├── MobileLauncher.Bootstrap/、Host/Stores/ 启动器托管组件
+│   ├── MobileLauncher.Controls/ 游戏触控补丁与资源
 ├── ui/launcher/              React + TypeScript 启动器界面
 ├── scripts/
 │   ├── build/                启动器构建准备脚本

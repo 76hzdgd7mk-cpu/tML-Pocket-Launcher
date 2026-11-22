@@ -74,5 +74,6 @@ internal object PackageVersionReader {
                 else recorded.ifBlank { detected }
             PackageKind.TERRARIA ->
                 terrariaVersion(detected) ?: terrariaVersion(recorded) ?: UNKNOWN_TERRARIA
+            PackageKind.MOBILE_TERRARIA -> recorded
         }
 }

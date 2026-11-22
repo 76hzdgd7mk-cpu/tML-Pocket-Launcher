@@ -6,6 +6,7 @@ import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
 import java.security.MessageDigest
+import java.util.Base64
 import java.util.zip.Inflater
 import java.util.zip.InflaterInputStream
 import org.json.JSONArray
@@ -22,6 +23,7 @@ data class TmodMetadata(
     val dependencies: List<String>,
     val side: Int,
     val size: Long,
+    val optionalDependencies: List<String> = emptyList(),
 ) {
     fun json(enabled: Boolean) =
         JSONObject()
@@ -38,6 +40,54 @@ data class TmodMetadata(
 }
 
 object TmodReader {
+    fun readIcon(file: File): String? = RandomAccessFile(file, "r").use { input ->
+        fun integer(): Int = Integer.reverseBytes(input.readInt())
+        fun string(): String = readString { input.readUnsignedByte() }
+        val magic = ByteArray(4).also(input::readFully)
+        require(String(magic, Charsets.US_ASCII) == "TMOD") { "不是有效的 TMOD 模组" }
+        string()
+        input.seek(input.filePointer + 20 + 256)
+        val dataLength = integer()
+        require(dataLength >= 0 && input.length() - input.filePointer == dataLength.toLong()) { "模组长度不匹配或已损坏" }
+        string()
+        string()
+        val count = integer()
+        require(count in 1..100_000) { "模组文件表超出限制" }
+        data class Entry(val name: String, val size: Int, val packed: Int, val offset: Long)
+        val entries = ArrayList<Entry>()
+        var offset = 0L
+        repeat(count) {
+            val name = string()
+            val size = integer()
+            val packed = integer()
+            require(size >= 0 && packed >= 0) { "模组文件长度无效" }
+            entries.add(Entry(name, size, packed, offset))
+            offset = Math.addExact(offset, packed.toLong())
+            require(offset <= dataLength) { "模组文件表越界" }
+        }
+        val dataStart = input.filePointer
+        require(dataStart + offset == input.length()) { "模组数据区不完整" }
+        val choices = listOf(
+            "icon_workshop.gif", "icon.gif", "icon_small.gif",
+            "icon_workshop.webp", "icon.webp", "icon_small.webp",
+            "icon_workshop.png", "icon.png", "icon_small.png",
+        )
+        val icon = choices.firstNotNullOfOrNull { target -> entries.firstOrNull { it.name.equals(target, true) } }
+            ?: return@use null
+        require(icon.size in 1..MAX_ICON_BYTES && icon.packed in 1..MAX_ICON_BYTES) { "模组图标大小无效" }
+        require(dataStart + icon.offset + icon.packed <= input.length()) { "模组图标数据越界" }
+        input.seek(dataStart + icon.offset)
+        val packed = ByteArray(icon.packed).also(input::readFully)
+        val bytes = if (icon.size == icon.packed) packed else inflateIcon(packed, icon.size)
+        val mime = when {
+            bytes.startsWith(byteArrayOf(0x47, 0x49, 0x46, 0x38)) -> "image/gif"
+            bytes.size >= 12 && String(bytes, 8, 4, Charsets.US_ASCII) == "WEBP" -> "image/webp"
+            bytes.startsWith(byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47)) -> "image/png"
+            else -> return@use null
+        }
+        "data:$mime;base64,${Base64.getEncoder().encodeToString(bytes)}"
+    }
+
     fun read(file: File, verifyHash: Boolean = false): TmodMetadata =
         RandomAccessFile(file, "r").use { input ->
             fun integer(): Int = Integer.reverseBytes(input.readInt())
@@ -115,6 +165,7 @@ object TmodReader {
             var description = ""
             var side = 0
             val deps = mutableListOf<String>()
+            val optionalDeps = mutableListOf<String>()
             val textTags = setOf("version", "homepage", "eacPath", "buildVersion", "modSource")
             val flags =
                 setOf(
@@ -145,6 +196,7 @@ object TmodReader {
                             while (entry.isNotEmpty()) {
                                 require(++items <= 4096) { "模组依赖列表过长" }
                                 if (tag == "modReferences") deps.add(entry)
+                                if (tag == "weakReferences") optionalDeps.add(entry)
                                 entry = text()
                             }
                         }
@@ -164,6 +216,7 @@ object TmodReader {
                 deps,
                 side,
                 file.length(),
+                optionalDeps,
             )
         }
 
@@ -181,4 +234,23 @@ object TmodReader {
         require(size in 0..262_144) { "TMOD 字符串过长" }
         return ByteArray(size) { byte().toByte() }.toString(Charsets.UTF_8)
     }
+
+    private fun inflateIcon(packed: ByteArray, expectedSize: Int): ByteArray =
+        InflaterInputStream(ByteArrayInputStream(packed), Inflater(true)).use { stream ->
+            val output = java.io.ByteArrayOutputStream(minOf(expectedSize, MAX_ICON_BYTES))
+            val buffer = ByteArray(8192)
+            while (true) {
+                val read = stream.read(buffer)
+                if (read < 0) break
+                require(output.size() + read <= expectedSize && output.size() + read <= MAX_ICON_BYTES) { "模组图标解压长度超出限制" }
+                output.write(buffer, 0, read)
+            }
+            require(output.size() == expectedSize) { "模组图标解压长度不匹配" }
+            output.toByteArray()
+        }
+
+    private fun ByteArray.startsWith(prefix: ByteArray): Boolean =
+        size >= prefix.size && prefix.indices.all { this[it] == prefix[it] }
+
+    private const val MAX_ICON_BYTES = 512 * 1024
 }

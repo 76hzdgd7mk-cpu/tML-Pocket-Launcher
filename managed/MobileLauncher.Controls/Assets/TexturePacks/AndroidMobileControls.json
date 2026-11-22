@@ -1,0 +1,824 @@
+{
+  "formatVersion": 1,
+  "id": "android-mobile-controls",
+  "name": "Android Mobile Controls",
+  "author": "MobileJoystick",
+  "textures": {
+    "mobile.action.aim-only-mode": {
+      "displayName": "Aim Only Mode",
+      "file": "MobileControls/AimOnlyMode.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.aim-reticle": {
+      "displayName": "Aim Reticle",
+      "file": "MobileControls/AimReticle.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.aim-use-mode": {
+      "displayName": "Aim Use Mode",
+      "file": "MobileControls/AimUseMode.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.attack-aim-only": {
+      "displayName": "Attack Aim Only",
+      "file": "MobileControls/AttackAimOnly.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.attack-aim-use": {
+      "displayName": "Attack Aim Use",
+      "file": "MobileControls/AttackAimUse.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.backpack-icon": {
+      "displayName": "Backpack Icon",
+      "file": "MobileControls/BackpackIcon.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.chat": {
+      "displayName": "Chat",
+      "file": "MobileControls/Chat.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.chat-bubble": {
+      "displayName": "Chat Bubble",
+      "file": "MobileControls/ChatBubble.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.grapple-hook": {
+      "displayName": "Grapple Hook",
+      "file": "MobileControls/GrappleHook.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.grapple-hook-idle": {
+      "displayName": "Grapple Hook Idle",
+      "file": "MobileControls/GrappleHook.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.jump": {
+      "displayName": "Jump",
+      "file": "MobileControls/Jump.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.map": {
+      "displayName": "Map",
+      "file": "MobileControls/Map.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.map-style": {
+      "displayName": "Map Style",
+      "file": "MobileControls/MapStyle.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.minimap-frame": {
+      "displayName": "Minimap Frame",
+      "file": "MobileControls/MinimapFrame.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.mount": {
+      "displayName": "Mount",
+      "file": "MobileControls/Mount.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-aim-cross": {
+      "displayName": "Phone Aim Cross",
+      "file": "MobileControls/PhoneAimCross.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-aim-mode-glyph": {
+      "displayName": "Phone Aim Mode Glyph",
+      "file": "MobileControls/PhoneAimModeGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-auto-select-glyph": {
+      "displayName": "Phone Auto Select Glyph",
+      "file": "MobileControls/PhoneAutoSelectGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-empty-grapple-glyph": {
+      "displayName": "Phone Empty Grapple Glyph",
+      "file": "MobileControls/PhoneEmptyGrappleGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-grapple-glyph": {
+      "displayName": "Phone Grapple Glyph",
+      "file": "MobileControls/PhoneGrappleGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-interact-glyph": {
+      "displayName": "Phone Interact Glyph",
+      "file": "MobileControls/PhoneInteractGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-inventory-glyph": {
+      "displayName": "Phone Inventory Glyph",
+      "file": "MobileControls/BackpackIcon.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-jump-glyph": {
+      "displayName": "Phone Jump Glyph",
+      "file": "MobileControls/PhoneJumpGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-loadout-glyph": {
+      "displayName": "Phone Loadout Glyph",
+      "file": "MobileControls/PhoneLoadoutGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-menu-glyph": {
+      "displayName": "Phone Menu Glyph",
+      "file": "MobileControls/PhoneMenuGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-mount-glyph": {
+      "displayName": "Phone Mount Glyph",
+      "file": "MobileControls/PhoneMountGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-radial-glyph": {
+      "displayName": "Phone Radial Glyph",
+      "file": "MobileControls/PhoneRadialGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-radial-ring": {
+      "displayName": "Phone Radial Ring",
+      "file": "MobileControls/PhoneRadialRing.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-smart-cursor-glyph": {
+      "displayName": "Phone Smart Cursor Glyph",
+      "file": "MobileControls/PhoneSmartCursorGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-smart-cursor-on-glyph": {
+      "displayName": "Phone Smart Cursor On Glyph",
+      "file": "MobileControls/PhoneSmartCursorOnGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-smart-interact-glyph": {
+      "displayName": "Phone Smart Interact Glyph",
+      "file": "MobileControls/PhoneSmartInteractGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-swap-glyph": {
+      "displayName": "Phone Swap Glyph",
+      "file": "MobileControls/PhoneSwapGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-target-glyph": {
+      "displayName": "Phone Target Glyph",
+      "file": "MobileControls/PhoneTargetGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-unbound-glyph": {
+      "displayName": "Phone Unbound Glyph",
+      "file": "MobileControls/PhoneUnboundGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-use-glyph": {
+      "displayName": "Phone Use Glyph",
+      "file": "MobileControls/PhoneUseGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-use-profile-glyph": {
+      "displayName": "Phone Use Profile Glyph",
+      "file": "MobileControls/PhoneUseProfileGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-zoom-in-glyph": {
+      "displayName": "Phone Zoom In Glyph",
+      "file": "MobileControls/PhoneZoomInGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.phone-zoom-out-glyph": {
+      "displayName": "Phone Zoom Out Glyph",
+      "file": "MobileControls/PhoneZoomOutGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.settings": {
+      "displayName": "Settings",
+      "file": "MobileControls/PhoneMenuGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.smart-cursor": {
+      "displayName": "Smart Cursor",
+      "file": "MobileControls/SmartCursor.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.smart-cursor-off": {
+      "displayName": "Smart Cursor Off",
+      "file": "MobileControls/SmartCursorOff.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.target-lock-off": {
+      "displayName": "Target Lock Off",
+      "file": "MobileControls/TargetLockOff.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.target-lock-on": {
+      "displayName": "Target Lock On",
+      "file": "MobileControls/TargetLockOn.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.world-aim-cross": {
+      "displayName": "World Aim Cross",
+      "file": "MobileControls/WorldAimCross.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.world-interact-cursor": {
+      "displayName": "World Interact Cursor",
+      "file": "MobileControls/PhoneInteractGlyph.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.zoom-in": {
+      "displayName": "Zoom In",
+      "file": "MobileControls/ZoomIn.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.zoom-in-plus": {
+      "displayName": "Zoom In Plus",
+      "file": "MobileControls/AimOnlyMode.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.zoom-out": {
+      "displayName": "Zoom Out",
+      "file": "MobileControls/ZoomOut.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.action.zoom-pair": {
+      "displayName": "Zoom Pair",
+      "file": "MobileControls/ZoomPair.png",
+      "category": "action",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.hud.chat": {
+      "displayName": "Chat",
+      "file": "MobileControls/ChatBubble.png",
+      "category": "hud",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.hud.chat-selected": {
+      "displayName": "Chat Selected",
+      "file": "MobileHud/ChatSelected.png",
+      "category": "hud",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.hud.map": {
+      "displayName": "Map",
+      "file": "MobileHud/Map.png",
+      "category": "hud",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.hud.map-selected": {
+      "displayName": "Map Selected",
+      "file": "MobileHud/MapSelected.png",
+      "category": "hud",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.hud.minimap": {
+      "displayName": "Minimap",
+      "file": "MobileControls/MapStyle.png",
+      "category": "hud",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.hud.minimap-selected": {
+      "displayName": "Minimap Selected",
+      "file": "MobileHud/MinimapSelected.png",
+      "category": "hud",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.hud.toolbar": {
+      "displayName": "Toolbar",
+      "file": "MobileHud/Toolbar.png",
+      "category": "hud",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.joystick.directional-arrows-original": {
+      "displayName": "Directional Arrows Original",
+      "file": "MobileControls/DirectionalArrowsOriginal.png",
+      "category": "joystick",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.joystick.joystick-arrows-original": {
+      "displayName": "Joystick Arrows Original",
+      "file": "MobileControls/JoystickArrowsOriginal.png",
+      "category": "joystick",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.joystick.joystick-base": {
+      "displayName": "Joystick Base",
+      "file": "MobileControls/JoystickBase.png",
+      "category": "joystick",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.joystick.joystick-frame": {
+      "displayName": "Joystick Frame",
+      "file": "MobileControls/PhoneRadialRing.png",
+      "category": "joystick",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.joystick.joystick-knob": {
+      "displayName": "Joystick Knob",
+      "file": "MobileControls/JoystickKnob.png",
+      "category": "joystick",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.joystick.joystick-knob-base-original": {
+      "displayName": "Joystick Knob Base Original",
+      "file": "MobileControls/JoystickKnobBaseOriginal.png",
+      "category": "joystick",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.joystick.joystick-pad": {
+      "displayName": "Joystick Pad",
+      "file": "MobileControls/JoystickPad.png",
+      "category": "joystick",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.joystick.joystick-pad-original": {
+      "displayName": "Joystick Pad Original",
+      "file": "MobileControls/JoystickPadOriginal.png",
+      "category": "joystick",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.joystick.move-jump-hint": {
+      "displayName": "Move Jump Hint",
+      "file": "MobileControls/PhoneJumpGlyph.png",
+      "category": "joystick",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.joystick.move-jump-hint-original": {
+      "displayName": "Move Jump Hint Original",
+      "file": "MobileControls/PhoneJumpGlyph.png",
+      "category": "joystick",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.surface.item-button-frame": {
+      "displayName": "Item Button Frame",
+      "file": "MobileControls/ItemButtonFrame.png",
+      "category": "surface",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.surface.phone-editor-slot": {
+      "displayName": "Phone Editor Slot",
+      "file": "MobileControls/PhoneEditorSlot.png",
+      "category": "surface",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.surface.phone-grapple-pad": {
+      "displayName": "Phone Grapple Pad",
+      "file": "MobileControls/JoystickBase.png",
+      "category": "surface",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.surface.phone-green-circle": {
+      "displayName": "Phone Green Circle",
+      "file": "MobileControls/PhoneGreenCircle.png",
+      "category": "surface",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.surface.phone-pressed-circle": {
+      "displayName": "Phone Pressed Circle",
+      "file": "MobileControls/PhonePressedCircle.png",
+      "category": "surface",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.surface.phone-purple-circle": {
+      "displayName": "Phone Purple Circle",
+      "file": "MobileControls/ItemButtonFrame.png",
+      "category": "surface",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.surface.phone-teal-circle": {
+      "displayName": "Phone Teal Circle",
+      "file": "MobileControls/PhoneTealCircle.png",
+      "category": "surface",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    "mobile.surface.phone-yellow-circle": {
+      "displayName": "Phone Yellow Circle",
+      "file": "MobileControls/PhonePressedCircle.png",
+      "category": "surface",
+      "offset": [
+        0,
+        0
+      ],
+      "scale": 1
+    }
+  },
+  "mappings": {
+    "AimOnlyMode": "mobile.action.aim-only-mode",
+    "AimReticle": "mobile.action.aim-reticle",
+    "AimUseMode": "mobile.action.aim-use-mode",
+    "AttackAimOnly": "mobile.action.attack-aim-only",
+    "AttackAimUse": "mobile.action.attack-aim-use",
+    "BackpackIcon": "mobile.action.backpack-icon",
+    "Chat": "mobile.action.chat",
+    "ChatBubble": "mobile.action.chat-bubble",
+    "DirectionalArrowsOriginal": "mobile.joystick.directional-arrows-original",
+    "GrappleHook": "mobile.action.grapple-hook",
+    "GrappleHookIdle": "mobile.action.grapple-hook-idle",
+    "HudChat": "mobile.hud.chat",
+    "HudChatSelected": "mobile.hud.chat-selected",
+    "HudMap": "mobile.hud.map",
+    "HudMapSelected": "mobile.hud.map-selected",
+    "HudMinimap": "mobile.hud.minimap",
+    "HudMinimapSelected": "mobile.hud.minimap-selected",
+    "HudToolbar": "mobile.hud.toolbar",
+    "ItemButtonFrame": "mobile.surface.item-button-frame",
+    "JoystickArrowsOriginal": "mobile.joystick.joystick-arrows-original",
+    "JoystickBase": "mobile.joystick.joystick-base",
+    "JoystickFrame": "mobile.joystick.joystick-frame",
+    "JoystickKnob": "mobile.joystick.joystick-knob",
+    "JoystickKnobBaseOriginal": "mobile.joystick.joystick-knob-base-original",
+    "JoystickPad": "mobile.joystick.joystick-pad",
+    "JoystickPadOriginal": "mobile.joystick.joystick-pad-original",
+    "Jump": "mobile.action.jump",
+    "Map": "mobile.action.map",
+    "MapStyle": "mobile.action.map-style",
+    "MinimapFrame": "mobile.action.minimap-frame",
+    "Mount": "mobile.action.mount",
+    "MoveJumpHint": "mobile.joystick.move-jump-hint",
+    "MoveJumpHintOriginal": "mobile.joystick.move-jump-hint-original",
+    "PhoneAimCross": "mobile.action.phone-aim-cross",
+    "PhoneAimModeGlyph": "mobile.action.phone-aim-mode-glyph",
+    "PhoneAutoSelectGlyph": "mobile.action.phone-auto-select-glyph",
+    "PhoneEditorSlot": "mobile.surface.phone-editor-slot",
+    "PhoneEmptyGrappleGlyph": "mobile.action.phone-empty-grapple-glyph",
+    "PhoneGrappleGlyph": "mobile.action.phone-grapple-glyph",
+    "PhoneGrapplePad": "mobile.surface.phone-grapple-pad",
+    "PhoneGreenCircle": "mobile.surface.phone-green-circle",
+    "PhoneInteractGlyph": "mobile.action.phone-interact-glyph",
+    "PhoneInventoryGlyph": "mobile.action.phone-inventory-glyph",
+    "PhoneJumpGlyph": "mobile.action.phone-jump-glyph",
+    "PhoneLoadoutGlyph": "mobile.action.phone-loadout-glyph",
+    "PhoneMenuGlyph": "mobile.action.phone-menu-glyph",
+    "PhoneMountGlyph": "mobile.action.phone-mount-glyph",
+    "PhonePressedCircle": "mobile.surface.phone-pressed-circle",
+    "PhonePurpleCircle": "mobile.surface.phone-purple-circle",
+    "PhoneRadialGlyph": "mobile.action.phone-radial-glyph",
+    "PhoneRadialRing": "mobile.action.phone-radial-ring",
+    "PhoneSmartCursorGlyph": "mobile.action.phone-smart-cursor-glyph",
+    "PhoneSmartCursorOnGlyph": "mobile.action.phone-smart-cursor-on-glyph",
+    "PhoneSmartInteractGlyph": "mobile.action.phone-smart-interact-glyph",
+    "PhoneSwapGlyph": "mobile.action.phone-swap-glyph",
+    "PhoneTargetGlyph": "mobile.action.phone-target-glyph",
+    "PhoneTealCircle": "mobile.surface.phone-teal-circle",
+    "PhoneUnboundGlyph": "mobile.action.phone-unbound-glyph",
+    "PhoneUseGlyph": "mobile.action.phone-use-glyph",
+    "PhoneUseProfileGlyph": "mobile.action.phone-use-profile-glyph",
+    "PhoneYellowCircle": "mobile.surface.phone-yellow-circle",
+    "PhoneZoomInGlyph": "mobile.action.phone-zoom-in-glyph",
+    "PhoneZoomOutGlyph": "mobile.action.phone-zoom-out-glyph",
+    "Settings": "mobile.action.settings",
+    "SmartCursor": "mobile.action.smart-cursor",
+    "SmartCursorOff": "mobile.action.smart-cursor-off",
+    "TargetLockOff": "mobile.action.target-lock-off",
+    "TargetLockOn": "mobile.action.target-lock-on",
+    "WorldAimCross": "mobile.action.world-aim-cross",
+    "WorldInteractCursor": "mobile.action.world-interact-cursor",
+    "ZoomIn": "mobile.action.zoom-in",
+    "ZoomInPlus": "mobile.action.zoom-in-plus",
+    "ZoomOut": "mobile.action.zoom-out",
+    "ZoomPair": "mobile.action.zoom-pair"
+  }
+}

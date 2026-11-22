@@ -311,6 +311,39 @@ public sealed class SteamSessionTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => verification);
     }
 
+    [Fact]
+    public async Task WorkshopUsesTheExistingAuthenticatedConnection()
+    {
+        var fake = new FakeConnection();
+        using var session = new SteamSession(_ => fake, NoDelay);
+        session.Begin(Credentials());
+        await WaitForAsync(session, "ready");
+
+        var selected = await session.WithWorkshopConnectionAsync((connection, _) => Task.FromResult(connection), default);
+
+        Assert.Same(fake, selected);
+        Assert.Equal(0, fake.AnonymousLogons);
+        Assert.False(fake.Disposed);
+    }
+
+    [Fact]
+    public async Task WorkshopUsesAnOwnedAnonymousConnectionWhenSignedOut()
+    {
+        var connections = new ConcurrentQueue<FakeConnection>();
+        using var session = new SteamSession(_ =>
+        {
+            var connection = new FakeConnection();
+            connections.Enqueue(connection);
+            return connection;
+        }, NoDelay);
+
+        var selected = await session.WithWorkshopConnectionAsync((connection, _) => Task.FromResult(connection), default);
+
+        Assert.Same(connections.Single(), selected);
+        Assert.Equal(1, connections.Single().AnonymousLogons);
+        Assert.True(connections.Single().Disposed);
+    }
+
     private static Task NoDelay(CancellationToken ct) { ct.ThrowIfCancellationRequested(); return Task.CompletedTask; }
     private static async Task WaitForAsync(SteamSession session, string phase)
     {
@@ -330,6 +363,7 @@ public sealed class SteamSessionTests
         public Action? OnAuth { get; init; }
         public Action<string>? OnLogOn { get; init; }
         public bool Disposed { get; private set; }
+        public int AnonymousLogons { get; private set; }
         public Task ConnectAsync(CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
@@ -349,6 +383,12 @@ public sealed class SteamSessionTests
             ct.ThrowIfCancellationRequested();
             OnLogOn?.Invoke(token);
             if (LogOnFailure != null) throw LogOnFailure;
+            return Task.CompletedTask;
+        }
+        public Task LogOnAnonymousAsync(CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            AnonymousLogons++;
             return Task.CompletedTask;
         }
         public bool HasGame { get; set; } = true;

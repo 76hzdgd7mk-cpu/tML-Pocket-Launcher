@@ -30,6 +30,26 @@ class GamePackageInstaller(private val filesDir: File) {
     private val journalFile
         get() = File(filesDir, ".package-install-transaction.json")
 
+    internal fun installDefaultTml(
+        cacheDir: File,
+        cancelled: () -> Boolean,
+        progress: (String, Int) -> Unit,
+        copyArchive: (File) -> Unit,
+    ) = synchronized(installLock) {
+        val state = readState()
+        // An empty catalog is retained after an explicit uninstall.
+        if (state.has(TmlVersionCatalog.VERSIONS) || state.has(PackageKind.TMODLOADER.name)) return@synchronized
+        checkCancelled(cancelled)
+        val archive = File.createTempFile("package-default-tml-", ".zip", cacheDir)
+        try {
+            progress("正在准备内置 tModLoader…", 0)
+            copyArchive(archive)
+            importPackage(PackageKind.TMODLOADER, archive, cancelled = cancelled, progress = progress)
+        } finally {
+            archive.delete()
+        }
+    }
+
     fun importPackage(
         kind: PackageKind,
         archive: File,
@@ -37,6 +57,46 @@ class GamePackageInstaller(private val filesDir: File) {
         cancelled: () -> Boolean = { false },
         progress: (String, Int) -> Unit = { _, _ -> },
         source: TerrariaSource = TerrariaSource.STEAM,
+    ) = installPackage(kind, version, cancelled, progress, source) { staging ->
+        require(kind != PackageKind.MOBILE_TERRARIA)
+        progress("Extracting package", 0)
+        try {
+            extract(archive, staging, cancelled, progress)
+        } catch (failure: IOException) {
+            val archiveFailure =
+                generateSequence<Throwable>(failure) { it.cause }.firstOrNull {
+                    it is EOFException || it is ZipException
+                } ?: throw failure
+            val detail = archiveFailure.message?.takeIf { it.isNotBlank() }
+                ?: "压缩数据意外结束或 ZIP 结构无效"
+            throw IOException(
+                "安装包 ZIP 已损坏或下载不完整，请重新下载后导入。\n" +
+                    "详细信息：${archiveFailure.javaClass.simpleName}：$detail",
+                failure,
+            )
+        }
+    }
+
+    internal fun installMobileTerraria(
+        version: String,
+        fingerprint: String,
+        targetTml: String,
+        cancelled: () -> Boolean,
+        progress: (String, Int) -> Unit,
+        convert: (File) -> Unit,
+    ) = installPackage(
+        PackageKind.MOBILE_TERRARIA, version, cancelled, progress, TerrariaSource.ANDROID,
+        JSONObject().put("apk", fingerprint).put("targetTml", targetTml), convert,
+    )
+
+    private fun installPackage(
+        kind: PackageKind,
+        version: String?,
+        cancelled: () -> Boolean,
+        progress: (String, Int) -> Unit,
+        source: TerrariaSource,
+        mobile: JSONObject? = null,
+        populate: (File) -> Unit,
     ) =
         synchronized(installLock) {
             checkCancelled(cancelled)
@@ -46,26 +106,10 @@ class GamePackageInstaller(private val filesDir: File) {
             val oldState = JSONObject(state.toString())
             val transaction = UUID.randomUUID().toString()
             val staging = File(gamesDir, ".import-$transaction")
-            requireDirectory(staging)
+            if (mobile == null) requireDirectory(staging)
             var journal: JSONObject? = null
             try {
-                progress("Extracting package", 0)
-                try {
-                    extract(archive, staging, cancelled, progress)
-                } catch (failure: IOException) {
-                    val archiveFailure =
-                        generateSequence<Throwable>(failure) { it.cause }.firstOrNull {
-                            it is EOFException || it is ZipException
-                        } ?: throw failure
-                    val detail =
-                        archiveFailure.message?.takeIf { it.isNotBlank() }
-                            ?: "压缩数据意外结束或 ZIP 结构无效"
-                    throw IOException(
-                        "安装包 ZIP 已损坏或下载不完整，请重新下载后导入。\n" +
-                            "详细信息：${archiveFailure.javaClass.simpleName}：$detail",
-                        failure,
-                    )
-                }
+                populate(staging)
                 checkCancelled(cancelled)
                 progress("Validating package", 90)
                 val layout = validate(kind, staging)
@@ -90,6 +134,7 @@ class GamePackageInstaller(private val filesDir: File) {
                         }
                     } else {
                         record.put("source", source.id)
+                        if (mobile != null) record.put("mobile", mobile)
                         state.put(kind.name, record)
                         null
                     }
@@ -245,7 +290,10 @@ class GamePackageInstaller(private val filesDir: File) {
                     val tml =
                         installedLayout(PackageKind.TMODLOADER, state) ?: return@synchronized null
                     val terraria =
-                        installedLayout(PackageKind.TERRARIA, state) ?: return@synchronized null
+                        installedLayout(terrariaKind(state), state) ?: return@synchronized null
+                    if (terrariaKind(state) == PackageKind.MOBILE_TERRARIA &&
+                        mobileRecord(state)?.optString("targetTml") != tml.version
+                    ) return@synchronized null
                     InstalledGame(
                         tml.root,
                         terraria.root,
@@ -267,7 +315,7 @@ class GamePackageInstaller(private val filesDir: File) {
         synchronized(installLock) {
             runCatching {
                     val state = readState()
-                    installedLayout(PackageKind.TERRARIA, state) ?: return@synchronized null
+                    installedLayout(terrariaKind(state), state) ?: return@synchronized null
                     sourceFrom(state)
                 }
                 .getOrNull()
@@ -275,9 +323,47 @@ class GamePackageInstaller(private val filesDir: File) {
 
     // Older installations and unrecognized metadata never imply a DRM-free source.
     private fun sourceFrom(state: JSONObject): TerrariaSource =
-        if (state.optJSONObject(PackageKind.TERRARIA.name)?.optString("source") == "gog")
+        if (terrariaKind(state) == PackageKind.MOBILE_TERRARIA) TerrariaSource.ANDROID
+        else if (state.optJSONObject(PackageKind.TERRARIA.name)?.optString("source") == "gog")
             TerrariaSource.GOG
         else TerrariaSource.STEAM
+
+    internal fun selectedTerrariaStatus(): String? = synchronized(installLock) {
+        runCatching { readState().let { installedLayout(terrariaKind(it), it)?.version } }.getOrNull()
+    }
+
+    internal fun desktopTerrariaSource(): TerrariaSource? = synchronized(installLock) {
+        runCatching {
+            val state = readState()
+            if (installedLayout(PackageKind.TERRARIA, state) == null) return@synchronized null
+            if (state.getJSONObject(PackageKind.TERRARIA.name).optString("source") == "gog")
+                TerrariaSource.GOG
+            else TerrariaSource.STEAM
+        }.getOrNull()
+    }
+
+    internal fun mobileTerrariaIsCurrent(fingerprint: String, targetTml: String): Boolean =
+        synchronized(installLock) {
+            val state = readState()
+            val mobile = mobileRecord(state)
+            mobile?.optString("apk") == fingerprint && mobile.optString("targetTml") == targetTml &&
+                runCatching { installedLayout(PackageKind.MOBILE_TERRARIA, state) != null }.getOrDefault(false)
+        }
+
+    internal fun selectTerraria(android: Boolean) = synchronized(installLock) {
+        val state = readState()
+        val kind = if (android) PackageKind.MOBILE_TERRARIA else PackageKind.TERRARIA
+        check(installedLayout(kind, state) != null) { "所选 Terraria 资源不可用" }
+        if (android) state.put("_useMobileTerraria", true)
+        else state.remove("_useMobileTerraria")
+        writeState(state)
+    }
+
+    private fun terrariaKind(state: JSONObject) =
+        if (state.optBoolean("_useMobileTerraria")) PackageKind.MOBILE_TERRARIA else PackageKind.TERRARIA
+
+    private fun mobileRecord(state: JSONObject) =
+        state.optJSONObject(PackageKind.MOBILE_TERRARIA.name)?.optJSONObject("mobile")
 
     private data class Layout(val root: File, val content: File, val version: String)
 
@@ -322,7 +408,7 @@ class GamePackageInstaller(private val filesDir: File) {
                 }
                 .toList()
         files.forEach { rejectLink(it) }
-        if (kind == PackageKind.TERRARIA) {
+        if (kind != PackageKind.TMODLOADER) {
             val contents =
                 files.filter { it.isDirectory && it.name == "Content" && validContent(it) }
             val content =
@@ -335,6 +421,15 @@ class GamePackageInstaller(private val filesDir: File) {
                         )
                 }
             val root = if (content == directory) directory else requireNotNull(content.parentFile)
+            if (kind == PackageKind.MOBILE_TERRARIA) {
+                val report = readJson(requiredFile(root, "conversion-report.json"))
+                check(report.optBoolean("complete") && report.getJSONArray("missing").length() == 0 &&
+                    report.getInt("required_files") == files.count { it.isFile && it.toPath().startsWith(content.toPath()) }) {
+                    "Android 版 Terraria 资源转换不完整"
+                }
+                for (name in listOf("Wave Bank.xwb", "Sound Bank.xsb", "TerrariaMusic.xgs",
+                    "PixelShader.xnb", "ScreenShader.xnb", "TileShader.xnb")) requiredFile(content, name)
+            }
             return Layout(root, content, PackageVersionReader.terraria(root, files))
         }
 
@@ -823,6 +918,7 @@ class GamePackageInstaller(private val filesDir: File) {
             gamesDir,
             when {
                 kind == PackageKind.TERRARIA -> "terraria"
+                kind == PackageKind.MOBILE_TERRARIA -> "terraria-android"
                 versionId == null || versionId == TmlVersionCatalog.LEGACY_ID -> "tmodloader"
                 else -> "tmodloader-$versionId"
             },

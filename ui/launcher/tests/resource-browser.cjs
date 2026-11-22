@@ -62,6 +62,20 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
       window.resourceFixture = state;
       const send = (message) =>
         window.LauncherNative.onmessage?.({ data: JSON.stringify(message) });
+      const workshopItem = (appId, id = '12345', title = appId === 1281930 ? '真实协议测试模组' : '测试世界资源') => ({
+        appId,
+        id,
+        title,
+        description: '工坊详情显示为文本。支持自动安装。',
+        creator: 'Workshop Author',
+        previewUrl: '',
+        subscriptions: 24,
+        votesUp: 12,
+        votesDown: 1,
+        tags: ['Overhaul', 'Tweaks'],
+        keyValues: appId === 1281930 ? { modreferences: 'MissingLibrary' } : {},
+        dependencyIds: appId === 1281930 ? ['45678'] : [],
+      });
       window.LauncherNative = {
         onmessage: null,
         postMessage(text) {
@@ -76,14 +90,26 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
             if (window.failReleases) error = '网络中断，无法读取版本';
             else
               data = { releases: params.page === 1 ? first : second, hasMore: params.page === 1 };
-          } else if (method === 'workshop.details') {
+          } else if (method === 'workshop.query') {
             if (window.failWorkshop) error = '该工坊项目不可用';
             else
               data = {
-                title: '真实协议测试模组',
-                description: '工坊详情显示为文本。\n[测试说明] 支持公开下载。',
-                file_url: window.noWorkshopFile ? '' : 'https://example.invalid/workshop.tmod',
+                total: params.appId === 1281930 ? 21 : 1,
+                items: params.appId !== 1281930
+                  ? [workshopItem(params.appId)]
+                  : params.page === 1
+                    ? [workshopItem(params.appId), ...Array.from({ length: 19 }, (_, index) =>
+                        workshopItem(params.appId, String(20000 + index), `模组 ${index + 1}`))]
+                    : [workshopItem(params.appId), workshopItem(params.appId, '30000', '第二页模组')],
               };
+            if (params.page > 1) {
+              window.finishWorkshopPage = () => send({ id, ok: !error, data, error });
+              return;
+            }
+          } else if (method === 'workshop.details') {
+            if (window.failWorkshop) error = '该工坊项目不可用';
+            else
+              data = workshopItem(params.appId, params.id);
           } else if (method === 'workshop.download' || method === 'download') {
             Object.assign(state, {
               busy: true,
@@ -95,8 +121,19 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
             send({ event: 'snapshot', data: state });
             window.finishResourceDownload = () => {
               Object.assign(state, { busy: false, message: '安装完成', progress: 100 });
+              if (method === 'workshop.download' && params.appId === 1281930) {
+                state.mods = [{
+                  id: 'WorkshopMod', title: '已下载模组', version: '1.0', author: 'Workshop Author',
+                  size: 1048576, enabled: false, deps: ['MissingLibrary@2.0'],
+                  dependencies: [{
+                    name: 'MissingLibrary', title: 'MissingLibrary', status: 'missing',
+                    requiredVersion: '2.0', installedVersion: '', optional: false,
+                  }],
+                }];
+                data = { modId: 'WorkshopMod' };
+              }
               send({ event: 'snapshot', data: state });
-              send({ id, ok: true, data: true });
+              send({ id, ok: true, data });
               window.finishResourceDownload = null;
             };
             return;
@@ -261,38 +298,72 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
 
     await category('mods').click();
     await page.getByRole('searchbox', { name: '搜索创意工坊', exact: true }).fill('灾厄 & 地图');
-    await page.getByRole('button', { name: '浏览创意工坊', exact: true }).click();
-    await page.waitForFunction(() =>
-      window.resourceCalls.some((call) => call.method === 'openExternal'),
+    assert.equal(await page.getByRole('button', { name: '浏览创意工坊', exact: true }).count(), 0);
+    await page.getByRole('button', { name: '加载热门项目', exact: true }).click();
+    await page.getByRole('button', { name: /真实协议测试模组/ }).waitFor();
+    await page.getByRole('combobox', { name: '模组分类', exact: true }).selectOption('Library');
+    await page
+      .getByRole('combobox', { name: 'tModLoader 版本', exact: true })
+      .selectOption('1.4.4');
+    await page.getByRole('combobox', { name: '模组语言', exact: true }).selectOption('Chinese');
+    await page.getByRole('combobox', { name: '排序顺序', exact: true }).selectOption('highestRated');
+    await page.getByRole('combobox', { name: '时间范围', exact: true }).selectOption('7');
+    await page.getByRole('button', { name: '搜索工坊', exact: true }).click();
+    await page.waitForFunction(
+      () => window.resourceCalls.filter((call) => call.method === 'workshop.query').length >= 2,
     );
-    const external = await page.evaluate(
-      () => window.resourceCalls.find((call) => call.method === 'openExternal').params.url,
+    const queryCall = await page.evaluate(() =>
+      window.resourceCalls.filter((call) => call.method === 'workshop.query').at(-1),
     );
-    assert.equal(new URL(external).searchParams.get('searchtext'), '灾厄 & 地图');
+    assert.equal(queryCall.params.appId, 1281930, 'tModLoader uses its own Workshop app ID');
+    assert.equal(queryCall.params.sort, 'highestRated');
+    assert.equal(queryCall.params.days, 7);
+    assert.equal(queryCall.params.category, 'Library');
+    assert.equal(queryCall.params.version, '1.4.4');
+    assert.equal(queryCall.params.language, 'Chinese');
+    const workshopItems = page.locator('.workshop-item');
+    await workshopItems.first().waitFor();
+    assert.equal(await workshopItems.count(), 20);
+    assert.ok((await workshopItems.first().boundingBox()).height < 76, 'workshop rows are compact');
+    await page.getByRole('searchbox', { name: '搜索创意工坊', exact: true }).fill('未提交的新搜索');
+    await page.getByRole('button', { name: '加载更多', exact: true }).click();
+    await page.waitForFunction(() => typeof window.finishWorkshopPage === 'function');
+    assert.equal(await workshopItems.count(), 20, 'previous results remain while loading');
+    const scrollBeforeAppend = await page.locator('.page-scroll').evaluate((element) => element.scrollTop);
+    await page.evaluate(() => window.finishWorkshopPage());
+    await page.getByRole('button', { name: /第二页模组/ }).waitFor();
+    assert.equal(await workshopItems.count(), 21, 'more results append without duplicates');
+    assert.equal(await page.locator('.page-scroll').evaluate((element) => element.scrollTop), scrollBeforeAppend);
+    const appendedQuery = await page.evaluate(() =>
+      window.resourceCalls.filter((call) => call.method === 'workshop.query').at(-1),
+    );
+    assert.equal(appendedQuery.params.page, 2);
+    assert.equal(appendedQuery.params.search, queryCall.params.search);
+    assert.equal(await page.getByRole('button', { name: '加载更多', exact: true }).count(), 0);
+    await page.getByRole('button', { name: /真实协议测试模组/ }).click();
+    await page.getByRole('heading', { name: '真实协议测试模组', exact: true }).waitFor();
+    await page.getByText('查看工坊依赖', { exact: true }).click();
+    await page.getByText('MissingLibrary', { exact: true }).waitFor();
+    await page.getByRole('button', { name: '工坊项目 45678', exact: true }).waitFor();
     const project = page.getByRole('textbox', { name: '创意工坊项目编号', exact: true });
     await project.fill('abc');
-    assert.ok(await page.getByRole('button', { name: '查询模组', exact: true }).isDisabled());
+    assert.ok(await page.getByRole('button', { name: '按编号查看', exact: true }).isDisabled());
     await project.fill('12345');
     await page.evaluate(() => {
       window.failWorkshop = true;
     });
-    await page.getByRole('button', { name: '查询模组', exact: true }).click();
+    await page.getByRole('button', { name: '按编号查看', exact: true }).click();
     await page.getByRole('alert').getByText('该工坊项目不可用', { exact: true }).waitFor();
     await page.evaluate(() => {
       window.failWorkshop = false;
-      window.noWorkshopFile = true;
     });
-    await page.getByRole('button', { name: '查询模组', exact: true }).click();
+    await page.getByRole('button', { name: '按编号查看', exact: true }).click();
     await page.getByRole('heading', { name: '真实协议测试模组', exact: true }).waitFor();
-    assert.ok(await page.getByRole('button', { name: '下载并安装', exact: true }).isDisabled());
-    await page.evaluate(() => {
-      window.noWorkshopFile = false;
-    });
-    await page.getByRole('button', { name: '查询模组', exact: true }).click();
     await page.waitForFunction(
       () =>
-        !document.querySelector('.resource-workshop-card .resource-pack-actions button:last-child')
-          .disabled,
+        [...document.querySelectorAll('.resource-workshop-card button')].some(
+          (button) => button.textContent.trim() === '下载并安装' && !button.disabled,
+        ),
     );
     await project.fill('99999');
     await capture('resource-mods-dark-landscape');
@@ -308,6 +379,13 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
       '12345',
       'download uses the queried item, not edited input',
     );
+    assert.equal(
+      await page.evaluate(
+        () => window.resourceCalls.find((call) => call.method === 'workshop.download').params.appId,
+      ),
+      1281930,
+      'download retains the selected Workshop app ID',
+    );
     await windowDialog.getByRole('button', { name: '最小化', exact: true }).last().click();
     await page.locator('.topbar [data-action="tasks"]').click();
     await page.waitForURL('**/downloads');
@@ -319,8 +397,13 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
     );
     assert.equal(await page.getByRole('dialog').count(), 0, 'background completion keeps focus');
     await page.locator('.topbar [data-action="tasks"]').click();
+    await page.getByText('查看模组依赖', { exact: true }).click();
+    await page.getByText('至少 2.0', { exact: true }).waitFor();
     await page.getByRole('button', { name: '查看已安装资源', exact: true }).click();
     await page.waitForURL('**/#mods');
+    await page.getByRole('button', { name: '查看 已下载模组 的依赖', exact: true }).click();
+    await page.getByRole('dialog').getByText('缺失', { exact: true }).waitFor();
+    await page.keyboard.press('Escape');
     assert.equal(await page.getByRole('tab', { name: '下载模组', exact: true }).count(), 0);
     await page.getByRole('button', { name: '添加模组', exact: true }).click();
     await page.getByRole('button', { name: '下载模组', exact: true }).click();
@@ -380,6 +463,17 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
     await page.waitForURL((url) => url.hash === '#mods/resource-mods');
     await openFilters();
     await page.getByRole('searchbox', { name: '搜索创意工坊', exact: true }).waitFor();
+    await category('assets').click();
+    await page.waitForURL((url) => url.hash === '#mods/resource-assets');
+    await page.getByRole('heading', { name: 'Terraria 资源', exact: true }).waitFor();
+    await openFilters();
+    await page.getByRole('combobox', { name: '资源类型', exact: true }).selectOption('packs');
+    await page.getByRole('combobox', { name: '资源包分类', exact: true }).selectOption('Music');
+    await page.getByRole('button', { name: '加载热门项目', exact: true }).click();
+    await page.waitForFunction(() => window.resourceCalls.some((call) => call.method === 'workshop.query' && call.params.appId === 105600));
+    const terrariaQuery = await page.evaluate(() => window.resourceCalls.filter((call) => call.method === 'workshop.query').at(-1));
+    assert.equal(terrariaQuery.params.appId, 105600, 'Terraria resources use Terraria Workshop app ID');
+    assert.equal(terrariaQuery.params.category, 'Music');
     await page.getByRole('button', { name: '返回上一页', exact: true }).click();
     await page.waitForURL((url) => url.hash === '#mods');
     assert.equal(

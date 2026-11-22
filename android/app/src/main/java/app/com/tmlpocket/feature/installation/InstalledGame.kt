@@ -4,12 +4,14 @@ import java.io.File
 
 enum class PackageKind {
     TERRARIA,
+    MOBILE_TERRARIA,
     TMODLOADER,
 }
 
 enum class TerrariaSource(val id: String) {
     STEAM("steam"),
     GOG("gog"),
+    ANDROID("android"),
 }
 
 data class InstalledTmlVersion(

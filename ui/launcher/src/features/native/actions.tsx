@@ -180,7 +180,7 @@ export function useNativeActions(launcher: LauncherContextValue) {
     else if (id === 'controls-layout')
       notice(
         '触控布局',
-        '触控由内置 MobileJoystick 提供。进入游戏后打开设置，可选择简单、高级或自定义布局，调整大小、透明度和死区；自定义模式支持拖动控件、绑定模组快捷键及保存四套预设。',
+        '在启动器的「设置 → 触控与输入」编辑控制和界面布局。游戏内也可以继续调整。',
       );
     else if (id === 'licenses')
       openDialog({
@@ -194,8 +194,8 @@ export function useNativeActions(launcher: LauncherContextValue) {
             <p>SteamKit2: LGPL-2.1-only。未修改的独立程序集，源码来自 SteamRE/SteamKit。</p>
             <p>
               RotatingartLauncher 触摸、显示、帧率、控制台与联机适配：GPL-3.0，源码位于
-              external/tML-Pocket-Patches。MobileJoystick 0.1.4：yu，源码见外部 tML-Pocket-Mods
-              项目并保留资源来源说明。
+              external/tML-Pocket-Patches。MobileJoystick 作者为 yu，游戏补丁源码和素材来源见
+              managed/MobileLauncher.Controls。
             </p>
             <p>完整许可文件随 APK 提供。</p>
           </>

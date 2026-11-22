@@ -103,6 +103,7 @@
     .game-stage,
     .game-dock,
     .task-card,
+    .download-page:not(.download-compact),
     .download-card,
     .dialog,
     .primitive-popup,

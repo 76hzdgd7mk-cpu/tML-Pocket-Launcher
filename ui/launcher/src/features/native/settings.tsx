@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Badge, Button, SettingRow, Switch } from '../../components/ui';
 import { Select } from '../../components/form-controls';
 import { useGameActions } from '../game-actions';
 import { nativeRequest } from '../../native/bridge';
+import { ControlsEditor } from './controls-editor';
 
 export function NativeRuntimeSettings() {
   const { showInfo, nativeState, notify } = useGameActions();
@@ -86,29 +88,35 @@ export function NativeRuntimeSettings() {
   );
 }
 export function NativeControlsSettings() {
-  const { showInfo } = useGameActions();
   return (
     <section className="settings-section">
       <h2>触控与输入</h2>
       <div className="panel">
         <SettingRow
           title="MobileJoystick"
-          description="内置 0.1.4 · 双摇杆、触屏背包、菜单与地图，共用原生多点触摸。"
+          description="随启动器加载的游戏补丁，提供双摇杆、触屏背包、菜单与地图。"
         >
           <Badge tone="green">内置触控系统</Badge>
-        </SettingRow>
-        <SettingRow
-          title="布局与手感"
-          description="进入游戏 → 设置，调整控件大小、透明度、死区和自定义预设。"
-        >
-          <Button variant="ghost" onClick={() => showInfo('controls-layout')}>
-            使用说明
-          </Button>
         </SettingRow>
         <SettingRow title="文本输入" description="游戏内使用 Android 系统键盘。">
           <Badge>系统键盘</Badge>
         </SettingRow>
       </div>
+    </section>
+  );
+}
+
+export function NativeLayoutManagement() {
+  const [editing, setEditing] = useState(false);
+  return (
+    <section className="settings-section">
+      <h2>控制管理</h2>
+      <div className="panel">
+        <SettingRow title="游戏布局">
+          <Button onClick={() => setEditing(true)}>编辑游戏布局</Button>
+        </SettingRow>
+      </div>
+      {editing && <ControlsEditor onClose={() => setEditing(false)} />}
     </section>
   );
 }

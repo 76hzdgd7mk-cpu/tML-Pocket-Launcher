@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NativePacks } from './packs';
 import {
   Badge,
@@ -11,6 +11,7 @@ import {
 } from '../../components/ui';
 import { useLauncher } from '../../state/launcher';
 import { nativeRequest } from '../../native/bridge';
+import { ModDependencies } from './mod-dependencies';
 
 export function NativeModsPage() {
   const { state, update, nativeState, openDialog, closeDialog, openWorkspace } = useLauncher();
@@ -21,12 +22,28 @@ export function NativeModsPage() {
   }, [state.modTab, update, openWorkspace]);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
+  const [icons, setIcons] = useState<Record<string, string>>({});
+  const requestedIcons = useRef(new Set<string>());
   const mods = nativeState?.mods || [];
   const filteredMods = mods.filter(
     (mod) =>
       `${mod.title} ${mod.author} ${mod.id}`.toLowerCase().includes(query.trim().toLowerCase()) &&
       (filter === 'all' || (filter === 'enabled' ? mod.enabled : !mod.enabled)),
   );
+  useEffect(() => {
+    const pending = filteredMods
+      .filter((mod) => !mod.error && !requestedIcons.current.has(mod.id))
+      .slice(0, 24);
+    if (!pending.length) return;
+    pending.forEach((mod) => requestedIcons.current.add(mod.id));
+    void nativeRequest<Record<string, string>>('mods.icons', {
+      ids: pending.map((mod) => mod.id),
+    }).then((loaded) => {
+      setIcons((current) => ({ ...current, ...loaded }));
+    }).catch(() => {
+      pending.forEach((mod) => requestedIcons.current.delete(mod.id));
+    });
+  }, [filteredMods, nativeState?.busy]);
   const run = (method: string, params: object = {}) =>
     void nativeRequest(method, params).catch((error: Error) =>
       openDialog({ title: '操作未完成', description: error.message }),
@@ -87,7 +104,7 @@ export function NativeModsPage() {
             openDialog({
               title: '批量管理',
               description:
-                '作用于全部可管理模组，内置触控保持启用。停用时会联动停用依赖项，下次启动生效。',
+                '作用于全部可管理模组。停用时会联动停用依赖项，下次启动生效。',
               body: (
                 <div className="pack-options">
                   {[true, false].map((enabled) => (
@@ -134,7 +151,7 @@ export function NativeModsPage() {
           {filteredMods.map((mod) => (
             <div className="resource-row native-mod-row" key={mod.id}>
               <span className="resource-icon">
-                <Icon name="mod" />
+                {icons[mod.id] ? <img src={icons[mod.id]} alt="" /> : <Icon name="mod" />}
               </span>
               <div className="resource-copy">
                 <h3>
@@ -144,26 +161,40 @@ export function NativeModsPage() {
                 <p>
                   {mod.author || mod.id} · {(mod.size / 1048576).toFixed(1)} MB
                 </p>
-                {(mod.error || mod.deps.length > 0) && (
-                  <p>{mod.error || `依赖：${mod.deps.join('、')}`}</p>
+                {mod.error && <p>{mod.error}</p>}
+              </div>
+              <div className="native-mod-actions">
+                {!mod.error && (
+                  <Button
+                    aria-label={`查看 ${mod.title} 的依赖`}
+                    onClick={() =>
+                      openDialog({
+                        title: `${mod.title} · 模组依赖`,
+                        description: '根据已安装模组和启用状态检查。',
+                        body: <ModDependencies mod={mod} />,
+                      })
+                    }
+                  >
+                    依赖
+                  </Button>
+                )}
+                {!mod.builtin && (
+                  <>
+                    <Switch
+                      disabled={nativeState?.busy || !!mod.error}
+                      label={`启用${mod.title}`}
+                      checked={mod.enabled}
+                      onChange={(enabled) => run('mods.enable', { ids: [mod.id], enabled })}
+                    />
+                    <Button
+                      disabled={nativeState?.busy}
+                      onClick={() => confirmDelete(mod.id, mod.title)}
+                    >
+                      删除
+                    </Button>
+                  </>
                 )}
               </div>
-              {!mod.builtin && (
-                <div className="native-mod-actions">
-                  <Switch
-                    disabled={nativeState?.busy || !!mod.error}
-                    label={`启用${mod.title}`}
-                    checked={mod.enabled}
-                    onChange={(enabled) => run('mods.enable', { ids: [mod.id], enabled })}
-                  />
-                  <Button
-                    disabled={nativeState?.busy}
-                    onClick={() => confirmDelete(mod.id, mod.title)}
-                  >
-                    删除
-                  </Button>
-                </div>
-              )}
             </div>
           ))}
         </section>

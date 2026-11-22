@@ -8,6 +8,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
   const browser = await chromium.launch({
     headless: true,
     channel: process.env.PLAYWRIGHT_CHANNEL || 'msedge',
+    executablePath: process.env.PLAYWRIGHT_EXECUTABLE || undefined,
   });
   try {
     const page = await browser.newPage({
@@ -102,19 +103,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
         ],
         appVersion: '0.1.0',
       };
-      state.mods.push({
-        id: 'MobileJoystick',
-        title: 'MobileJoystick',
-        version: '0.1.4',
-        loaderVersion: '2026.9.3.1',
-        author: 'yu',
-        description: '',
-        deps: [],
-        side: 1,
-        size: 1145553,
-        enabled: true,
-        builtin: true,
-      });
+      const controls = {};
       window.nativeCalls = [];
       window.nativeFixture = state;
       const stores = {
@@ -132,6 +121,11 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
           let data = true;
           let error;
           if (method === 'state' || method === 'refresh') data = state;
+          else if (method === 'terraria.mobile.inspect')
+            data = window.mobileTerrariaFixture ?? { status: 'not-installed' };
+          else if (method === 'terraria.mobile.convert') state.terrariaSource = 'android';
+          else if (method === 'controls.read') data = controls;
+          else if (method === 'controls.save') data = Object.assign(controls, params.settings);
           else if (method === 'files.roots')
             data = {
               granted: !!window.nativeStorageGranted,
@@ -315,7 +309,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
             error = window.tmlImportFailure;
           else if (method === 'launch') {
             if (
-              state.terrariaSource !== 'gog' &&
+              state.terrariaSource === 'steam' &&
               (stores.steam.phase !== 'ready' || !stores.steam.owned)
             )
               error = '请登录拥有 Terraria 的 Steam 账户并验证所有权';
@@ -393,8 +387,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
       0,
     );
     const builtInRow = page.locator('.native-mod-row').filter({ hasText: 'MobileJoystick' });
-    assert.equal(await builtInRow.getByRole('button', { name: '删除', exact: true }).count(), 0);
-    await builtInRow.getByText('内置触控', { exact: true }).waitFor();
+    assert.equal(await builtInRow.count(), 0);
     const modSearch = page.getByRole('searchbox', { name: '搜索已安装模组' });
     await modSearch.fill('nothing-matches');
     await page.getByText('没有匹配的模组', { exact: true }).waitFor();
@@ -485,6 +478,20 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await saveDialog.waitFor({ state: 'hidden' });
     await nav('games').click();
     await page.getByRole('tab', { name: '添加游戏', exact: true }).click();
+    const mobileTerraria = page.getByRole('button', { name: '检测 Android 版 Terraria' });
+    await mobileTerraria.click();
+    const mobileInspection = page.getByRole('dialog', { name: 'Android 版 Terraria' });
+    await mobileInspection.getByText(/本机未检测到/).waitFor();
+    await page.keyboard.press('Escape');
+    await mobileInspection.waitFor({ state: 'hidden' });
+    await page.evaluate(() => {
+      window.mobileTerrariaFixture = { status: 'unity', version: '1.4.5.8.6', apkCount: 2 };
+    });
+    await mobileTerraria.click();
+    await mobileInspection.getByText('已检测到 Terraria 1.4.5.8.6，共 2 个 APK。').waitFor();
+    await mobileInspection.getByText(/此 APK 未包含 Android 版 Terraria 转换配置/).waitFor();
+    await page.keyboard.press('Escape');
+    await mobileInspection.waitFor({ state: 'hidden' });
     await page.getByRole('button', { name: '导入资源', exact: true }).click();
     await page.getByRole('button', { name: '选择 ZIP', exact: true }).click();
     const fileDialog = page.getByRole('dialog', { name: '选择文件', exact: true });
@@ -630,10 +637,11 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
       'background completion does not steal focus',
     );
     await page.locator('.topbar [data-action=tasks]').click();
-    await page.getByRole('heading', { name: '一切准备就绪', exact: true }).waitFor();
-    await page.getByRole('heading', { name: /tModLoader/ }).waitFor();
-    await page.getByRole('button', { name: '查看下载窗口', exact: true }).click();
-    await downloadWindow.getByRole('heading', { name: '一切准备就绪', exact: true }).waitFor();
+    const releaseTask = page.locator('.download-card').filter({ hasText: 'GitHub' }).first();
+    await releaseTask.getByText('安装完成', { exact: true }).waitFor();
+    await releaseTask.getByRole('heading', { name: /tModLoader/ }).waitFor();
+    await releaseTask.getByRole('button', { name: '查看下载窗口', exact: true }).click();
+    await downloadWindow.getByRole('heading', { name: '安装完成', exact: true }).waitFor();
     await downloadWindow.getByRole('button', { name: '最小化', exact: true }).last().click();
     await page.getByRole('button', { name: '查看已安装资源', exact: true }).click();
     await page.getByRole('tab', { name: '添加游戏', exact: true }).click();
@@ -654,11 +662,13 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
       'background failure does not steal focus',
     );
     await page.locator('.topbar [data-action=tasks]').click();
-    await page.getByRole('alert').filter({ hasText: '连接中断，请重试' }).waitFor();
-    await page.getByRole('button', { name: '重新下载', exact: true }).click();
+    const failedRelease = page.locator('.download-card').filter({ hasText: '连接中断，请重试' });
+    await failedRelease.getByRole('alert').waitFor();
+    assert.ok(await releaseTask.count(), 'session retains download tasks');
+    await failedRelease.getByRole('button', { name: '重新下载', exact: true }).click();
     await page.waitForFunction(() => typeof window.finishNativeDownload === 'function');
     await page.evaluate(() => window.finishNativeDownload());
-    await downloadWindow.getByRole('heading', { name: '一切准备就绪', exact: true }).waitFor();
+    await downloadWindow.getByRole('heading', { name: '安装完成', exact: true }).waitFor();
     await downloadWindow.getByRole('button', { name: '查看已安装资源', exact: true }).click();
     await page.getByRole('tab', { name: '添加游戏', exact: true }).click();
     await page.getByRole('button', { name: 'Steam 登录与下载', exact: true }).click();
@@ -857,20 +867,24 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.waitForFunction(
       () => document.querySelector('[role=progressbar]')?.getAttribute('aria-valuenow') === '23',
     );
-    await page.getByRole('button', { name: '取消任务', exact: true }).click();
-    await page.getByRole('heading', { name: '下载已取消', exact: true }).waitFor();
-    await page.getByRole('button', { name: '重新下载', exact: true }).click();
+    const steamTask = page
+      .locator('.download-card')
+      .filter({ hasText: 'Steam · Linux 游戏资源' })
+      .first();
+    await steamTask.getByRole('button', { name: '取消任务', exact: true }).click();
+    await steamTask.getByText('下载已取消', { exact: true }).waitFor();
+    await steamTask.getByRole('button', { name: '重新下载', exact: true }).click();
     await page.waitForFunction(() => typeof window.finishNativeDownload === 'function');
     await page.evaluate(() => window.finishNativeDownload());
-    await downloadWindow.getByRole('heading', { name: '一切准备就绪', exact: true }).waitFor();
+    await downloadWindow.getByRole('heading', { name: '安装完成', exact: true }).waitFor();
     await capture('steam-download-completed');
     await downloadWindow.getByRole('button', { name: '最小化', exact: true }).last().click();
     assert.ok(page.url().endsWith('/downloads'), 'completion stays on the download result page');
     await page.evaluate(() => window.dispatchEvent(new Event('launcher:back')));
     await page.waitForFunction(() => !location.hash.includes('/'));
     await page.locator('.topbar [data-action=tasks]').click();
-    await page.getByRole('heading', { name: '一切准备就绪', exact: true }).waitFor();
-    await page.getByRole('button', { name: '查看已安装资源', exact: true }).click();
+    await steamTask.getByText('安装完成', { exact: true }).waitFor();
+    await steamTask.getByRole('button', { name: '查看已安装资源', exact: true }).click();
     await page.getByRole('tab', { name: '添加游戏', exact: true }).click();
     await page.getByRole('button', { name: 'GOG 登录与下载', exact: true }).click();
     await page.getByRole('button', { name: '打开 GOG 官方登录', exact: true }).click();
@@ -882,13 +896,261 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
         (call) => call.method === 'store.gog.download' && call.params.id === 'linux-en',
       ),
     );
-    await downloadWindow.getByRole('heading', { name: '一切准备就绪', exact: true }).waitFor();
+    await downloadWindow.getByRole('heading', { name: '安装完成', exact: true }).waitFor();
     assert.ok((await downloadWindow.innerText()).includes('GOG'));
+    const cardColors = (card) =>
+      card.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return [style.backgroundColor, style.color, style.colorScheme];
+      });
+    const darkDownloadColors = await cardColors(downloadWindow.locator('.download-card'));
     await page.keyboard.press('Escape');
     await nav('settings').click();
     await page.locator('#settings-tab-controls').click();
     await page.getByText('内置触控系统', { exact: true }).waitFor();
     assert.equal(await page.getByRole('slider', { name: '按键不透明度', exact: true }).count(), 0);
+    await page.locator('#settings-tab-control-management').click();
+    assert.equal(await page.locator('#settings-tab-interface-management').count(), 0);
+    const openEditor = () =>
+      page.getByRole('button', { name: '编辑游戏布局', exact: true }).click();
+    await openEditor();
+    const editor = page.getByRole('dialog', { name: '游戏布局编辑' });
+    const dock = editor.getByRole('button', { name: '悬浮菜单' });
+    const menu = editor.getByRole('region', { name: '编辑菜单' });
+    const openMenu = async () => {
+      if (await menu.isVisible()) return;
+      if ((await dock.getAttribute('aria-expanded')) === 'true') await dock.click();
+      await dock.click();
+    };
+    const command = async (name) => {
+      await openMenu();
+      await menu.getByRole('button', { name, exact: true }).click();
+    };
+    const closePanel = async () => {
+      if ((await dock.getAttribute('aria-expanded')) === 'true') await dock.click();
+    };
+    const canvas = editor.locator('.controls-preview');
+    const dragBy = async (target, dx, dy) => {
+      const { x, y, width, height } = await target.boundingBox();
+      const startX = x + width / 2;
+      const startY = y + height / 2;
+      await page.mouse.move(startX, startY);
+      await page.mouse.down();
+      await page.mouse.move(startX + dx, startY + dy, { steps: 5 });
+      await page.mouse.up();
+    };
+    const fullBounds = { x: 0, y: 0, width: 932, height: 430 };
+    assert.deepEqual(await canvas.boundingBox(), fullBounds);
+    const moveStick = canvas.getByRole('button', { name: '移动', exact: true });
+    const aimStick = canvas.getByRole('button', { name: '瞄准', exact: true });
+    const jumpButton = canvas.getByRole('button', { name: '跳跃', exact: true });
+    const bagButton = canvas.getByRole('button', { name: '背包', exact: true });
+    const mapButton = canvas.getByRole('button', { name: '地图', exact: true });
+    const assertMobilePlacement = async (width, height) => {
+      const scale = 1.8 * Math.min(width / 1920, height / 1080);
+      const edge = 9 * scale;
+      const inset = Math.max(4, Math.trunc(edge));
+      const top = Math.max(4, Math.trunc(6 * scale));
+      const mapSize = Math.trunc(40 * scale);
+      const side = Math.max(16, Math.trunc(38 * scale));
+      const bagX = Math.max(inset, Math.trunc(width * 0.056)) + Math.floor(side / 2);
+      await page.waitForFunction(
+        (left) =>
+          Math.abs(
+            parseFloat(
+              document.querySelector('[aria-label="背包"].controls-preview-node')?.style.left,
+            ) - left,
+          ) < 0.001,
+        (bagX / width) * 100,
+      );
+      const assertCenter = async (locator, x, y) => {
+        const bounds = await locator.boundingBox();
+        assert.ok(Math.abs(bounds.x + bounds.width / 2 - x) < 0.1);
+        assert.ok(Math.abs(bounds.y + bounds.height / 2 - y) < 0.1);
+      };
+      const stickY = height - 104 * scale - edge;
+      const aimX = width - Math.max(width * 0.15, 166 * scale + edge);
+      await assertCenter(moveStick, Math.max(width * 0.203125, 166 * scale + edge), stickY);
+      await assertCenter(aimStick, aimX, stickY);
+      await assertCenter(jumpButton, aimX + 122 * scale, stickY - 84 * scale);
+      assert.ok(Math.abs((await aimStick.boundingBox()).width - 132 * scale) < 0.1);
+      await assertCenter(bagButton, bagX, top + Math.floor(side / 2));
+      await assertCenter(
+        mapButton,
+        width - inset - mapSize + Math.floor(mapSize / 2),
+        top + Math.floor(mapSize / 2),
+      );
+    };
+    await assertMobilePlacement(932, 430);
+    await page.setViewportSize({ width: 740, height: 460 });
+    await assertMobilePlacement(740, 460);
+    await page.setViewportSize({ width: 932, height: 430 });
+    await assertMobilePlacement(932, 430);
+    assert.equal(
+      await bagButton.evaluate((element) => getComputedStyle(element).backgroundImage),
+      'none',
+    );
+    await bagButton.click();
+    const properties = editor.getByRole('complementary', { name: '属性' });
+    await properties.getByRole('heading', { name: '背包', exact: true }).waitFor();
+    assert.equal(await properties.getByRole('slider', { name: '控件横向位置' }).isEnabled(), true);
+    assert.equal(await properties.getByRole('combobox', { name: '按键动作' }).inputValue(), '12');
+    await properties.getByRole('button', { name: '关闭属性' }).click();
+    const dockBefore = await dock.boundingBox();
+    await dragBy(dock, -90, 60);
+    const dockAfter = await dock.boundingBox();
+    assert.ok(Math.abs(dockAfter.x - dockBefore.x + 90) < 1);
+    assert.ok(Math.abs(dockAfter.y - dockBefore.y - 60) < 1);
+    assert.equal(await dock.getAttribute('aria-expanded'), 'false');
+    await command('属性');
+    assert.deepEqual(await canvas.boundingBox(), fullBounds);
+    assert.equal(await editor.getByRole('combobox', { name: '布局模式' }).inputValue(), '1');
+    assert.equal(await editor.getByRole('button', { name: '药水', exact: true }).count(), 1);
+    assert.equal((await editor.boundingBox()).width, 932);
+    assert.equal((await editor.boundingBox()).height, 430);
+    await command('添加控件');
+    await editor.getByRole('button', { name: '方向键', exact: true }).click();
+    await command('属性');
+    await editor.getByRole('textbox', { name: '控件名称' }).fill('测试方向键');
+    await editor.getByRole('combobox', { name: '方向键样式' }).selectOption('ROUND');
+    await command('使用默认控件');
+    assert.equal(await canvas.getByRole('button', { name: '测试方向键', exact: true }).count(), 0);
+    await assertMobilePlacement(932, 430);
+    await command('撤销');
+    await canvas.getByRole('button', { name: '测试方向键', exact: true }).waitFor();
+    await command('撤销');
+    await closePanel();
+    await canvas.getByRole('button', { name: '测试方向键', exact: true }).click();
+    assert.equal(await editor.getByRole('combobox', { name: '方向键样式' }).inputValue(), 'CROSS');
+    await command('重做');
+    const controlScenes = menu.getByRole('group', { name: '预览场景' });
+    await controlScenes.getByRole('button', { name: '背包', exact: true }).click();
+    assert.equal(await canvas.getAttribute('data-scene'), 'inventory');
+    assert.equal(await canvas.locator('.controls-art-slots.inventory > i').count(), 50);
+    await controlScenes.getByRole('button', { name: '游戏', exact: true }).click();
+    const fittedWidth = (await canvas.boundingBox()).width;
+    await command('放大画布');
+    assert.ok((await canvas.boundingBox()).width > fittedWidth * 1.2);
+    await command('缩小画布');
+    assert.equal((await canvas.boundingBox()).width, fittedWidth);
+    const dpad = canvas.getByRole('button', { name: '测试方向键', exact: true });
+    assert.equal(await dpad.getAttribute('data-control-type'), 'dpad');
+    await command('纯预览');
+    assert.equal(await canvas.getAttribute('data-grid'), 'false');
+    assert.equal(await dpad.isDisabled(), true);
+    assert.equal(await menu.isVisible(), false);
+    await command('纯预览');
+    assert.equal(await dpad.isEnabled(), true);
+    await closePanel();
+    const canvasBounds = await canvas.boundingBox();
+    await dragBy(dpad, canvasBounds.width * 0.06, 0);
+    assert.equal(await properties.isVisible(), false);
+    await dpad.click();
+    await properties.getByRole('heading', { name: '测试方向键', exact: true }).waitFor();
+    const controlX = editor.getByRole('slider', { name: '控件横向位置', exact: true });
+    assert.ok(Math.abs(Number(await controlX.inputValue()) - 0.555) <= 0.01);
+    await command('网格吸附');
+    await closePanel();
+    await dragBy(dpad, canvasBounds.width * 0.003, canvasBounds.height * 0.028);
+    await command('属性');
+    const controlY = editor.getByRole('slider', { name: '控件纵向位置', exact: true });
+    assert.equal(Number(await controlY.inputValue()), 0.53);
+    const dpadWidth = editor.getByRole('slider', { name: '宽度', exact: true });
+    await closePanel();
+    await dragBy(dpad.locator('.controls-resize-handle'), 18, 18);
+    assert.equal(await properties.isVisible(), false);
+    await command('属性');
+    const resizedWidth = Number(await dpadWidth.inputValue());
+    assert.ok(resizedWidth > 0.16);
+    await command('撤销');
+    await command('属性');
+    assert.equal(Number(await dpadWidth.inputValue()), 0.16);
+    await command('重做');
+    await command('属性');
+    assert.equal(Number(await dpadWidth.inputValue()), resizedWidth);
+    await closePanel();
+    await capture('controls-world-editor');
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.deepEqual(await canvas.boundingBox(), { x: 0, y: 0, width: 390, height: 844 });
+    await page.waitForFunction(() => {
+      const node = document.querySelector('[data-control-type="dpad"]');
+      return (
+        node &&
+        Math.abs(node.getBoundingClientRect().width / 844 - parseFloat(node.style.height) / 100) <
+          0.01
+      );
+    });
+    await page.setViewportSize({ width: 932, height: 430 });
+    await command('游戏界面');
+    await openMenu();
+    const scenePicker = menu.getByRole('group', { name: '预览场景' });
+    const interfaceCanvas = canvas;
+    await scenePicker.getByRole('button', { name: '背包', exact: true }).click();
+    assert.equal(await interfaceCanvas.locator('.controls-art-slots.inventory > i').count(), 50);
+    await closePanel();
+    await capture('controls-inventory-editor');
+    const coinAmmo = interfaceCanvas.getByRole('button', { name: '钱币与弹药', exact: true });
+    const coinBounds = await coinAmmo.boundingBox();
+    await page.mouse.click(
+      coinBounds.x + coinBounds.width / 2,
+      coinBounds.y + coinBounds.height / 2,
+    );
+    await properties.getByRole('heading', { name: '钱币与弹药', exact: true }).waitFor();
+    assert.equal(
+      await editor.getByRole('combobox', { name: '界面区域', exact: true }).inputValue(),
+      'CoinAmmo',
+    );
+    await openMenu();
+    await scenePicker.getByRole('button', { name: '制作', exact: true }).click();
+    assert.equal(
+      await interfaceCanvas.getByRole('button', { name: '制作区', exact: true }).count(),
+      1,
+    );
+    assert.equal(
+      await interfaceCanvas.getByRole('button', { name: '装备区', exact: true }).count(),
+      0,
+    );
+    await scenePicker.getByRole('button', { name: '快捷栏', exact: true }).click();
+    await command('属性');
+    await editor.getByRole('combobox', { name: '快捷栏方向' }).selectOption('1');
+    await closePanel();
+    const hotbarPreview = interfaceCanvas.getByRole('button', { name: '快捷栏', exact: true });
+    await dragBy(hotbarPreview, 25, 40);
+    await dragBy(hotbarPreview.locator('.controls-resize-handle'), 20, 20);
+    await command('属性');
+    assert.ok(
+      Number(await editor.getByRole('slider', { name: '区域大小', exact: true }).inputValue()) > 1,
+    );
+    await command('游戏控制');
+    assert.equal(await dpad.count(), 1);
+    await command('保存布局');
+    await editor.waitFor({ state: 'hidden' });
+    assert.ok(
+      await page.evaluate(() =>
+        window.nativeCalls.some(
+          (call) =>
+            call.method === 'controls.save' &&
+            call.params.category === 'layout' &&
+            call.params.settings.CustomPresets?.some((preset) =>
+              preset?.Controls.some((control) => control.Launcher?.Data.name === '测试方向键'),
+            ) &&
+            call.params.settings.InterfaceLayout?.Regions.Hotbar?.CenterY > 0.12,
+        ),
+      ),
+    );
+    await openEditor();
+    await command('游戏界面');
+    await command('属性');
+    assert.equal(await editor.getByRole('combobox', { name: '快捷栏方向' }).inputValue(), '1');
+    await command('游戏控制');
+    await command('属性');
+    await editor.getByRole('combobox', { name: '选中控件' }).selectOption({ label: '测试方向键' });
+    assert.equal(await editor.getByRole('combobox', { name: '方向键样式' }).inputValue(), 'ROUND');
+    await editor.getByRole('textbox', { name: '控件名称' }).fill('未保存');
+    await closePanel();
+    await page.evaluate(() => window.dispatchEvent(new Event('launcher:back')));
+    await editor.getByRole('button', { name: '放弃修改' }).click();
+    await editor.waitFor({ state: 'hidden' });
     await page.locator('#settings-tab-runtime').click();
     await page.getByRole('combobox', { name: '渲染器', exact: true }).click();
     await page.getByRole('option', { name: /GL4ES.*dev\.example\.renderer 1\.2/ }).click();
@@ -913,6 +1175,20 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.getByRole('option', { name: '泰拉风', exact: true }).click();
     await page.waitForFunction(() => window.nativeFixture.preferences.themeStyle === 'tml');
     assert.equal(await page.locator('html').getAttribute('data-skin'), 'tml');
+    const checkDownloadTheme = async () => {
+      await page.locator('.topbar [data-action=tasks]').click();
+      const gogTask = page.locator('.download-card').filter({ hasText: 'GOG · Linux 游戏资源' });
+      const listColors = await cardColors(gogTask);
+      await gogTask.getByRole('button', { name: '查看下载窗口', exact: true }).click();
+      assert.deepEqual(await cardColors(downloadWindow.locator('.download-card')), listColors);
+      await page.keyboard.press('Escape');
+      await downloadWindow.waitFor({ state: 'hidden' });
+      await page.getByRole('button', { name: '返回上一页', exact: true }).click();
+      return listColors;
+    };
+    const tmlDownloadColors = await checkDownloadTheme();
+    assert.equal(tmlDownloadColors[0], 'rgb(33, 43, 79)');
+    assert.notDeepEqual(tmlDownloadColors, darkDownloadColors);
     await page.getByRole('button', { name: '图片背景', exact: true }).click();
     const imageBrowser = page.getByRole('dialog', { name: '选择文件', exact: true });
     await imageBrowser.locator('.file-entry').filter({ hasText: 'forest.png' }).click();
@@ -928,6 +1204,10 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.getByRole('option', { name: '默认', exact: true }).click();
     await page.waitForFunction(() => window.nativeFixture.preferences.themeStyle === 'default');
     assert.equal(await page.locator('html').getAttribute('data-skin'), null);
+    const lightDownloadColors = await checkDownloadTheme();
+    assert.equal(lightDownloadColors[2], 'light');
+    assert.notDeepEqual(lightDownloadColors, tmlDownloadColors);
+    assert.notDeepEqual(lightDownloadColors, darkDownloadColors);
     assert.equal(
       await page.evaluate(() => window.nativeFixture.preferences.renderScale),
       75,
@@ -947,6 +1227,33 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     assert.equal(await page.locator('#demo-toggle').count(), 0);
     await page.getByRole('button', { name: '查看日志', exact: true }).click();
     await page.getByText('[dotnet] 实际启动日志', { exact: true }).waitFor();
+    await page.keyboard.press('Escape');
+    await nav('games').click();
+    await page.getByRole('tab', { name: '添加游戏', exact: true }).click();
+    const launchesBeforeConversion = await page.evaluate(() => {
+      window.mobileTerrariaFixture = {
+        status: 'unity',
+        version: '1.4.5.8.6',
+        apkCount: 1,
+        targetTml: window.nativeFixture.tml,
+      };
+      return window.nativeCalls.filter((call) => call.method === 'launch').length;
+    });
+    await mobileTerraria.click();
+    await mobileInspection.getByRole('button', { name: '转换资源', exact: true }).click();
+    await mobileInspection.waitFor({ state: 'hidden' });
+    await page.getByRole('region', { name: 'tModLoader 游戏状态' }).waitFor();
+    assert.equal(
+      await page.evaluate(
+        () => window.nativeCalls.filter((call) => call.method === 'launch').length,
+      ),
+      launchesBeforeConversion,
+    );
+    await page.locator('.launch-button').click();
+    await page.waitForFunction(
+      (count) => window.nativeCalls.filter((call) => call.method === 'launch').length === count + 1,
+      launchesBeforeConversion,
+    );
     assert.deepEqual(errors, []);
     console.log(
       'PASS: native bridge fixture; file browser and detailed import failures; Steam/GOG/tModLoader download windows, minimize/reopen without duplicate downloads, Android Back, six phone sizes, cancellation/retry, retained results, and background success/failure without stealing focus; Steam login/Guard/library/download navigation; GOG versions; mods/packs/releases; settings and launch/logs. Fixture results do not establish real-device authentication or resource downloads.',

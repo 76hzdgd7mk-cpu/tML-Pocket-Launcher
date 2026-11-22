@@ -9,11 +9,13 @@ import android.util.Log
 import app.com.tmlpocket.core.runtime.AssetBootstrap
 import app.com.tmlpocket.feature.files.FileBrowserAccess
 import app.com.tmlpocket.feature.installation.GamePackageInstaller
+import app.com.tmlpocket.feature.installation.MobileTerrariaPackage
+import app.com.tmlpocket.feature.installation.MobileTerrariaConverter
 import app.com.tmlpocket.feature.installation.PackageKind
 import app.com.tmlpocket.feature.installation.TerrariaSource
 import app.com.tmlpocket.feature.mods.ModRepository
 import app.com.tmlpocket.feature.mods.ModRepository.Companion.strings
-import app.com.tmlpocket.feature.mods.WorkshopClient
+import app.com.tmlpocket.feature.mods.WorkshopContentInstaller
 import app.com.tmlpocket.feature.patches.PatchRepository
 import app.com.tmlpocket.feature.releases.TmlRelease
 import app.com.tmlpocket.feature.releases.TmlReleaseClient
@@ -37,6 +39,8 @@ internal class LauncherController(private val context: Context) {
     private val worker = Executors.newSingleThreadExecutor()
     private val installer = GamePackageInstaller(context.filesDir)
     private val mods = ModRepository(File(context.filesDir, "userdata"))
+    private val mobileControls = MobileControlsSettings(File(context.filesDir, "userdata"))
+    private var migratedTouchMod = false
     private val patches = PatchRepository(File(context.filesDir, "patches"))
     private val client = TmlReleaseClient()
     private val releases = linkedMapOf<Long, TmlRelease>()
@@ -101,7 +105,7 @@ internal class LauncherController(private val context: Context) {
     }
 
     fun request(name: String, params: JSONObject, reply: (Result<Any>) -> Unit) {
-        if (name in setOf("files.roots", "files.list", "files.image", "files.export", "import")) {
+        if (name in setOf("files.roots", "files.list", "files.image", "files.export", "mods.icons", "import")) {
             if (!closed)
                 filesWorker.execute {
                     if (name == "import") {
@@ -130,6 +134,7 @@ internal class LauncherController(private val context: Context) {
                                     "files.roots" -> fileBrowser.status()
                                     "files.list" -> fileBrowser.repository().list(params)
                                     "files.image" -> fileBrowser.image(params)
+                                    "mods.icons" -> mods.icons(params.getJSONArray("ids").strings())
                                     else ->
                                         fileBrowser
                                             .repository()
@@ -148,12 +153,17 @@ internal class LauncherController(private val context: Context) {
         }
         when (name) {
             "logs",
+            "terraria.mobile.inspect",
             "store.steam.details" -> {
                 if (!closed)
                     detailsWorker.execute {
                         val result = runCatching {
-                            if (name == "logs") JSONObject().put("text", readLogs())
-                            else steamDetails.details(params.optBoolean("refresh"))
+                            when (name) {
+                                "logs" -> JSONObject().put("text", readLogs())
+                                "terraria.mobile.inspect" -> MobileTerrariaPackage.inspect(context)
+                                    .put("targetTml", MobileTerrariaPackage.targetTml(context) ?: JSONObject.NULL)
+                                else -> steamDetails.details(params.optBoolean("refresh"))
+                            }
                         }
                         main.post { if (!closed) reply(result) }
                     }
@@ -222,8 +232,13 @@ internal class LauncherController(private val context: Context) {
                     "packs.apply",
                     "patches.toggle",
                     "patches.delete",
+                    "workshop.query",
+                    "workshop.details",
                     "workshop.download",
+                    "controls.save",
                     "launch.check",
+                    "terraria.mobile.convert",
+                    "terraria.desktop.select",
                     "store.steam.download",
                     "store.gog.download",
                 ) && gameRunning()
@@ -247,6 +262,8 @@ internal class LauncherController(private val context: Context) {
                 require(!network.isActiveNetworkMetered) { "已启用仅在 Wi-Fi 下下载，请连接不计费网络或关闭此选项" }
             }
             when (name) {
+                "controls.read" -> mobileControls.read()
+                "controls.save" -> mobileControls.save(params)
                 "store.status",
                 "store.steam.login",
                 "store.steam.guard",
@@ -286,7 +303,10 @@ internal class LauncherController(private val context: Context) {
                     true
                 }
                 "state",
-                "refresh" -> null
+                "refresh" -> {
+                    if (!gameRunning()) installDefaultTml(cancelled)
+                    null
+                }
                 "versions.select" -> {
                     installer.selectVersion(params.getString("id"))
                     true
@@ -374,17 +394,34 @@ internal class LauncherController(private val context: Context) {
                     patches.delete(params.getString("id"))
                     true
                 }
-                "workshop.details" -> WorkshopClient().details(params.getString("id"))
+                "workshop.query",
+                "workshop.details" -> stores.request(name, params, cancelled, ::progress)
                 "workshop.download" -> {
-                    val file =
-                        WorkshopClient()
-                            .download(params.getString("id"), context.cacheDir, cancelled)
-                    try {
-                        mods.importFile(file)
-                    } finally {
-                        file.delete()
+                    val result = stores.request(name, params, cancelled, ::progress) as JSONObject
+                    val root = File(context.cacheDir, "store-downloads").canonicalFile
+                    val directory = File(result.getString("directory")).canonicalFile
+                    val file = File(result.getString("file")).canonicalFile
+                    require(directory.parentFile == root && file.parentFile == directory && file.isFile) {
+                        "工坊暂存下载路径无效"
                     }
-                    true
+                    try {
+                        require(result.getInt("appId") == params.getInt("appId") && result.getString("id") == params.getString("id")) {
+                            "下载的工坊项目与请求不一致"
+                        }
+                        if (cancelled()) throw InterruptedIOException("已取消")
+                        progress("正在安装工坊内容…", 95)
+                        val modId = WorkshopContentInstaller(File(context.filesDir, "userdata"), mods)
+                            .install(
+                                result.getInt("appId"),
+                                result.getString("id"),
+                                params.optString("title", result.optString("fileName")),
+                                file,
+                                installer.packageStatus(PackageKind.TMODLOADER),
+                            )
+                        JSONObject().put("modId", modId ?: JSONObject.NULL)
+                    } finally {
+                        directory.deleteRecursively()
+                    }
                 }
                 "storage" -> storage()
                 "cache.clear" -> {
@@ -401,8 +438,18 @@ internal class LauncherController(private val context: Context) {
                     storage()
                 }
                 "logs" -> JSONObject().put("text", readLogs())
+                "terraria.desktop.select" -> {
+                    installer.selectTerraria(android = false)
+                    true
+                }
+                "terraria.mobile.convert" -> {
+                    installDefaultTml(cancelled)
+                    prepareMobileTerraria(cancelled)
+                    true
+                }
                 "launch.check" -> {
                     launchProgress("resources", "正在检查游戏资源…")
+                    installDefaultTml(cancelled)
                     val installed =
                         installer.installation() ?: error("请先导入 Terraria 资源与 tModLoader 发行包")
                     if (installed.terrariaSource == TerrariaSource.STEAM) {
@@ -413,7 +460,7 @@ internal class LauncherController(private val context: Context) {
                     }
                     check(!cancelled()) { "启动已取消" }
                     launchProgress("mods", "正在检查模组与补丁…")
-                    AssetBootstrap.prepareBuiltinMods(context)
+                    AssetBootstrap.migrateTouchMod(context)
                     mods.validateForLaunch(installed.version)
                     val args =
                         settings.read().optJSONArray("launchArguments")?.strings().orEmpty() +
@@ -650,9 +697,28 @@ internal class LauncherController(private val context: Context) {
         }
     }
 
+    private fun installDefaultTml(cancelled: () -> Boolean) {
+        installer.installDefaultTml(context.cacheDir, cancelled, ::progress) { destination ->
+            val buffer = ByteArray(128 * 1024)
+            context.assets.open("tmodloader-default/tModLoader.zip").use { input ->
+                destination.outputStream().use { output ->
+                    while (true) {
+                        check(!cancelled()) { "内置 tModLoader 安装已取消" }
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        output.write(buffer, 0, count)
+                    }
+                }
+            }
+        }
+    }
+
     private fun readState(): JSONObject {
-        AssetBootstrap.prepareBuiltinMods(context)
-        val terraria = installer.packageStatus(PackageKind.TERRARIA)
+        if (!gameRunning() && !migratedTouchMod) {
+            AssetBootstrap.migrateTouchMod(context)
+            migratedTouchMod = true
+        }
+        val terraria = installer.selectedTerrariaStatus()
         val tml = installer.packageStatus(PackageKind.TMODLOADER)
         val runtime =
             runCatching {
@@ -664,6 +730,7 @@ internal class LauncherController(private val context: Context) {
         return JSONObject()
             .put("terraria", terraria ?: JSONObject.NULL)
             .put("terrariaSource", installer.terrariaSource()?.id ?: JSONObject.NULL)
+            .put("desktopTerrariaSource", installer.desktopTerrariaSource()?.id ?: JSONObject.NULL)
             .put("tml", tml ?: JSONObject.NULL)
             .put(
                 "installedVersions",
@@ -681,6 +748,42 @@ internal class LauncherController(private val context: Context) {
             .put("packs", mods.packs())
             .put("patches", patches.list())
             .put("appVersion", app.com.tmlpocket.BuildConfig.VERSION_NAME)
+    }
+
+    private fun prepareMobileTerraria(cancelled: () -> Boolean) {
+        val target = MobileTerrariaPackage.targetTml(context)
+            ?: error("此 APK 未包含 Android 版 Terraria 转换器")
+        val tml = installer.packageStatus(PackageKind.TMODLOADER)
+        check(tml == target) { "Android 版 Terraria 需要选择 tModLoader $target" }
+        val info = MobileTerrariaPackage.installed(context)
+            ?: error("请先安装 Android 版 Terraria")
+        val fingerprint = MobileTerrariaPackage.fingerprint(info)
+        if (!installer.mobileTerrariaIsCurrent(fingerprint, target)) {
+            installer.installMobileTerraria(
+                info.versionName.orEmpty().ifBlank { info.longVersionCode.toString() },
+                fingerprint,
+                target,
+                cancelled,
+                ::progress,
+            ) { destination ->
+                MobileTerrariaConverter.convertInstalled(context, destination) { stage, current, total ->
+                    if (cancelled()) return@convertInstalled false
+                    val (label, value) = when (stage) {
+                        "extract" -> "正在提取 Android 版 Terraria 资源…" to 0
+                        "assets" -> "正在转换贴图、字体和音效（$current/$total）…" to (5 + current * 55 / total)
+                        "music" -> "正在转换音乐（$current/$total）…" to (60 + current * 29 / total)
+                        else -> "正在校验转换资源…" to 90
+                    }
+                    progress(label, value)
+                    true
+                }
+                check(MobileTerrariaPackage.installed(context)?.let(MobileTerrariaPackage::fingerprint) == fingerprint) {
+                    "转换期间 Android 版 Terraria 已更新，请重新转换"
+                }
+            }
+        }
+        check(!cancelled()) { "资源转换已取消" }
+        installer.selectTerraria(android = true)
     }
 
     private fun storage(): JSONObject =

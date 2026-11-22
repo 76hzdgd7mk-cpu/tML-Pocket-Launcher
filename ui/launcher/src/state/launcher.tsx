@@ -45,6 +45,7 @@ function preferredSystemDark() {
 export const resourceDestinations = [
   { id: 'resource-versions', label: '游戏', symbol: 'game' },
   { id: 'resource-mods', label: '模组', symbol: 'mod' },
+  { id: 'resource-assets', label: '资源', symbol: 'wallpaper' },
   { id: 'resource-packs', label: '模组包', symbol: 'folder' },
 ] as const;
 export type ResourceWorkspace = (typeof resourceDestinations)[number]['id'];
@@ -60,6 +61,7 @@ export const workspaceNames: Record<NativeWorkspace, string> = {
   downloads: '下载',
   'resource-versions': '下载 - 游戏',
   'resource-mods': '下载 - 模组',
+  'resource-assets': '下载 - 资源',
   'resource-packs': '下载 - 模组包',
 };
 export interface LauncherContextValue {
@@ -258,6 +260,11 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!nativeMode) return;
     const back = () => {
+      const layoutEditor = document.querySelector<HTMLDialogElement>('#game-layout-editor[open]');
+      if (layoutEditor) {
+        layoutEditor.dispatchEvent(new Event('cancel', { cancelable: true }));
+        return;
+      }
       if (dialogOpen.current) closeDialog();
       else if (nativeWorkspace) closeWorkspace();
       else if (state.page !== 'home') navigate('home');

@@ -1,0 +1,2099 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Input.Touch;
+using Terraria;
+using Terraria.Audio;
+using Terraria.GameContent;
+using Terraria.GameInput;
+using Terraria.ID;
+using Terraria.ModLoader;
+using Terraria.Social.Steam;
+using Terraria.Social;
+using Terraria.UI;
+using ReLogic.Content;
+using ReLogic.Graphics;
+using Terraria.ModLoader.Config;
+
+namespace MobileJoystick;
+
+// The options window retains Terraria's pause/update lifecycle; only its view
+// and navigation are replaced. Coordinates here are physical client pixels.
+public partial class MobileMenuSystem : MobileSystem
+{
+	private enum Page { Pause, Settings, TouchEditor, InterfaceEditor }
+	private enum TouchEditorView { Overview, Edit, ActionPicker, CopyPicker }
+	private enum BindingCategory { Basic, Mod, Keyboard }
+	private Page page;
+	private int category;
+	private bool session, returningFromFancy, forceClose, modDirty, settingsDirty;
+	private bool wasDown, down, pressed, released, consumed, waitForRelease;
+	private Vector2 pointer, pressPosition, previousPointer;
+	private int touchId = -1;
+	private float scroll;
+	private bool scrolling;
+	private MobileSetting slider, dropdown;
+	private Rectangle sliderBounds;
+	private List<MobileSetting> items = new();
+	private Action pendingDisplayChange;
+	private Page fancyReturnPage;
+	private int fancyReturnCategory;
+	private int touchEditorTab;
+	private Page touchEditorReturnPage;
+	private int touchEditorReturnCategory;
+	private TouchEditorView touchEditorView;
+	private TouchEditorView pickerReturnView;
+	// No placement tool is active until the user chooses one, as on the phone.
+	private MobileCustomControlKind? addControlKind;
+	private bool presetPickerOpen;
+	private bool editorInputBlocked;
+	private MobileCustomPreset editorDraft;
+	private MobileControlEditorHistory editorHistory;
+	private readonly Dictionary<int, MobileCustomPreset> pendingPresetCopies = new();
+	private int selectedCustomPreset;
+	private MobileCustomPreset defaultCustomPreview;
+	private int selectedRadialSlot = -1;
+	private BindingCategory bindingCategory;
+	private int bindingPage;
+	private const int BindingsPerPage = 24;
+	private string selectedControlId;
+	private bool editorDragging, editorSizing, editorGestureChanged;
+	private Vector2 editorGestureStart;
+	private float editorControlStartX, editorControlStartY;
+	private readonly MobileInterfaceLayoutEditor interfaceEditor = new();
+	private bool interfaceRegionDragging, interfaceRegionSizing;
+	private bool interfaceScaleDragging;
+	private Vector2 interfaceGestureStart, interfaceGestureCenter;
+	private float interfaceGestureScale;
+	private int interfaceGestureWidth;
+	private Rectangle interfaceScaleSlider;
+	private Rectangle interfaceHeaderArea, interfaceFooterArea;
+	private static readonly MobileControlAction[] BindingActions = {
+		MobileControlAction.Interact, MobileControlAction.SwapUseInteract, MobileControlAction.SmartCursor,
+		MobileControlAction.SmartInteract, MobileControlAction.AimModeToggle, MobileControlAction.Jump,
+		MobileControlAction.UseItem, MobileControlAction.Inventory, MobileControlAction.TargetLockToggle,
+		MobileControlAction.Buff, MobileControlAction.Settings, MobileControlAction.CycleUseProfile,
+		MobileControlAction.Heal, MobileControlAction.Grapple, MobileControlAction.Loadout1,
+		MobileControlAction.Mana, MobileControlAction.QuickMount, MobileControlAction.Loadout2,
+		MobileControlAction.AutoSelect, MobileControlAction.ZoomIn, MobileControlAction.Loadout3,
+		MobileControlAction.Unbound, MobileControlAction.ZoomOut, MobileControlAction.SwitchLoadout,
+		MobileControlAction.ToggleGameControls
+	};
+	private bool draggingLeftStick, draggingRightStick;
+	private Vector2 dragStartPointer;
+	private Vector2 dragStartOffset;
+	private readonly Dictionary<string, Texture2D> textures = new();
+	private readonly RasterizerState clip = new() { ScissorTestEnable = true, CullMode = CullMode.None };
+	private MobileMenuLayout layout;
+	private Rectangle touchEditorPanel;
+	private MobilePauseAction[] pauseActions = Array.Empty<MobilePauseAction>();
+	private static string T(string key) => MobileSettingsCatalog.Text(key);
+	internal static bool EditingCustomControls {
+		get {
+			if (!Main.ingameOptionsWindow) return false;
+			var menu = MobileControlsSession.Get<MobileMenuSystem>();
+			return menu.session && menu.page == Page.TouchEditor && menu.touchEditorTab == 2 && menu.touchEditorView != TouchEditorView.Overview;
+		}
+	}
+	internal static bool EditingInterfaceLayout => MobileControlsSession.Get<MobileMenuSystem>().interfaceEditor.IsOpen;
+	internal static MobileInterfaceLayoutProfile InterfaceLayoutDraft => MobileControlsSession.Get<MobileMenuSystem>().interfaceEditor.Draft;
+
+	public override void Load()
+	{
+		if (Main.dedServ) return;
+		On_IngameOptions.Open += Open;
+		On_IngameOptions.Close += Close;
+		On_IngameOptions.Draw += Draw;
+		On_IngameFancyUI.Close += CloseFancy;
+	}
+
+	public override void Unload()
+	{
+		if (Main.dedServ) return;
+		On_IngameOptions.Open -= Open;
+		On_IngameOptions.Close -= Close;
+		On_IngameOptions.Draw -= Draw;
+		On_IngameFancyUI.Close -= CloseFancy;
+		textures.Clear();
+		clip.Dispose();
+	}
+
+	public override void OnWorldUnload()
+	{
+		if (interfaceEditor.IsOpen) interfaceEditor.Close();
+		session = returningFromFancy = false;
+		slider = dropdown = null;
+		draggingLeftStick = draggingRightStick = false;
+		ResetCustomEditor();
+	}
+
+	public override void PostUpdateInput()
+	{
+		if (!session || !Main.ingameOptionsWindow) return;
+		ReadPointer();
+	}
+
+	public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)
+	{
+		if (!EditingInterfaceLayout) return;
+		// Recipe Browser inserts its UI before Mouse Text. Keep the editor's
+		// handles and footer above it even when mods add their layers later.
+		int index = layers.FindIndex(layer => layer.Name == "Vanilla: Ingame Options");
+		if (index < 0) return;
+		GameInterfaceLayer editorLayer = layers[index];
+		layers.RemoveAt(index);
+		layers.Add(editorLayer);
+	}
+
+	private void Open(On_IngameOptions.orig_Open orig)
+	{
+		orig();
+		if (!UiTextureAssets.Available || MobileJoystickConfig.Instance?.EnableMobileControls != true) return;
+		session = true;
+		page = Page.Pause;
+		ResetInput();
+	}
+
+	private void Close(On_IngameOptions.orig_Close orig)
+	{
+		if (!session || forceClose) { orig(); return; }
+		if (dropdown != null) { dropdown = null; return; }
+		if (page != Page.Pause) { Back(); return; }
+		if (!Save()) return;
+		orig();
+		Main.playerInventory = false;
+		session = false;
+		ResetInput();
+	}
+
+	private void CloseFancy(On_IngameFancyUI.orig_Close orig)
+	{
+		orig();
+		if (!returningFromFancy || Main.gameMenu) return;
+		returningFromFancy = false;
+		IngameOptions.Open();
+		// Preserve the current session even if its enable switch was turned off.
+		session = true;
+		page = Page.Pause;
+		if (fancyReturnPage == Page.Settings) Settings(fancyReturnCategory);
+		Main.ingameOptionsWindow = true;
+		Main.playerInventory = false;
+		ResetInput();
+	}
+
+	private void ShowFancy(Action open)
+	{
+		if (!Save()) return;
+		fancyReturnPage = page;
+		fancyReturnCategory = category;
+		returningFromFancy = true;
+		Main.ingameOptionsWindow = false;
+		open();
+		consumed = true;
+	}
+
+	private void Settings(int index)
+	{
+		category = index;
+		page = Page.Settings;
+		items = index == 8 ? MobileSettingsCatalog.ModConfigs(config => ShowFancy(() => config.Open(onClose: IngameFancyUI.Close)))
+			: index == 10 ? LauncherControlPackSettings.Create(() => Settings(10))
+			: MobileSettingsCatalog.Create(index, () => ShowFancy(IngameFancyUI.OpenKeybinds), () => Settings(8), () => Settings(9), action => pendingDisplayChange = action);
+		scroll = 0;
+		slider = dropdown = null;
+		consumed = true;
+		ClickSound();
+	}
+
+	internal static void OpenTouchEditor()
+		=> MobileControlsSession.Get<MobileMenuSystem>().OpenTouchEditorPage();
+
+	internal static void OpenLauncherControlPacks()
+	{
+		if (Main.gameMenu) MobileTitleSettingsSystem.OpenLauncherControlPacks();
+		else MobileControlsSession.Get<MobileMenuSystem>().Settings(10);
+	}
+
+	internal static void OpenInterfaceLayoutEditor()
+		=> MobileControlsSession.Get<MobileMenuSystem>().OpenInterfaceLayoutEditorPage();
+
+	private void OpenInterfaceLayoutEditorPage()
+	{
+		interfaceEditor.Open(MobileJoystickConfig.Instance?.InterfaceLayout);
+		interfaceRegionDragging = interfaceRegionSizing = false;
+		interfaceScaleDragging = false;
+		page = Page.InterfaceEditor;
+		consumed = true;
+		ClickSound();
+	}
+
+	private void OpenTouchEditorPage()
+	{
+		MobileCustomControls.EnsureInitialized(MobileJoystickConfig.Instance);
+		touchEditorReturnPage = page == Page.Settings ? Page.Settings : Page.Pause;
+		touchEditorReturnCategory = category;
+		page = Page.TouchEditor;
+		touchEditorTab = MobileJoystickConfig.Instance?.ControlLayout switch {
+			MobileControlLayoutMode.Advanced => 1,
+			MobileControlLayoutMode.Custom => 2,
+			_ => 0
+		};
+		ResetCustomEditor();
+		draggingLeftStick = draggingRightStick = false;
+		slider = dropdown = null;
+		consumed = true;
+		ClickSound();
+	}
+
+	private void Back()
+	{
+		if (launcherPropertyPath != null) { EndLauncherPropertyEdit(); return; }
+		if (page == Page.InterfaceEditor) { interfaceEditor.Close(); page = Page.Settings; Settings(1); return; }
+		if (!Save()) return;
+		if (page == Page.Settings && category >= 8) { Settings(category == 8 ? 7 : 4); return; }
+		if (page == Page.TouchEditor) {
+			if (touchEditorView is TouchEditorView.ActionPicker or TouchEditorView.CopyPicker) {
+				touchEditorView = pickerReturnView;
+				selectedRadialSlot = -1;
+				consumed = true;
+				return;
+			}
+			if (touchEditorView == TouchEditorView.Edit) { DiscardCustomDraft(); consumed = true; return; }
+			ResetCustomEditor();
+			if (touchEditorReturnPage == Page.Settings) { Settings(touchEditorReturnCategory); return; }
+			page = Page.Pause;
+			consumed = true;
+			ClickSound();
+			return;
+		}
+		page = Page.Pause;
+		slider = dropdown = null;
+		consumed = true;
+		ClickSound();
+	}
+
+	private bool Save()
+	{
+		try {
+			if (modDirty) MobileJoystickConfig.Instance.SaveFromMobileMenu();
+			if (settingsDirty && (!Main.SaveSettings() || !PlayerInput.Save()))
+				throw new System.IO.IOException("Terraria could not save settings or the input profile.");
+			modDirty = settingsDirty = false;
+			return true;
+		}
+		catch (Exception ex) {
+			MobileControlsSession.Logger.Error("Could not save mobile menu settings", ex);
+			Main.NewText(T("SettingsCouldNotBeSavedCheckFilePermissionsAndRetry"), Color.OrangeRed);
+			return false;
+		}
+	}
+
+	private void Quit()
+	{
+		if (!Save()) return;
+		SteamedWraps.StopPlaytimeTracking();
+		SystemLoader.PreSaveAndQuit();
+		forceClose = true;
+		try { IngameOptions.Close(); }
+		finally { forceClose = false; }
+		session = false;
+		Main.menuMode = 10;
+		Main.gameMenu = true;
+		WorldGen.SaveAndQuit();
+	}
+
+	private void ResetInput()
+	{
+		waitForRelease = true;
+		wasDown = false;
+		pressed = released = false;
+		touchId = -1;
+		slider = dropdown = null;
+		scrolling = false;
+	}
+
+	private void ReadPointer()
+	{
+		down = MobileTouchInput.ReadUiPointer(ref touchId, ref pointer, out bool cancelled);
+		if (cancelled) { ResetInput(); down = false; return; }
+		bool justPressed = down && !wasDown;
+		pressed |= justPressed;
+		released |= !down && wasDown;
+		wasDown = down;
+		if (waitForRelease) {
+			if (!down) waitForRelease = false;
+			pressed = released = false;
+		}
+		if (justPressed) { pressPosition = pointer; scrolling = false; }
+	}
+
+	private bool Hit(Rectangle r)
+	{
+		if (editorInputBlocked || consumed || !released || scrolling || slider != null || !r.Contains(pointer.ToPoint()) || !r.Contains(pressPosition.ToPoint())) return false;
+		consumed = true;
+		ClickSound();
+		return true;
+	}
+
+	private static void ClickSound() => SoundEngine.PlaySound(SoundID.MenuTick);
+
+	private void Draw(On_IngameOptions.orig_Draw orig, Main main, SpriteBatch sb)
+	{
+		if (!session) { orig(main, sb); return; }
+		consumed = false;
+		Main.LocalPlayer.mouseInterface = true;
+		Main.LocalPlayer.controlUseItem = Main.LocalPlayer.controlUseTile = false;
+		PlayerInput.LockVanillaMouseScroll("MobileJoystick: Menu");
+		pauseActions = MobilePauseMenu.Create(SocialAPI.Network?.CanInvite() == true, Main.LocalPlayer.difficulty == 3);
+		layout = new MobileMenuLayout(PlayerInput.RealScreenWidth, PlayerInput.RealScreenHeight, page == Page.Settings || page == Page.TouchEditor || page == Page.InterfaceEditor,
+			page == Page.Pause ? pauseActions.Length : 6);
+		sb.End();
+		Begin(sb);
+		try {
+			sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(0, 0, PlayerInput.RealScreenWidth, PlayerInput.RealScreenHeight), Color.Black * .38f);
+			if (page != Page.TouchEditor && page != Page.InterfaceEditor) Nine(sb, "Panel", layout.Panel, Color.White, 12);
+			if (page == Page.Settings) DrawSettings(sb);
+			else if (page == Page.TouchEditor) DrawTouchEditor(sb);
+			else if (page == Page.InterfaceEditor) DrawInterfaceLayoutEditor(sb);
+			else DrawPause(sb);
+		}
+		finally {
+			editorInputBlocked = false;
+			if (released) { slider = null; scrolling = false; }
+			pressed = released = false;
+			previousPointer = pointer;
+			Main.mouseLeftRelease = false;
+			sb.End();
+			sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
+				DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Main.UIScaleMatrix);
+		}
+		Main.DrawCursor(Main.DrawThickCursor());
+		Action displayChange = pendingDisplayChange;
+		pendingDisplayChange = null;
+		displayChange?.Invoke();
+	}
+
+	private static void Begin(SpriteBatch sb, RasterizerState raster = null) => sb.Begin(SpriteSortMode.Deferred,
+		BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, raster ?? RasterizerState.CullCounterClockwise, null, Matrix.Identity);
+
+	private void DrawPause(SpriteBatch sb)
+	{
+		foreach (MobilePauseAction action in pauseActions) {
+			int i = Array.IndexOf(pauseActions, action);
+			Rectangle r = layout.PauseButton(i);
+			Nine(sb, "PauseButton", r, r.Contains(pointer.ToPoint()) ? new Color(230, 238, 255) : Color.White);
+			sb.Draw(Texture("Pause" + action), layout.At(18, 20 + i * 60, 44, 40), Color.White);
+			Label(sb, PauseLabel(action), layout.At(58, 12 + i * 60, 238, 54), 1.06f, true, display: true);
+			if (!Hit(r)) continue;
+			switch (action) {
+				case MobilePauseAction.Resume: IngameOptions.Close(); break;
+				case MobilePauseAction.Invite:
+					if (SocialAPI.Network?.CanInvite() == true && Save()) {
+						IngameOptions.Close();
+						SocialAPI.Network.OpenInviteInterface();
+					}
+					break;
+				case MobilePauseAction.Controls: OpenTouchEditorPage(); break;
+				case MobilePauseAction.Settings: Settings(0); break;
+				case MobilePauseAction.Journey:
+					if (Save()) Main.LocalPlayer.ToggleCreativeMenu();
+					break;
+				case MobilePauseAction.Achievements: ShowFancy(IngameFancyUI.OpenAchievements); break;
+				case MobilePauseAction.Bestiary: ShowFancy(() => { IngameFancyUI.OpenUIState(Main.BestiaryUI); Main.BestiaryUI.OnOpenPage(); }); break;
+				case MobilePauseAction.SaveExit: Quit(); break;
+			}
+			break;
+		}
+	}
+
+	private static string PauseLabel(MobilePauseAction action) => action switch {
+		MobilePauseAction.Resume => T("Resume"),
+		MobilePauseAction.Invite => T("Invite"),
+		MobilePauseAction.Controls => T("GameControls"),
+		MobilePauseAction.Settings => T("Settings"),
+		MobilePauseAction.Journey => T("Journey"),
+		MobilePauseAction.Achievements => T("Achievements"),
+		MobilePauseAction.Bestiary => T("Bestiary"),
+		_ => T("SaveExit")
+	};
+
+	private void DrawInterfaceLayoutEditor(SpriteBatch sb)
+	{
+		int width = PlayerInput.RealScreenWidth, height = PlayerInput.RealScreenHeight;
+		float s = Math.Min(layout.Scale, width / 900f);
+		MobileInterfaceLayoutProfile draft = interfaceEditor.Draft;
+		int dockWidth = Math.Min((int)(900 * s), width - (int)(20 * s));
+		int dockHeight = (int)(112 * s);
+		Rectangle dock = new((width - dockWidth) / 2, height - dockHeight - (int)(8 * s), dockWidth, dockHeight);
+		MobileJoystickConfig config = MobileJoystickConfig.Instance;
+		int inset = Math.Max(4, (int)((config?.EdgePadding ?? 18) * MobileJoystickLayout.GetControlScale(config, width, height) * .5f));
+		int safeTop = Math.Max(inset, (int)(8 * s));
+		int safeBottom = dock.Top - (int)(8 * s);
+		interfaceEditor.HotbarEditorBounds = new Rectangle(inset, safeTop, Math.Max(1, width - inset * 2), Math.Max(1, safeBottom - safeTop));
+		interfaceHeaderArea = Rectangle.Empty;
+
+		interfaceFooterArea = dock;
+		Nine(sb, "EditorSelected", dock, new Color(188, 198, 215, 238), 10);
+		int left = dock.X + (int)(8 * s);
+		int right = dock.X + (int)(408 * s);
+		int rowOneY = dock.Y + (int)(8 * s);
+		int rowTwoY = dock.Y + (int)(62 * s);
+		Rectangle hotbarTab = new(left, rowOneY, (int)(100 * s), (int)(40 * s));
+		Rectangle inventoryTab = new(hotbarTab.Right + (int)(6 * s), hotbarTab.Y, (int)(100 * s), hotbarTab.Height);
+		Rectangle externalTab = new(inventoryTab.Right + (int)(6 * s), inventoryTab.Y, (int)(100 * s), inventoryTab.Height);
+		DrawEditorTab(sb, hotbarTab, "BackpackIcon", T("Hotbar"), !interfaceEditor.InventoryView && !interfaceEditor.ExternalView);
+		DrawEditorTab(sb, inventoryTab, "Grid", T("Inventory"), interfaceEditor.InventoryView);
+		DrawEditorTab(sb, externalTab, "Settings", T("ModUI"), interfaceEditor.ExternalView);
+		if (Hit(hotbarTab)) { interfaceEditor.ExternalView = false; interfaceEditor.InventoryView = false; interfaceEditor.Selected = MobileInterfaceRegion.Hotbar; }
+		if (Hit(inventoryTab)) { interfaceEditor.ExternalView = false; interfaceEditor.InventoryView = true; if (interfaceEditor.Selected == MobileInterfaceRegion.Hotbar) interfaceEditor.Selected = MobileInterfaceRegion.InventoryItems; }
+		if (Hit(externalTab)) {
+			interfaceEditor.ExternalView = true;
+			interfaceEditor.InventoryView = false;
+			if (interfaceEditor.SelectedExternalUi == null && ExternalUiLayoutRegistry.Adapters.Count > 0)
+				interfaceEditor.CaptureExternalSelection(ExternalUiLayoutRegistry.Adapters[0].Id);
+		}
+
+		Rectangle undo = new(left + (int)(320 * s), rowOneY, (int)(38 * s), (int)(40 * s));
+		Rectangle redo = new(undo.Right + (int)(6 * s), undo.Y, undo.Width, undo.Height);
+		DrawEditorToolSurface(sb, undo, interfaceEditor.CanUndo);
+		DrawEditorToolSurface(sb, redo, interfaceEditor.CanRedo);
+		Texture2D historyArrow = Texture("Back");
+		float historyArrowScale = Math.Min(20 * s / historyArrow.Width, 20 * s / historyArrow.Height);
+		sb.Draw(historyArrow, undo.Center.ToVector2(), null, interfaceEditor.CanUndo ? Color.White : Color.Silver, 0, historyArrow.Size() * .5f, historyArrowScale, SpriteEffects.None, 0);
+		sb.Draw(historyArrow, redo.Center.ToVector2(), null, interfaceEditor.CanRedo ? Color.White : Color.Silver, MathHelper.Pi, historyArrow.Size() * .5f, historyArrowScale, SpriteEffects.None, 0);
+		if (Hit(undo) && interfaceEditor.CanUndo) interfaceEditor.Undo();
+		if (Hit(redo) && interfaceEditor.CanRedo) interfaceEditor.Redo();
+		Label(sb, T("InterfaceLayoutEditor"), new Rectangle(left, rowTwoY, (int)(160 * s), (int)(40 * s)), .62f, display: true);
+
+		if (interfaceEditor.ExternalView) DrawExternalUiLayoutPreview(sb, width, height);
+		else if (!interfaceEditor.InventoryView) DrawHotbarLayoutPreview(sb, width, height, draft);
+		else DrawInventoryLayoutPreview(sb, width, height, draft);
+
+		Rectangle selectedNameBounds = new(left + (int)(160 * s), rowTwoY, (int)(260 * s), (int)(40 * s));
+		string selectedName = interfaceEditor.ExternalView
+			? interfaceEditor.SelectedExternalUi?.Name ?? T("NoCompatibleModUI")
+			: InterfaceRegionName(interfaceEditor.Selected);
+		Label(sb, selectedName, selectedNameBounds, .54f, true, display: true);
+		if (interfaceEditor.ExternalView && Hit(selectedNameBounds)) CycleExternalUiSelection();
+
+		Rectangle reset = new(right, rowOneY, (int)(92 * s), (int)(40 * s));
+		Rectangle defaults = new(reset.Right + (int)(6 * s), reset.Y, (int)(100 * s), reset.Height);
+		DrawEditorFooterButton(sb, reset, "Back", T("ResetRegion"));
+		DrawEditorFooterButton(sb, defaults, "Back", T("Defaults"));
+		if (Hit(reset)) {
+			if (interfaceEditor.ExternalView) interfaceEditor.ResetSelectedExternalUi();
+			else interfaceEditor.ResetSelected(width, height);
+		}
+		if (Hit(defaults)) {
+			if (interfaceEditor.ExternalView) interfaceEditor.ResetExternalUiDefaults();
+			else interfaceEditor.RestoreDefaults();
+		}
+
+		Rectangle discard = new(defaults.Right + (int)(6 * s), defaults.Y, (int)(84 * s), defaults.Height);
+		Rectangle apply = new(discard.Right + (int)(6 * s), discard.Y, (int)(84 * s), discard.Height);
+		DrawEditorFooterButton(sb, discard, "EditorDiscard", T("Discard"));
+		DrawEditorFooterButton(sb, apply, "EditorApply", T("Apply"));
+		if (Hit(discard)) { interfaceEditor.Close(); interfaceRegionDragging = interfaceRegionSizing = false; Settings(1); }
+		if (Hit(apply)) ApplyInterfaceLayout();
+
+		ExternalUiLayoutAdapter selectedAdapter = interfaceEditor.ExternalView ? interfaceEditor.SelectedExternalUi : null;
+		bool canScale = !interfaceEditor.ExternalView || selectedAdapter?.CanScale == true;
+		float maximumScale = interfaceEditor.ExternalView ? 2f : interfaceEditor.MaximumScale(interfaceEditor.Selected, width, height);
+		interfaceScaleSlider = new(right + (int)(58 * s), rowTwoY + (int)(14 * s), (int)(180 * s), (int)(12 * s));
+		float currentScale = interfaceEditor.ExternalView ? selectedAdapter?.Scale ?? 1f : interfaceEditor.Resolve(interfaceEditor.Selected, width, height).Scale;
+		Label(sb, T("Size"), new Rectangle(right, rowTwoY, (int)(54 * s), (int)(40 * s)), .68f, true);
+		sb.Draw(TextureAssets.MagicPixel.Value, interfaceScaleSlider, canScale ? new Color(55, 65, 78) : new Color(55, 65, 78) * .45f);
+		int knobX = interfaceScaleSlider.X + (int)((currentScale - .5f) / Math.Max(.001f, maximumScale - .5f) * interfaceScaleSlider.Width);
+		sb.Draw(Texture("PlayerSliderKnob"), new Rectangle(knobX - (int)(10 * s), interfaceScaleSlider.Center.Y - (int)(13 * s), (int)(20 * s), (int)(26 * s)), canScale ? Color.White : Color.Silver);
+		Label(sb, canScale ? $"{currentScale:0.00}×" : T("MoveOnly"), new Rectangle(interfaceScaleSlider.Right + (int)(4 * s), rowTwoY, (int)(54 * s), (int)(40 * s)), .56f, true);
+		Rectangle scaleHit = new(interfaceScaleSlider.X - (int)(12 * s), interfaceScaleSlider.Y - (int)(18 * s), interfaceScaleSlider.Width + (int)(24 * s), interfaceScaleSlider.Height + (int)(36 * s));
+		if (canScale && pressed && scaleHit.Contains(pointer.ToPoint())) {
+			interfaceScaleDragging = true;
+			if (!interfaceEditor.ExternalView) interfaceEditor.BeginGesture();
+			consumed = true;
+		}
+		if (interfaceScaleDragging && down) {
+			float value = .5f + (maximumScale - .5f) * MathHelper.Clamp((pointer.X - interfaceScaleSlider.X) / Math.Max(1f, interfaceScaleSlider.Width), 0f, 1f);
+			if (interfaceEditor.ExternalView) selectedAdapter?.Resize(value);
+			else interfaceEditor.SetScale(interfaceEditor.Selected, value, width, height, false);
+			consumed = true;
+		}
+		if (released || !down) interfaceScaleDragging = false;
+		UpdateInterfaceRegionGesture(width, height, s);
+	}
+
+	private void DrawExternalUiLayoutPreview(SpriteBatch sb, int width, int height)
+	{
+		IReadOnlyList<ExternalUiLayoutAdapter> adapters = ExternalUiLayoutRegistry.Adapters;
+		if (adapters.Count == 0) {
+			Label(sb, T("NoCompatibleExternalModUIIsAvailable"),
+				new Rectangle(0, height / 3, width, (int)(42 * layout.Scale)), .8f, true, new Color(225, 230, 240));
+			return;
+		}
+		foreach (ExternalUiLayoutAdapter adapter in adapters) {
+			bool visible = adapter.Visible;
+			if (!visible && adapter.Id != interfaceEditor.SelectedExternalUiId) continue;
+			bool selected = adapter.Id == interfaceEditor.SelectedExternalUiId;
+			string name = visible ? adapter.Name : adapter.Name + T("DisplayConditionsNotMet");
+			Rectangle bounds = adapter.Bounds;
+			if (adapter.Id == MobileCalamityUiSystem.DifficultyAdapterId) MobileCalamityUiSystem.DrawDifficultyPreview(sb, bounds);
+			DrawInterfaceRegion(sb, name, bounds, selected, selected && adapter.CanScale);
+		}
+	}
+
+	private void CycleExternalUiSelection()
+	{
+		IReadOnlyList<ExternalUiLayoutAdapter> adapters = ExternalUiLayoutRegistry.Adapters;
+		if (adapters.Count == 0) return;
+		int index = -1;
+		for (int i = 0; i < adapters.Count; i++) if (adapters[i].Id == interfaceEditor.SelectedExternalUiId) { index = i; break; }
+		interfaceEditor.CaptureExternalSelection(adapters[(index + 1) % adapters.Count].Id);
+	}
+
+	private void DrawHotbarLayoutPreview(SpriteBatch sb, int width, int height, MobileInterfaceLayoutProfile draft)
+	{
+		MobileHotbarLayout hotbar = MobileJoystickLayout.CreateHotbarLayout(MobileJoystickConfig.Instance, width, height, true, draft,
+			interfaceEditor.SafeBoundsFor(MobileInterfaceRegion.Hotbar, width, height));
+		DrawInterfaceRegion(sb, MobileInterfaceRegion.Hotbar, interfaceEditor.Bounds(MobileInterfaceRegion.Hotbar, width, height), width, height);
+		for (int i = 0; i < 10; i++) {
+			Rectangle slot = hotbar.GetSlot(i);
+			Item item = Main.LocalPlayer.inventory[i];
+			MobileInventorySystem.DrawMobileHotbarBackground(sb, slot, Main.LocalPlayer.selectedItem == i, item);
+			if (!item.IsAir) ItemSlot.DrawItemIcon(item, ItemSlot.Context.InventoryItem, sb, slot.Center.ToVector2(), slot.Width / 52f * .9f, 32f, Color.White);
+		}
+		foreach (Rectangle button in new[] { hotbar.InventoryButton, hotbar.SettingsButton }) {
+			sb.Draw(TextureAssets.InventoryBack.Value, button, Color.White * .9f);
+			sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(button.X, button.Y, button.Width, Math.Max(2, (int)(2 * layout.Scale))), new Color(255, 219, 106));
+		}
+		NativeControlTheme.Legacy(sb, "BackpackIcon", hotbar.InventoryButton.Center.ToVector2(), hotbar.InventoryButton.Width * .75f, Color.White);
+		NativeControlTheme.Legacy(sb, "Settings", hotbar.SettingsButton.Center.ToVector2(), hotbar.SettingsButton.Width * .75f, Color.White);
+	}
+
+	private void DrawInventoryLayoutPreview(SpriteBatch sb, int width, int height, MobileInterfaceLayoutProfile draft)
+	{
+		var inv = new MobileInventoryLayout(width, height, -1, draft);
+		MobileInterfaceRegion[] regions = { MobileInterfaceRegion.InventoryItems, MobileInterfaceRegion.CoinAmmo, MobileInterfaceRegion.Equipment, MobileInterfaceRegion.Crafting, MobileInterfaceRegion.InventoryActions };
+		foreach (MobileInterfaceRegion region in regions)
+			DrawInterfaceRegion(sb, region, interfaceEditor.Bounds(region, width, height), width, height);
+
+		for (int i = 0; i < 50; i++) {
+			Rectangle slot = inv.Inventory(i);
+			DrawPreviewSlot(sb, slot);
+			Item item = Main.LocalPlayer.inventory[i];
+			if (!item.IsAir) ItemSlot.DrawItemIcon(item, ItemSlot.Context.InventoryItem, sb, slot.Center.ToVector2(), slot.Width / 52f * .82f, 32f, Color.White);
+		}
+		for (int i = 50; i < 58; i++) DrawPreviewSlot(sb, inv.CoinAmmo(i));
+		for (int i = 0; i < 12; i++) DrawPreviewSlot(sb, inv.Gear(2 + i % 6, i / 6));
+		for (int i = 0; i < 12; i++) DrawPreviewSlot(sb, inv.Recipe(i));
+	}
+
+	private void DrawInterfaceRegion(SpriteBatch sb, MobileInterfaceRegion region, Rectangle bounds, int width, int height)
+		=> DrawInterfaceRegion(sb, InterfaceRegionName(region), bounds, interfaceEditor.Selected == region, true);
+
+	private void DrawInterfaceRegion(SpriteBatch sb, string name, Rectangle bounds, bool selected, bool canScale)
+	{
+		if (bounds.IsEmpty) return;
+		Color color = selected ? new Color(255, 219, 106) : new Color(117, 205, 228);
+		sb.Draw(TextureAssets.MagicPixel.Value, bounds, color * (selected ? .12f : .055f));
+		int edge = Math.Max(2, (int)(3 * layout.Scale));
+		sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(bounds.Left, bounds.Top, bounds.Width, edge), color);
+		sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(bounds.Left, bounds.Bottom - edge, bounds.Width, edge), color);
+		sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(bounds.Left, bounds.Top, edge, bounds.Height), color);
+		sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(bounds.Right - edge, bounds.Top, edge, bounds.Height), color);
+		if (selected && canScale) {
+			int handleSize = Math.Max(12, (int)(24 * layout.Scale));
+			var handle = new Rectangle(bounds.Right - handleSize, bounds.Bottom - handleSize, handleSize, handleSize);
+			sb.Draw(TextureAssets.MagicPixel.Value, handle, Color.White);
+			sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(handle.X + handleSize / 3, handle.Y + handleSize / 3, handleSize / 3, handleSize / 3), color);
+		}
+		Label(sb, name, new Rectangle(bounds.X, bounds.Y - (int)(25 * layout.Scale), Math.Max(bounds.Width, (int)(100 * layout.Scale)), (int)(24 * layout.Scale)), .62f, true, color);
+	}
+
+	private void DrawPreviewSlot(SpriteBatch sb, Rectangle bounds)
+	{
+		sb.Draw(TextureAssets.InventoryBack.Value, bounds, Color.White * .88f);
+	}
+
+	private void UpdateInterfaceRegionGesture(int width, int height, float scale)
+	{
+		if (interfaceEditor.ExternalView) {
+			UpdateExternalUiGesture(width, height, scale);
+			return;
+		}
+		MobileInterfaceRegion[] regions = interfaceEditor.InventoryView
+			? new[] { MobileInterfaceRegion.InventoryItems, MobileInterfaceRegion.CoinAmmo, MobileInterfaceRegion.Equipment, MobileInterfaceRegion.Crafting, MobileInterfaceRegion.InventoryActions }
+			: new[] { MobileInterfaceRegion.Hotbar };
+		if (pressed && !consumed) {
+			if (interfaceHeaderArea.Contains(pressPosition.ToPoint()) || interfaceFooterArea.Contains(pressPosition.ToPoint())) return;
+			foreach (MobileInterfaceRegion region in regions) {
+				Rectangle bounds = interfaceEditor.Bounds(region, width, height);
+				Rectangle handle = new(bounds.Right - (int)(30 * scale), bounds.Bottom - (int)(30 * scale), (int)(30 * scale), (int)(30 * scale));
+				if (!bounds.Contains(pressPosition.ToPoint())) continue;
+				interfaceEditor.Selected = region;
+				interfaceGestureStart = pointer;
+				interfaceGestureScale = interfaceEditor.Resolve(region, width, height).Scale;
+				interfaceRegionSizing = handle.Contains(pressPosition.ToPoint());
+				interfaceRegionDragging = !interfaceRegionSizing;
+				interfaceEditor.BeginGesture();
+				consumed = true;
+				break;
+			}
+		}
+		if (down && interfaceRegionDragging) {
+			Vector2 delta = pointer - interfaceGestureStart;
+			interfaceEditor.Move(interfaceEditor.Selected, delta, width, height, false);
+			interfaceGestureStart = pointer;
+			consumed = true;
+		}
+		if (down && interfaceRegionSizing) {
+			Rectangle bounds = MobileInterfaceLayoutEditor.DefaultBounds(interfaceEditor.Selected, width, height);
+			float deltaScale = (pointer.X - interfaceGestureStart.X) / Math.Max(48f, bounds.Width);
+			interfaceEditor.SetScale(interfaceEditor.Selected, interfaceGestureScale + deltaScale, width, height, false);
+			consumed = true;
+		}
+		if (released || !down) interfaceRegionDragging = interfaceRegionSizing = false;
+	}
+
+	private void UpdateExternalUiGesture(int width, int height, float scale)
+	{
+		if (pressed && !consumed) {
+			if (interfaceFooterArea.Contains(pressPosition.ToPoint())) return;
+			IReadOnlyList<ExternalUiLayoutAdapter> adapters = ExternalUiLayoutRegistry.Adapters;
+			for (int i = adapters.Count - 1; i >= 0; i--) {
+				ExternalUiLayoutAdapter adapter = adapters[i];
+				if (!adapter.Visible && adapter.Id != interfaceEditor.SelectedExternalUiId) continue;
+				Rectangle bounds = adapter.Bounds;
+				if (!bounds.Contains(pressPosition.ToPoint())) continue;
+				interfaceEditor.CaptureExternalSelection(adapter.Id);
+				interfaceGestureStart = pointer;
+				interfaceGestureCenter = bounds.Center.ToVector2();
+				interfaceGestureScale = adapter.Scale;
+				interfaceGestureWidth = Math.Max(1, bounds.Width);
+				float handleSize = 30 * scale;
+				Rectangle handle = new(bounds.Right - (int)handleSize, bounds.Bottom - (int)handleSize, (int)handleSize, (int)handleSize);
+				interfaceRegionSizing = adapter.CanScale && handle.Contains(pressPosition.ToPoint());
+				interfaceRegionDragging = !interfaceRegionSizing;
+				consumed = true;
+				break;
+			}
+		}
+
+		ExternalUiLayoutAdapter selected = interfaceEditor.SelectedExternalUi;
+		if (selected != null && down && interfaceRegionDragging) {
+			selected.Move(interfaceGestureCenter + pointer - interfaceGestureStart);
+			consumed = true;
+		}
+		if (selected?.CanScale == true && down && interfaceRegionSizing) {
+			Rectangle bounds = selected.Bounds;
+			float deltaScale = (pointer.X - interfaceGestureStart.X) / Math.Max(48f, interfaceGestureWidth);
+			selected.Resize(interfaceGestureScale + deltaScale);
+			consumed = true;
+		}
+		if (released || !down) interfaceRegionDragging = interfaceRegionSizing = false;
+	}
+
+	private void ApplyInterfaceLayout()
+	{
+		MobileJoystickConfig config = MobileJoystickConfig.Instance;
+		MobileInterfaceLayoutProfile previous = config.InterfaceLayout?.Clone();
+		try {
+			config.InterfaceLayout = interfaceEditor.Apply();
+			config.SaveFromMobileMenu();
+			interfaceEditor.Close(keepExternalChanges: true);
+			Settings(1);
+		}
+		catch (Exception ex) {
+			config.InterfaceLayout = previous;
+			MobileControlsSession.Logger.Error("Could not save interface layout", ex);
+			Main.NewText(T("InterfaceLayoutCouldNotBeSavedCheckFilePermissionsAndRetry"), Color.OrangeRed);
+		}
+	}
+
+	private static string InterfaceRegionName(MobileInterfaceRegion region) => region switch {
+		MobileInterfaceRegion.Hotbar => T("Hotbar"),
+		MobileInterfaceRegion.InventoryItems => T("ItemGrid"),
+		MobileInterfaceRegion.CoinAmmo => T("CoinsAndAmmo"),
+		MobileInterfaceRegion.InventoryActions => T("InventoryControls"),
+		MobileInterfaceRegion.Equipment => T("EquipmentAndLoadouts"),
+		_ => T("CraftingArea")
+	};
+
+	private void DrawTouchEditorLegacy(SpriteBatch sb)
+	{
+		float s = layout.Scale;
+		int width = PlayerInput.RealScreenWidth;
+		int height = PlayerInput.RealScreenHeight;
+		sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(0, 0, width, height), Color.Black * .2f);
+		touchEditorPanel = new((width - (int)(536 * s)) / 2, (int)(14 * s), (int)(536 * s), (int)(200 * s));
+		Nine(sb, "Panel", touchEditorPanel, Color.White, 12);
+
+		Rectangle simple = EditorAt(10, 10, 166, 44);
+		Rectangle advanced = EditorAt(185, 10, 166, 44);
+		Rectangle custom = EditorAt(360, 10, 166, 44);
+		DrawEditorTab(sb, simple, "Tab5", T("Simple"), touchEditorTab == 0);
+		DrawEditorTab(sb, advanced, "Tab4", T("Advanced"), touchEditorTab == 1);
+		DrawEditorTab(sb, custom, "Tab6", T("Custom"), touchEditorTab == 2);
+		if (Hit(simple)) SelectControlLayout(MobileControlLayoutMode.Simple);
+		if (Hit(advanced)) SelectControlLayout(MobileControlLayoutMode.Advanced);
+		if (Hit(custom)) touchEditorTab = 2;
+
+		if (touchEditorTab == 2) {
+			DrawEditorPresetLegacy(sb);
+		}
+		else {
+			string description = touchEditorTab == 0
+				? T("UseTwoSticksToMoveAndAimWithSeparateShortcutButtons")
+				: T("UseTwoSticksToMoveAndAimSuitableForAdvancedPlay");
+			Label(sb, description, EditorAt(24, 66, 488, 48), .72f, true, new Color(220, 228, 246));
+		}
+
+		MobileControlLayout controls = MobileJoystickLayout.CreateControlsLayout(MobileJoystickConfig.Instance, width, height);
+		if (touchEditorTab == 2) {
+			UpdateTouchEditorDrag(controls);
+			controls = MobileJoystickLayout.CreateControlsLayout(MobileJoystickConfig.Instance, width, height);
+		}
+		DrawTouchEditorControls(sb, controls, touchEditorTab == 2);
+
+		Rectangle back = EditorAt(10, 145, 166, 44);
+		Rectangle move = EditorAt(360, 145, 166, 44);
+		DrawEditorFooterButton(sb, back, "Back", T("Back"));
+		DrawEditorFooterButton(sb, move, "JoystickPad", T("Move"));
+		if (Hit(back)) Back();
+		if (Hit(move)) touchEditorTab = 2;
+		if (touchEditorTab == 2) {
+			Label(sb, T("CustomMode"), EditorAt(184, 145, 168, 44), .68f, true, new Color(175, 191, 228));
+		}
+	}
+
+	private void DrawTouchEditor(SpriteBatch sb)
+	{
+		float s = layout.Scale;
+		int width = PlayerInput.RealScreenWidth;
+		int height = PlayerInput.RealScreenHeight;
+		bool editingCustom = touchEditorTab == 2 && touchEditorView != TouchEditorView.Overview;
+		if (editingCustom) MobileInventorySystem.DrawControlEditorBackdrop(sb, width, height);
+		editorInputBlocked = touchEditorView is TouchEditorView.ActionPicker or TouchEditorView.CopyPicker || presetPickerOpen || launcherPropertyPath != null;
+		bool modalBlocked = editorInputBlocked;
+		if (editingCustom && SelectedCustomControl() is { } propertyOwner && CustomPropertyBounds(propertyOwner).Contains(pressPosition.ToPoint())) editorInputBlocked = true;
+		touchEditorPanel = new((width - (int)(536 * s)) / 2, (int)(14 * s), (int)(536 * s), (int)((editingCustom ? 126 : 200) * s));
+		DrawEditorPanel(sb, touchEditorPanel);
+
+		if (!editingCustom) {
+			Rectangle simple = EditorAt(10, 10, 172, 44);
+			Rectangle advanced = EditorAt(182, 10, 172, 44);
+			Rectangle custom = EditorAt(354, 10, 172, 44);
+			DrawEditorTab(sb, simple, "EditorSimple", T("Simple"), touchEditorTab == 0);
+			DrawEditorTab(sb, advanced, "EditorAdvanced", T("Advanced"), touchEditorTab == 1);
+			DrawEditorTab(sb, custom, "EditorCustom", T("Custom"), touchEditorTab == 2);
+			if (Hit(simple)) SelectControlLayout(MobileControlLayoutMode.Simple);
+			if (Hit(advanced)) SelectControlLayout(MobileControlLayoutMode.Advanced);
+			if (Hit(custom) && touchEditorTab != 2) OpenCustomOverview();
+		}
+		else {
+			DrawCustomEditorHeader(sb);
+		}
+		// Apply/discard and Edit change the draft while this frame is being drawn.
+		// Draw the new view on the next frame instead of using the previous view's state.
+		if (editingCustom != (touchEditorTab == 2 && touchEditorView != TouchEditorView.Overview)) return;
+
+		MobileJoystickConfig config = MobileJoystickConfig.Instance;
+		MobileControlLayout controls;
+		MobileCustomPreset previewPreset = null;
+		if (touchEditorTab == 2) {
+			if (touchEditorView == TouchEditorView.Overview) {
+				DrawEditorPreset(sb);
+				previewPreset = CustomOverviewPreset(config);
+			}
+			else previewPreset = editorDraft;
+			controls = previewPreset == null
+				? MobileJoystickLayout.CreateControlsLayout(config, width, height)
+				: MobileJoystickLayout.CreateControlsLayout(config, width, height, previewPreset);
+			if (editingCustom) {
+				DrawCustomAddModes(sb, width, height);
+				editorInputBlocked = modalBlocked;
+				UpdateCustomEditorGestures(width, height);
+				controls = MobileJoystickLayout.CreateControlsLayout(config, width, height, editorDraft);
+				DrawCustomPreview(sb, controls, editorDraft);
+				DrawCustomProperties(sb, width, height);
+				editorInputBlocked = false;
+				if (touchEditorView == TouchEditorView.ActionPicker) DrawActionPicker(sb, width, height);
+				else if (touchEditorView == TouchEditorView.CopyPicker) DrawCopyPicker(sb, width, height);
+			}
+			else if (touchEditorView == TouchEditorView.Overview) {
+				DrawCustomPreview(sb, controls, previewPreset);
+				DrawCustomOverviewFooter(sb);
+				Label(sb, T("TryTheseControlsAndMoveThemWhereTheyFeelComfortableOrEditYourOwnCustomLayout"),
+					EditorScreenAt(-80, 206, 696, 58), .7f, true);
+				if (presetPickerOpen) DrawCustomPresetPicker(sb);
+			}
+		}
+		else {
+			string description = touchEditorTab == 0
+				? T("UseTwoSticksToMoveAndAimWithSeparateShortcutButtons")
+				: T("UseTwoSticksToMoveAndAimSuitableForAdvancedPlay");
+			Label(sb, description, EditorAt(24, 66, 488, 48), .72f, true, new Color(220, 228, 246));
+			controls = MobileJoystickLayout.CreateControlsLayout(config, width, height);
+			DrawTouchEditorControls(sb, controls, false);
+			Rectangle back = EditorAt(10, 145, 166, 44);
+			Rectangle move = EditorAt(360, 145, 166, 44);
+			DrawEditorFooterButton(sb, back, "Back", T("Back"));
+			DrawEditorFooterButton(sb, move, "EditorMove", T("Move"));
+			if (Hit(back)) Back();
+			if (Hit(move)) OpenCustomOverview();
+		}
+	}
+
+	private void DrawEditorPreset(SpriteBatch sb)
+	{
+		Rectangle preset = EditorAt(62, 66, 230, 44);
+		Rectangle edit = EditorAt(300, 66, 166, 44);
+		MobileJoystickConfig config = MobileJoystickConfig.Instance;
+		string name = CustomEditorPresetLabel(CustomOverviewPreset(config));
+		DrawEditorSurface(sb, preset);
+		Label(sb, name, new Rectangle(preset.X, preset.Y, preset.Width - (int)(30 * layout.Scale), preset.Height), .76f, true, display: true);
+		DrawEditorDropdownArrow(sb, preset);
+		if (Hit(preset)) presetPickerOpen = !presetPickerOpen;
+		DrawEditorToolSurface(sb, edit);
+		Texture2D gear = Texture("EditorGear");
+		if (gear != null) {
+			int size = Math.Max(20, (int)(27 * layout.Scale));
+			Rectangle icon = new(edit.X + (int)(12 * layout.Scale), edit.Center.Y - size / 2, size, size);
+			sb.Draw(gear, icon, Color.White);
+			Label(sb, T("Edit"), new Rectangle(icon.Right, edit.Y, edit.Right - icon.Right, edit.Height), .76f, true, display: true);
+		}
+		else Label(sb, T("Edit"), edit, .76f, true, display: true);
+		if (Hit(edit)) BeginCustomEdit();
+		if (!presetPickerOpen) DrawTexturePackChoice(sb);
+	}
+
+	private void DrawTexturePackChoice(SpriteBatch sb)
+	{
+		IReadOnlyList<(string Id, string Name)> packs = ControlTexturePackSystem.AvailablePacks();
+		if (packs.Count == 0) return;
+		Rectangle row = EditorAt(62, 112, 404, 36);
+		DrawEditorSurface(sb, row, true);
+		Label(sb, T("ControlTexturePack"), new Rectangle(row.X + 10, row.Y, row.Width / 2, row.Height), .66f);
+		string name = packs.FirstOrDefault(pack => pack.Id == ControlTexturePackSystem.ActivePackId).Name ?? packs[0].Name;
+		Label(sb, name, new Rectangle(row.X + row.Width / 2, row.Y, row.Width / 2 - 12, row.Height), .66f, true, Color.White);
+		DrawEditorDropdownArrow(sb, row);
+		if (!Hit(row)) return;
+		int index = packs.ToList().FindIndex(pack => pack.Id == ControlTexturePackSystem.ActivePackId);
+		var next = packs[(index + 1 + packs.Count) % packs.Count];
+		if (!ControlTexturePackSystem.SetActivePack(next.Id)) Main.NewText(T("CouldNotLoadTexturePackCurrentArtworkWasKept"));
+	}
+
+	private void DrawCustomPresetPicker(SpriteBatch sb)
+	{
+		editorInputBlocked = false;
+		MobileJoystickConfig config = MobileJoystickConfig.Instance;
+		for (int i = 0; i < MobileCustomControls.PresetCount; i++) {
+			Rectangle option = EditorAt(62, 112 + i * 38, 230, 36);
+			DrawEditorSurface(sb, option, i == selectedCustomPreset && defaultCustomPreview == null);
+			string optionName = config?.CustomPresets != null && i < config.CustomPresets.Count ? config.CustomPresets[i].Name : "Custom " + (i + 1);
+			Label(sb, CustomPresetLabel(optionName), option, .72f, true);
+			if (Hit(option)) { selectedCustomPreset = i; defaultCustomPreview = null; presetPickerOpen = false; }
+		}
+		if (released && !consumed) { presetPickerOpen = false; consumed = true; }
+	}
+
+	private void DrawCustomOverviewFooter(SpriteBatch sb)
+	{
+		Rectangle back = EditorAt(10, 145, 166, 44);
+		Rectangle move = EditorAt(360, 145, 166, 44);
+		DrawEditorFooterButton(sb, back, "Back", T("Back"));
+		DrawEditorFooterButton(sb, move, "EditorMove", T("Move"));
+		if (Hit(back)) Back();
+		if (Hit(move)) BeginCustomEdit();
+	}
+
+	private void DrawCustomEditorHeader(SpriteBatch sb)
+	{
+		Rectangle copy = EditorAt(10, 10, 52, 44);
+		Rectangle title = EditorAt(70, 10, 340, 44);
+		Rectangle undo = EditorAt(420, 10, 48, 44);
+		Rectangle redo = EditorAt(474, 10, 52, 44);
+		DrawEditorToolSurface(sb, copy);
+		Texture2D copyIcon = Texture("EditorCopy");
+		sb.Draw(copyIcon, new Rectangle(copy.Center.X - (int)(15 * layout.Scale), copy.Center.Y - (int)(15 * layout.Scale), (int)(30 * layout.Scale), (int)(30 * layout.Scale)), Color.White);
+		DrawEditorSurface(sb, title);
+		Texture2D titleIcon = Texture("WorldName");
+		sb.Draw(titleIcon, new Rectangle(title.X + (int)(10 * layout.Scale), title.Center.Y - (int)(15 * layout.Scale), (int)(30 * layout.Scale), (int)(30 * layout.Scale)), Color.White);
+		Label(sb, CustomEditorPresetLabel(editorDraft), new Rectangle(title.X + (int)(45 * layout.Scale), title.Y, title.Width - (int)(50 * layout.Scale), title.Height), .82f, true, display: true);
+		DrawEditorToolSurface(sb, undo, editorHistory?.CanUndo == true);
+		DrawEditorToolSurface(sb, redo, editorHistory?.CanRedo == true);
+		Texture2D undoIcon = Texture("EditorUndo");
+		Texture2D redoIcon = Texture("EditorRedo");
+		sb.Draw(undoIcon, new Rectangle(undo.Center.X - (int)(14 * layout.Scale), undo.Center.Y - (int)(14 * layout.Scale), (int)(28 * layout.Scale), (int)(28 * layout.Scale)), Color.White * (editorHistory?.CanUndo == true ? 1f : .45f));
+		sb.Draw(redoIcon, new Rectangle(redo.Center.X - (int)(14 * layout.Scale), redo.Center.Y - (int)(14 * layout.Scale), (int)(28 * layout.Scale), (int)(28 * layout.Scale)), Color.White * (editorHistory?.CanRedo == true ? 1f : .45f));
+		if (Hit(copy)) { pickerReturnView = TouchEditorView.Edit; touchEditorView = TouchEditorView.CopyPicker; }
+		if (editorHistory?.CanUndo == true && Hit(undo)) RestoreEditorHistory(editorHistory.Undo());
+		if (editorHistory?.CanRedo == true && Hit(redo)) RestoreEditorHistory(editorHistory.Redo());
+
+		Rectangle discard = EditorAt(10, 66, 184, 48);
+		Rectangle defaults = EditorAt(201, 66, 134, 48);
+		Rectangle apply = EditorAt(342, 66, 184, 48);
+		DrawEditorFooterButton(sb, discard, "EditorDiscard", T("Discard"));
+		DrawEditorSurface(sb, defaults, EditorPressed(defaults));
+		Label(sb, T("Defaults"), defaults, .68f, true);
+		DrawEditorFooterButton(sb, apply, "EditorApply", T("Apply"));
+		if (Hit(discard)) DiscardCustomDraft();
+		if (Hit(defaults)) RestoreCustomDefaults();
+		if (Hit(apply)) ApplyCustomDraft();
+	}
+
+	private void DrawCustomAddModes(SpriteBatch sb, int width, int height)
+	{
+		Rectangle panel = EditorScreenAt(0, 136, 536, 108);
+		DrawEditorPanel(sb, panel);
+		Rectangle joystick = EditorScreenAt(10, 145, 172, 44);
+		Rectangle button = EditorScreenAt(182, 145, 172, 44);
+		Rectangle radial = EditorScreenAt(354, 145, 172, 44);
+		DrawControlModeTab(sb, joystick, "EditorJoystick", T("Joystick"), addControlKind == MobileCustomControlKind.Joystick);
+		DrawControlModeTab(sb, button, "EditorPlainButton", T("Button"), addControlKind == MobileCustomControlKind.Button);
+		DrawControlModeTab(sb, radial, "EditorRadial", T("RadialMenu"), addControlKind == MobileCustomControlKind.RadialMenu);
+		if (Hit(joystick)) SelectCustomAddTool(MobileCustomControlKind.Joystick);
+		if (Hit(button)) SelectCustomAddTool(MobileCustomControlKind.Button);
+		if (Hit(radial)) SelectCustomAddTool(MobileCustomControlKind.RadialMenu);
+		MobileCustomControlKind[] extraKinds = { MobileCustomControlKind.DPad, MobileCustomControlKind.Touchpad, MobileCustomControlKind.Mousewheel, MobileCustomControlKind.Text };
+		for (int i = 0; i < extraKinds.Length; i++) {
+			Rectangle option = EditorScreenAt(10 + i * 129, 192, 126, 42);
+			DrawEditorSurface(sb, option, addControlKind == extraKinds[i]);
+			Label(sb, LauncherKindLabel(extraKinds[i]), option, .62f, true);
+			if (Hit(option)) SelectCustomAddTool(extraKinds[i]);
+		}
+		string instruction = addControlKind switch {
+			MobileCustomControlKind.Joystick => T("TapAnywhereToAddANewJoystick"),
+			MobileCustomControlKind.Button => T("TapAnywhereToAddANewButton"),
+			MobileCustomControlKind.RadialMenu => T("TapAnywhereToAddANewRadialMenu"),
+			_ => T("TapAnyControlToEditItOrHoldAndDragToMoveIt")
+		};
+		Label(sb, instruction,
+			EditorScreenAt(-80, 250, 696, 38), .7f, true);
+	}
+
+	private void SelectCustomAddTool(MobileCustomControlKind kind)
+	{
+		addControlKind = kind;
+		EndLauncherPropertyEdit();
+		selectedControlId = null;
+		selectedRadialSlot = -1;
+		editorDragging = editorSizing = editorGestureChanged = false;
+	}
+
+	private void DrawControlModeTab(SpriteBatch sb, Rectangle bounds, string iconName, string text, bool active)
+	{
+		DrawEditorSurface(sb, bounds, active);
+		int size = Math.Max(20, (int)(28 * layout.Scale));
+		Texture2D icon = Texture(iconName);
+		Rectangle iconBounds = new((int)(bounds.X + 8 * layout.Scale), bounds.Center.Y - size / 2, size, size);
+		sb.Draw(icon, iconBounds, Color.White);
+		Label(sb, text, new Rectangle(bounds.X + (int)(42 * layout.Scale), bounds.Y, bounds.Width - (int)(46 * layout.Scale), bounds.Height), .68f, true);
+	}
+
+	private void DrawCustomPreview(SpriteBatch sb, MobileControlLayout controls, MobileCustomPreset preset)
+	{
+		if (preset == null) return;
+		foreach (MobileCustomControl control in preset.Controls) {
+			float opacity = MobileJoystickConfig.Instance?.Opacity ?? .78f;
+			float radius = MobileJoystickLayout.GetCustomControlRadius(control, controls.Scale, PlayerInput.RealScreenHeight);
+			Vector2 center = MobileJoystickLayout.GetCustomControlCenter(control, PlayerInput.RealScreenWidth, PlayerInput.RealScreenHeight, radius);
+			bool selected = touchEditorView == TouchEditorView.Edit && control.Id == selectedControlId;
+			bool held = touchEditorView == TouchEditorView.Overview && PreviewControlHeld(center, radius);
+			Color color = Color.White;
+			if (held) opacity = 1f;
+			if (control.Launcher != null) {
+				LauncherControlArtwork.Draw(sb, new MobileControlButton(MobileControlAction.LauncherControl, "", center, radius, control.Id,
+					launcher: control.Launcher, dimensions: control.Launcher.Dimensions(PlayerInput.RealScreenHeight, control.Size)), Color.White * opacity, selected);
+				continue;
+			}
+			if (control.Kind == MobileCustomControlKind.Joystick) {
+                NativeControlTheme.Stick(sb, control.JoystickRole, center, radius,
+                    PreviewStickOffset(center, radius), color * opacity, held, selected, control.TextureName);
+                continue;
+            }
+			if (control.Kind == MobileCustomControlKind.RadialMenu && (selected || held)) {
+				DrawEditorRadialPreview(sb, control, center, radius, selected);
+				continue;
+			}
+			if (control.Kind == MobileCustomControlKind.RadialMenu && MobileControlArtwork.DrawButton(sb, MobileControlAction.RadialMenu, center, radius, color * opacity, textureName: control.TextureName)) continue;
+			if (control.Kind == MobileCustomControlKind.Button && control.Action == MobileControlAction.KeyboardKey) {
+				string keyTexture = string.IsNullOrWhiteSpace(control.TextureName) ? MobileJoystickLayout.GetDefaultTexture(control.Action) : control.TextureName;
+				DrawControlTexture(sb, keyTexture, center, radius * 2f, color * opacity);
+				MobileKeyboardBindings.DrawLabel(sb, control.KeyboardKey, center, radius * 1.65f, .65f * layout.Scale, color * opacity);
+				continue;
+			}
+			if (control.Kind == MobileCustomControlKind.Button && MobileControlArtwork.DrawButton(sb, control.Action, center, radius,
+				color * opacity, selected || held, textureName: control.TextureName)) continue;
+			string texture = string.IsNullOrWhiteSpace(control.TextureName)
+				? MobileJoystickLayout.GetDefaultTexture(control.Kind == MobileCustomControlKind.RadialMenu ? MobileControlAction.RadialMenu : control.Action)
+				: control.TextureName;
+			if (control.Action == MobileControlAction.AimModeToggle) texture = MobileJoystickInput.AimAndUseMode ? "AimUseMode" : "AimOnlyMode";
+			if (control.Action == MobileControlAction.TargetLockToggle) texture = MobileJoystickInput.TargetLockEnabled ? "TargetLockOff" : "TargetLockOn";
+			if (control.Action == MobileControlAction.SmartCursor) texture = MobileJoystickInput.SmartCursorEnabled ? "SmartCursorOff" : "SmartCursor";
+			if (control.Action is MobileControlAction.Interact or MobileControlAction.UseItem) texture = "ItemButtonFrame";
+			DrawControlTexture(sb, texture, center, radius * 2f, color * opacity);
+			if (selected || held) DrawSelectedEditorButton(sb, control.Action, center, radius);
+			if (control.Action is MobileControlAction.Interact or MobileControlAction.UseItem)
+				MobileJoystickSystem.DrawItemIcon(sb, control.Action == MobileControlAction.Interact
+					? MobileJoystickInput.GetPriorityRightClickOrHeldItem() : MobileJoystickInput.GetHeldItem(), center, radius * 1.35f, color * opacity);
+		}
+	}
+
+	private void DrawEditorSprite(SpriteBatch sb, string name, Vector2 center, float size, Color color)
+	{
+		NativeControlTheme.Legacy(sb, name, center, size, color);
+	}
+
+	private bool PreviewControlHeld(Vector2 center, float radius)
+		=> down && !waitForRelease && !editorInputBlocked && !presetPickerOpen
+			&& !touchEditorPanel.Contains(pressPosition.ToPoint())
+			&& Vector2.DistanceSquared(pressPosition, center) <= radius * radius;
+
+	private Vector2 PreviewStickOffset(Vector2 center, float radius)
+	{
+		if (touchEditorView != TouchEditorView.Overview || !PreviewControlHeld(center, radius) || radius <= 0f) return Vector2.Zero;
+		Vector2 offset = (pointer - center) / radius;
+		return offset.LengthSquared() > 1f ? Vector2.Normalize(offset) : offset;
+	}
+
+	private void DrawSelectedEditorButton(SpriteBatch sb, MobileControlAction action, Vector2 center, float radius)
+	{
+        MobileControlArtwork.DrawButton(sb, action, center, radius, Color.White, true);
+	}
+
+	private static Vector2 EditorRadialDirection(int slot) => slot switch {
+		0 => -Vector2.UnitY, 1 => Vector2.UnitX, 2 => Vector2.UnitY, _ => -Vector2.UnitX
+	};
+
+	private void DrawEditorRadialPreview(SpriteBatch sb, MobileCustomControl control, Vector2 center, float radius, bool selected)
+	{
+		MobileControlArtwork.DrawRadialFrame(sb, center, radius, Color.White * .8f);
+		for (int slot = 0; slot < 4; slot++) {
+			Vector2 position = center + EditorRadialDirection(slot) * radius * 2.05f;
+			MobileControlAction action = control.RadialActions[slot];
+			if (action == MobileControlAction.KeyboardKey)
+				MobileKeyboardBindings.DrawLabel(sb, control.RadialKeyboardKeys.ElementAtOrDefault(slot), position, radius * 1.5f, .65f * layout.Scale, Color.White);
+			else if (!MobileControlArtwork.DrawActionIcon(sb, action, position, radius, Color.White))
+				DrawControlTexture(sb, MobileJoystickLayout.GetDefaultTexture(action), position, radius, Color.White);
+			Vector2 numberCenter = center + EditorRadialDirection(slot) * radius * 1.25f;
+			Label(sb, (slot + 1).ToString(), new Rectangle((int)(numberCenter.X - radius / 2), (int)(numberCenter.Y - radius / 2),
+				(int)radius, (int)radius), .6f, true);
+			Rectangle hit = new((int)(position.X - radius * .6f), (int)(position.Y - radius * .6f), (int)(radius * 1.2f), (int)(radius * 1.2f));
+			if (selected && Hit(hit)) OpenBindingPicker(slot);
+		}
+	}
+
+	private Rectangle EditorScreenAt(float x, float y, float width, float height)
+	{
+		int screenWidth = PlayerInput.RealScreenWidth;
+		int screenHeight = PlayerInput.RealScreenHeight;
+		return new((screenWidth - (int)(536 * layout.Scale)) / 2 + (int)(x * layout.Scale),
+			(int)(14 * layout.Scale) + (int)(y * layout.Scale),
+			Math.Max(1, (int)(width * layout.Scale)), Math.Max(1, (int)(height * layout.Scale)));
+	}
+
+	private MobileCustomControl SelectedCustomControl()
+		=> editorDraft?.Controls?.FirstOrDefault(control => control.Id == selectedControlId);
+
+	private Rectangle CustomPropertyBounds(MobileCustomControl control)
+	{
+		float s = layout.Scale;
+		int width = (int)(440 * s);
+		int height = (int)((control.Launcher != null ? 300 : control.Kind == MobileCustomControlKind.RadialMenu ? 382 : control.Kind == MobileCustomControlKind.Joystick ? 256 : 304) * s);
+		float radius = CustomControlRadius(control) * (control.Kind == MobileCustomControlKind.RadialMenu ? 2.8f : 1f);
+		Vector2 center = MobileJoystickLayout.GetCustomControlCenter(control, PlayerInput.RealScreenWidth, PlayerInput.RealScreenHeight, radius);
+		float cx = center.X;
+		float cy = center.Y;
+		int gap = Math.Max(4, (int)(8 * s));
+		int left = cx < PlayerInput.RealScreenWidth * .5f ? (int)(cx + radius + gap) : (int)(cx - radius - gap - width);
+		left = Math.Clamp(left, gap, Math.Max(gap, PlayerInput.RealScreenWidth - width - gap));
+		int minimumTop = Math.Min(PlayerInput.RealScreenHeight - height - gap, (int)(14 * s + 244 * s + gap));
+		int top = Math.Clamp((int)(cy - height * .5f), Math.Max(gap, minimumTop), Math.Max(gap, PlayerInput.RealScreenHeight - height - gap));
+		return new Rectangle(left, top, width, height);
+	}
+
+	private Rectangle PropertyAt(Rectangle panel, float x, float y, float width, float height) => new(
+		panel.X + (int)(x * layout.Scale), panel.Y + (int)(y * layout.Scale),
+		Math.Max(1, (int)(width * layout.Scale)), Math.Max(1, (int)(height * layout.Scale)));
+
+	private Rectangle CustomSizeSlider(Rectangle panel)
+		=> PropertyAt(panel, 218, 22, 198, 20);
+
+	private static float CustomControlRadius(MobileCustomControl control)
+		=> MobileJoystickLayout.GetCustomControlRadius(control, MobileJoystickLayout.GetControlScale(
+			MobileJoystickConfig.Instance, PlayerInput.RealScreenWidth, PlayerInput.RealScreenHeight), PlayerInput.RealScreenHeight);
+
+	private static void ConstrainCustomControl(MobileCustomControl control, int width, int height)
+	{
+		if (control.Launcher != null) {
+			Vector2 dimensions = control.Launcher.Dimensions(height, control.Size);
+			control.X = Math.Clamp(control.X, 0, Math.Max(0, 1 - dimensions.X / width));
+			control.Y = Math.Clamp(control.Y, 0, Math.Max(0, 1 - dimensions.Y / height));
+			return;
+		}
+		Vector2 center = MobileJoystickLayout.ClampCustomControlCenter(new(control.X * width, control.Y * height),
+			CustomControlRadius(control), width, height);
+		control.X = center.X / Math.Max(1, width);
+		control.Y = center.Y / Math.Max(1, height);
+	}
+
+	private static string JoystickRoleLabel(MobileJoystickRole role) => role switch {
+		MobileJoystickRole.Move => T("Move"), MobileJoystickRole.Aim => T("Aim"),
+		MobileJoystickRole.Grapple => T("GrappleAim"), _ => T("Unbound") };
+
+	private void DrawCustomProperties(SpriteBatch sb, int width, int height)
+	{
+		MobileCustomControl control = SelectedCustomControl();
+		if (control == null || touchEditorView != TouchEditorView.Edit) return;
+		if (control.Launcher != null) { DrawLauncherProperties(sb, control); return; }
+		Rectangle panel = CustomPropertyBounds(control);
+		DrawEditorPanel(sb, panel);
+		DrawPropertyRow(sb, panel, 8, 46, T("SizeLabel"));
+		Rectangle track = CustomSizeSlider(panel);
+		float amount = (control.Size - MobileCustomControls.MinimumSize) / (MobileCustomControls.MaximumSize - MobileCustomControls.MinimumSize);
+		Rectangle rail = new(track.X, track.Center.Y - (int)(7 * layout.Scale), track.Width, (int)(14 * layout.Scale));
+		MobileMenuFrame.Draw(sb, Texture("EditorSliderTrack"), rail, Color.White, layout.Scale, 6);
+		int knobWidth = Math.Max(1, (int)(25 * layout.Scale)), knobHeight = Math.Max(1, (int)(32 * layout.Scale));
+		sb.Draw(Texture("PlayerSliderKnob"), new Rectangle(track.X + (int)(amount * track.Width) - knobWidth / 2,
+			track.Center.Y - knobHeight / 2, knobWidth, knobHeight), Color.White);
+
+		if (control.Kind == MobileCustomControlKind.Button) {
+			Rectangle multitouch = PropertyAt(panel, 10, 58, 420, 42);
+			Rectangle multiRow = PropertyAt(panel, 10, 58, 420, 42);
+			DrawEditorSurface(sb, multiRow, true);
+			NativeControlTheme.Glyph(sb, "Hand", new Vector2(multiRow.X + 24 * layout.Scale, multiRow.Center.Y), 28 * layout.Scale, Color.White);
+			Label(sb, T("MultitouchLabel"), PropertyAt(panel, 54, 58, 220, 42), .68f);
+			MobileMenuFrame.ToggleBounds(multitouch, layout.Scale, out Rectangle off, out Rectangle on);
+			MobileMenuFrame.Draw(sb, Texture("EditorButton"), new Rectangle(off.X, off.Y, off.Width + on.Width, off.Height), Color.White, layout.Scale, 8);
+			MobileMenuFrame.Draw(sb, Texture(control.Multitouch ? "ToggleOn" : "ToggleOff"), control.Multitouch ? on : off, Color.White, layout.Scale, 8);
+			Label(sb, T("Off"), off, .65f, true, control.Multitouch ? Color.Gray : Color.White);
+			Label(sb, T("On"), on, .65f, true, control.Multitouch ? Color.White : Color.Gray);
+			Rectangle action = PropertyAt(panel, 10, 106, 420, 42);
+			DrawPropertyActionRow(sb, action, CustomBindingLabel(control.Action, control.ModKeybind, control.KeyboardKey), control.Action);
+			Rectangle texture = PropertyAt(panel, 10, 154, 420, 42);
+			DrawTextureChoiceRow(sb, texture, control);
+			if (Hit(off) && control.Multitouch) { control.Multitouch = false; RecordCustomEdit(); }
+			if (Hit(on) && !control.Multitouch) { control.Multitouch = true; RecordCustomEdit(); }
+			if (Hit(action)) OpenBindingPicker(-1);
+			if (Hit(texture)) CycleControlTexture(control);
+			DrawLauncherConversionRow(sb, panel, control, 202);
+			DrawCustomDeleteRow(sb, panel, 250, 42);
+		}
+		else if (control.Kind == MobileCustomControlKind.Joystick) {
+			Rectangle role = PropertyAt(panel, 10, 58, 420, 42);
+			DrawPropertyRow(sb, panel, 58, 42, T("JoystickRole"));
+			Label(sb, JoystickRoleLabel(control.JoystickRole),
+				PropertyAt(panel, 260, 58, 158, 42), .7f, true, Color.White);
+			Rectangle texture = PropertyAt(panel, 10, 106, 420, 42);
+			DrawTextureChoiceRow(sb, texture, control);
+			if (Hit(role)) {
+                control.JoystickRole = (MobileJoystickRole)(((int)control.JoystickRole + 1) % Enum.GetValues<MobileJoystickRole>().Length);
+                RecordCustomEdit();
+			}
+			if (Hit(texture)) CycleControlTexture(control);
+			DrawLauncherConversionRow(sb, panel, control, 154);
+			DrawCustomDeleteRow(sb, panel, 202, 42);
+		}
+		else {
+			for (int i = 0; i < 4; i++) {
+				Rectangle action = PropertyAt(panel, 10, 58 + i * 42, 420, 38);
+				MobileControlAction bound = control.RadialActions != null && i < control.RadialActions.Count ? control.RadialActions[i] : MobileControlAction.Unbound;
+				DrawPropertyActionRow(sb, action, CustomBindingLabel(bound, control.RadialModKeybinds.ElementAtOrDefault(i), control.RadialKeyboardKeys.ElementAtOrDefault(i)), bound, i + 1);
+				if (Hit(action)) OpenBindingPicker(i);
+			}
+			Rectangle texture = PropertyAt(panel, 10, 234, 420, 42);
+			DrawTextureChoiceRow(sb, texture, control);
+			if (Hit(texture)) CycleControlTexture(control);
+			DrawLauncherConversionRow(sb, panel, control, 282);
+			DrawCustomDeleteRow(sb, panel, 330, 42);
+		}
+	}
+
+	private void DrawTextureChoiceRow(SpriteBatch sb, Rectangle row, MobileCustomControl control)
+	{
+		DrawEditorSurface(sb, row, true);
+		ControlTextureEntry entry = ControlTexturePackSystem.FindTexture(control.TextureName);
+		string name = entry?.DisplayName ?? control.TextureName;
+		Label(sb, T("Texture"), new Rectangle(row.X + (int)(12 * layout.Scale), row.Y, (int)(80 * layout.Scale), row.Height), .68f);
+		if (ControlTexturePackSystem.GetTexture(control.TextureName) is Texture2D icon) {
+			int size = Math.Max(18, (int)(28 * layout.Scale));
+			sb.Draw(icon, new Rectangle(row.X + (int)(92 * layout.Scale), row.Center.Y - size / 2, size, size), Color.White);
+		}
+		Label(sb, string.IsNullOrWhiteSpace(name) ? T("ChooseTexture") : name,
+			new Rectangle(row.X + (int)(128 * layout.Scale), row.Y, row.Width - (int)(158 * layout.Scale), row.Height), .66f, true);
+		DrawEditorDropdownArrow(sb, row);
+	}
+
+	private void CycleControlTexture(MobileCustomControl control)
+	{
+		ControlTextureEntry current = ControlTexturePackSystem.FindTexture(control.TextureName);
+		IReadOnlyList<ControlTextureEntry> entries = ControlTexturePackSystem.Textures(current?.Category);
+		if (entries.Count == 0) {
+			Main.NewText(T("TheActiveTexturePackHasNoAvailableTextures"));
+			return;
+		}
+		int index = entries.ToList().FindIndex(entry => entry.Id == current?.Id);
+		control.TextureName = entries[(index + 1) % entries.Count].Id;
+		RecordCustomEdit();
+	}
+
+	private void DrawPropertyRow(SpriteBatch sb, Rectangle panel, int y, int height, string text)
+	{
+		Rectangle row = PropertyAt(panel, 10, y, 420, height);
+		DrawEditorSurface(sb, row, true);
+		Label(sb, text, PropertyAt(panel, 22, y, 180, height), .68f, false);
+	}
+
+	private void DrawPropertyActionRow(SpriteBatch sb, Rectangle row, string text, MobileControlAction action, int slot = -1)
+	{
+		DrawEditorSurface(sb, row, true);
+		Texture2D icon = action == MobileControlAction.Unbound ? Texture("EditorUnbound") : ControlTexture(MobileJoystickLayout.GetDefaultTexture(action));
+		if (!MobileControlArtwork.DrawActionIcon(sb, action, new Vector2(row.X + 24 * layout.Scale, row.Center.Y), 28 * layout.Scale, Color.White) && icon != null) {
+			int size = Math.Max(18, (int)(28 * layout.Scale));
+			sb.Draw(icon, new Rectangle(row.X + (int)(10 * layout.Scale), row.Center.Y - size / 2, size, size), Color.White);
+		}
+		if (slot >= 0) Label(sb, slot.ToString(), new Rectangle(row.X + (int)(48 * layout.Scale), row.Y, (int)(40 * layout.Scale), row.Height), .66f);
+		int inset = slot >= 0 ? 88 : 44;
+		Label(sb, text, new Rectangle(row.X + (int)(inset * layout.Scale), row.Y, row.Width - (int)((inset + 56) * layout.Scale), row.Height), .66f, right: true);
+		DrawEditorDropdownArrow(sb, row);
+	}
+
+	private void DrawCustomDeleteRow(SpriteBatch sb, Rectangle panel, int y, int height)
+	{
+		Rectangle row = PropertyAt(panel, 10, y, 420, height);
+		DrawEditorSurface(sb, row, true);
+		int size = Math.Max(20, (int)(28 * layout.Scale));
+		NativeControlTheme.Glyph(sb, "Trash", new Vector2(row.X + 14 * layout.Scale + size / 2f, row.Center.Y), size, Color.White);
+		Label(sb, T("DeleteControl"), new Rectangle(row.X + (int)(48 * layout.Scale), row.Y, row.Width - (int)(58 * layout.Scale), row.Height), .68f, true);
+		if (Hit(row)) DeleteSelectedControl();
+	}
+
+	private void UpdateCustomEditorGestures(int width, int height)
+	{
+		if (touchEditorView != TouchEditorView.Edit || editorDraft == null) return;
+		if (launcherPropertyPath != null) { consumed = true; return; }
+		MobileCustomControl selected = SelectedCustomControl();
+		if (selected != null) {
+			if (selected.Launcher == null && selected.Kind == MobileCustomControlKind.RadialMenu && pressed && !editorInputBlocked) {
+				float radius = CustomControlRadius(selected);
+				Vector2 center = MobileJoystickLayout.ClampCustomControlCenter(new(selected.X * width, selected.Y * height), radius, width, height);
+				for (int slot = 0; slot < 4; slot++) {
+					if (Vector2.DistanceSquared(pressPosition, center + EditorRadialDirection(slot) * radius * 2.05f) <= radius * radius * .36f) {
+						consumed = true;
+						return;
+					}
+				}
+			}
+			Rectangle panel = CustomPropertyBounds(selected);
+			Rectangle sizeTrack = CustomSizeSlider(panel);
+			if (selected.Launcher == null && !editorSizing && pressed && !consumed && sizeTrack.Contains(pressPosition.ToPoint())) {
+				editorSizing = true;
+				editorGestureChanged = false;
+				consumed = true;
+			}
+			if (editorSizing) {
+				if (down || released) {
+					float amount = MathHelper.Clamp((pointer.X - sizeTrack.X) / Math.Max(1f, sizeTrack.Width), 0f, 1f);
+					float size = MathHelper.Lerp(MobileCustomControls.MinimumSize, MobileCustomControls.MaximumSize, amount);
+					if (Math.Abs(selected.Size - size) > 0.001f) {
+						selected.Size = size;
+						ConstrainCustomControl(selected, width, height);
+						editorGestureChanged = true;
+					}
+				}
+				consumed = true;
+				if (released || !down) {
+					if (editorGestureChanged) RecordCustomEdit();
+					editorSizing = editorGestureChanged = false;
+				}
+				return;
+			}
+		}
+
+		Rectangle addPanel = EditorScreenAt(0, 136, 536, 108);
+		if (pressed && !consumed && !editorInputBlocked && !touchEditorPanel.Contains(pressPosition.ToPoint())
+			&& !addPanel.Contains(pressPosition.ToPoint()) && (selected == null || !CustomPropertyBounds(selected).Contains(pressPosition.ToPoint()))) {
+			MobileCustomControl hit = FindCustomControlAt(pressPosition, width, height);
+			if (hit != null) {
+				addControlKind = null;
+				selectedControlId = hit.Id;
+				BeginEditorGesture(hit, false);
+				consumed = true;
+			}
+			else {
+				MobileCustomControl added = CreateEditorControlAt(pointer, width, height);
+				selectedControlId = null;
+				if (added != null) {
+					addControlKind = null;
+					editorDraft.Controls.Add(added);
+					selectedControlId = added.Id;
+					editorGestureStart = pointer;
+					editorControlStartX = added.X;
+					editorControlStartY = added.Y;
+					editorGestureChanged = true;
+					editorDragging = true;
+					consumed = true;
+				}
+			}
+		}
+
+		if (!editorDragging) return;
+		MobileCustomControl moving = SelectedCustomControl();
+		if (moving == null) { editorDragging = editorGestureChanged = false; return; }
+		if (down) {
+			Vector2 delta = pointer - editorGestureStart;
+			if (editorGestureChanged || delta.LengthSquared() > 36f * layout.Scale * layout.Scale) {
+				moving.X = MathHelper.Clamp(editorControlStartX + delta.X / Math.Max(1, width), 0f, 1f);
+				moving.Y = MathHelper.Clamp(editorControlStartY + delta.Y / Math.Max(1, height), 0f, 1f);
+				ConstrainCustomControl(moving, width, height);
+				editorGestureChanged = true;
+			}
+			consumed = true;
+		}
+		if (released || !down) {
+			if (editorGestureChanged) RecordCustomEdit();
+			editorDragging = editorGestureChanged = false;
+		}
+	}
+
+	private MobileCustomControl FindCustomControlAt(Vector2 position, int width, int height)
+	{
+		for (int i = editorDraft.Controls.Count - 1; i >= 0; i--) {
+			MobileCustomControl control = editorDraft.Controls[i];
+			float radius = CustomControlRadius(control);
+			Vector2 center = MobileJoystickLayout.GetCustomControlCenter(control, width, height, radius);
+			if (control.Launcher != null ? control.Launcher.Contains(position, center, control.Launcher.Dimensions(height, control.Size))
+				: Vector2.DistanceSquared(position, center) <= radius * radius) return control;
+		}
+		return null;
+	}
+
+	private MobileCustomControl CreateEditorControlAt(Vector2 position, int width, int height)
+	{
+		if (addControlKind is not { } kind) return null;
+		MobileCustomControl control = new() {
+			Id = "control-" + Guid.NewGuid().ToString("N"),
+			Kind = kind,
+			Action = MobileControlAction.Unbound,
+			TextureName = addControlKind == MobileCustomControlKind.RadialMenu ? "DirectionalArrowsOriginal" : "ItemButtonFrame",
+			X = MathHelper.Clamp(position.X / Math.Max(1, width), 0f, 1f),
+			Y = MathHelper.Clamp(position.Y / Math.Max(1, height), 0f, 1f),
+			Size = 1f,
+			Multitouch = true
+		};
+		if (addControlKind == MobileCustomControlKind.Joystick) {
+			HashSet<MobileJoystickRole> roles = editorDraft.Controls
+				.Where(existing => existing.Kind == MobileCustomControlKind.Joystick)
+				.Select(existing => existing.JoystickRole).ToHashSet();
+			control.JoystickRole = Enum.GetValues<MobileJoystickRole>().FirstOrDefault(role => !roles.Contains(role), MobileJoystickRole.Unbound);
+			control.TextureName = control.JoystickRole == MobileJoystickRole.Move ? "JoystickKnob" : "AttackAimUse";
+		}
+		if (addControlKind == MobileCustomControlKind.RadialMenu)
+			control.RadialActions = Enumerable.Repeat(MobileControlAction.Unbound, 4).ToList();
+		if (kind is MobileCustomControlKind.DPad or MobileCustomControlKind.Touchpad or MobileCustomControlKind.Mousewheel or MobileCustomControlKind.Text) {
+			string type = kind.ToString().ToLowerInvariant();
+			control.Launcher = new MobileLauncherControl { Data = MobileLauncherControl.Defaults(type) };
+			control.Action = MobileControlAction.LauncherControl;
+			Vector2 dimensions = control.Launcher.Dimensions(height, 1);
+			control.X -= dimensions.X / width / 2; control.Y -= dimensions.Y / height / 2;
+		}
+		ConstrainCustomControl(control, width, height);
+		return control;
+	}
+
+	private void BeginEditorGesture(MobileCustomControl control, bool added)
+	{
+		editorGestureStart = pointer;
+		editorControlStartX = control.X;
+		editorControlStartY = control.Y;
+		editorGestureChanged = added;
+		editorDragging = true;
+	}
+
+	private void RecordCustomEdit()
+	{
+		if (editorDraft == null || editorHistory == null) return;
+		MobileCustomControls.Validate(editorDraft);
+		editorHistory.Record(editorDraft, pendingPresetCopies);
+	}
+
+	private void RestoreCustomDefaults()
+	{
+		MobileJoystickConfig config = MobileJoystickConfig.Instance;
+		if (config == null || editorDraft == null) return;
+		string presetName = editorDraft.Name;
+		editorDraft = MobileCustomControls.CreateDefaults(config)[selectedCustomPreset];
+		editorDraft.Name = presetName;
+		selectedControlId = null;
+		selectedRadialSlot = -1;
+		addControlKind = null;
+		EndLauncherPropertyEdit();
+		RecordCustomEdit();
+	}
+
+	private void RestoreEditorHistory(MobileCustomPreset restored)
+	{
+		editorDraft = restored;
+		pendingPresetCopies.Clear();
+		foreach (KeyValuePair<int, MobileCustomPreset> pair in editorHistory.CurrentCopies) pendingPresetCopies[pair.Key] = pair.Value;
+		if (SelectedCustomControl() == null) selectedControlId = null;
+	}
+
+	private void DeleteSelectedControl()
+	{
+		MobileCustomControl selected = SelectedCustomControl();
+		if (selected == null) return;
+		editorDraft.Controls.Remove(selected);
+		selectedControlId = null;
+		RecordCustomEdit();
+	}
+
+	private void OpenBindingPicker(int radialSlot)
+	{
+		selectedRadialSlot = radialSlot;
+		bindingCategory = BindingCategory.Basic;
+		bindingPage = 0;
+		if (SelectedCustomControl() is { } selected) {
+			MobileControlAction action = radialSlot >= 0 ? selected.RadialActions[radialSlot] : selected.Action;
+			if (action == MobileControlAction.KeyboardKey) {
+				bindingCategory = BindingCategory.Keyboard;
+				string key = radialSlot >= 0 ? selected.RadialKeyboardKeys.ElementAtOrDefault(radialSlot) : selected.KeyboardKey;
+				bindingPage = Math.Max(0, Array.IndexOf(MobileKeyboardBindings.Names, key)) / BindingsPerPage;
+			}
+			else if (action == MobileControlAction.ModKeybind) bindingCategory = BindingCategory.Mod;
+		}
+		pickerReturnView = TouchEditorView.Edit;
+		touchEditorView = TouchEditorView.ActionPicker;
+	}
+
+	private void SetCustomBinding(MobileControlAction action, string key)
+	{
+		MobileCustomControl selected = SelectedCustomControl();
+		if (selected == null) return;
+		if (selectedRadialSlot >= 0) {
+			selected.RadialActions ??= new List<MobileControlAction>();
+			while (selected.RadialActions.Count < 4) selected.RadialActions.Add(MobileControlAction.Unbound);
+			selected.RadialActions[selectedRadialSlot] = action;
+			selected.RadialModKeybinds ??= new();
+			while (selected.RadialModKeybinds.Count < 4) selected.RadialModKeybinds.Add(string.Empty);
+			selected.RadialModKeybinds[selectedRadialSlot] = action == MobileControlAction.ModKeybind ? key : string.Empty;
+			selected.RadialKeyboardKeys ??= new();
+			while (selected.RadialKeyboardKeys.Count < 4) selected.RadialKeyboardKeys.Add(string.Empty);
+			selected.RadialKeyboardKeys[selectedRadialSlot] = action == MobileControlAction.KeyboardKey ? key : string.Empty;
+		}
+		else {
+			selected.Action = action;
+			selected.ModKeybind = action == MobileControlAction.ModKeybind ? key : string.Empty;
+			selected.KeyboardKey = action == MobileControlAction.KeyboardKey ? key : string.Empty;
+			selected.TextureName = MobileJoystickLayout.GetDefaultTexture(action);
+		}
+		RecordCustomEdit();
+		selectedRadialSlot = -1;
+		touchEditorView = TouchEditorView.Edit;
+	}
+
+	private static string CustomBindingLabel(MobileControlAction action, string modKey, string keyboardKey) => action switch {
+		MobileControlAction.KeyboardKey => MobileKeyboardBindings.Label(keyboardKey),
+		MobileControlAction.ModKeybind => MobileModKeybinds.Label(modKey),
+		MobileControlAction.Unbound => T("Unbound"),
+		_ => ActionLabel(action)
+	};
+
+	private void DrawActionPicker(SpriteBatch sb, int width, int height)
+	{
+		Rectangle panel = new((width - (int)(590 * layout.Scale)) / 2, (height - (int)(450 * layout.Scale)) / 2,
+			(int)(590 * layout.Scale), (int)(450 * layout.Scale));
+		sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(0, 0, width, height), Color.Black * .28f);
+		DrawEditorPanel(sb, panel);
+		Label(sb, T("ChooseAction"), PropertyAt(panel, 8, 4, 574, 38), .82f, true, display: true);
+		DrawBindingCategory(sb, panel, BindingCategory.Basic, "BasicActions");
+		DrawBindingCategory(sb, panel, BindingCategory.Mod, "ModKeybinds");
+		DrawBindingCategory(sb, panel, BindingCategory.Keyboard, "FullKeyboard");
+		string[] keys = bindingCategory switch {
+			BindingCategory.Mod => MobileModKeybinds.Registered,
+			BindingCategory.Keyboard => MobileKeyboardBindings.Names,
+			_ => Array.Empty<string>()
+		};
+		int total = bindingCategory == BindingCategory.Basic ? BindingActions.Length : keys.Length;
+		int pages = Math.Max(1, (total + BindingsPerPage - 1) / BindingsPerPage);
+		bindingPage = Math.Clamp(bindingPage, 0, pages - 1);
+		int offset = bindingPage * BindingsPerPage;
+		int count = Math.Min(BindingsPerPage, total - offset);
+		if (bindingCategory == BindingCategory.Mod && count == 0) Label(sb, T("NoModKeybindsAreLoaded"), PropertyAt(panel, 10, 110, 570, 60), .75f, true);
+		MobileCustomControl selected = SelectedCustomControl();
+		bool radial = selectedRadialSlot >= 0;
+		MobileControlAction? selectedAction = radial ? selected?.RadialActions.ElementAtOrDefault(selectedRadialSlot) : selected?.Action;
+		string selectedKey = bindingCategory switch {
+			BindingCategory.Mod => radial ? selected?.RadialModKeybinds.ElementAtOrDefault(selectedRadialSlot) : selected?.ModKeybind,
+			BindingCategory.Keyboard => radial ? selected?.RadialKeyboardKeys.ElementAtOrDefault(selectedRadialSlot) : selected?.KeyboardKey,
+			_ => string.Empty
+		};
+		for (int i = 0; i < count; i++) {
+			int column = i % 3;
+			int row = i / 3;
+			Rectangle option = PropertyAt(panel, 8 + column * 191, 83 + row * 40, 184, 36);
+			MobileControlAction action = bindingCategory switch {
+				BindingCategory.Mod => MobileControlAction.ModKeybind,
+				BindingCategory.Keyboard => MobileControlAction.KeyboardKey,
+				_ => BindingActions[offset + i]
+			};
+			string key = bindingCategory == BindingCategory.Basic ? string.Empty : keys[offset + i];
+			bool active = selectedAction == action && key == selectedKey;
+			string material = action is MobileControlAction.Grapple or MobileControlAction.QuickMount ? "EditorActionGreen"
+				: action == MobileControlAction.Unbound ? "EditorActionUnbound"
+				: i % 3 == 0 ? "EditorSelected" : "EditorActionTeal";
+			MobileMenuFrame.Draw(sb, Texture(active || EditorPressed(option) ? "EditorPressed" : material), option, Color.White, layout.Scale, 8,
+				new Color(185, 185, 215));
+			if (action == MobileControlAction.KeyboardKey) Label(sb, MobileKeyboardBindings.Label(key), option, .67f, true);
+			else {
+				Texture2D icon = ControlTexture(MobileJoystickLayout.GetDefaultTexture(action));
+				if (!MobileControlArtwork.DrawActionIcon(sb, action, new Vector2(option.X + 20 * layout.Scale, option.Center.Y), 27 * layout.Scale, Color.White) && icon != null) {
+					int size = Math.Max(17, (int)(27 * layout.Scale));
+					sb.Draw(icon, new Rectangle(option.X + (int)(7 * layout.Scale), option.Center.Y - size / 2, size, size), Color.White);
+				}
+				Label(sb, action == MobileControlAction.ModKeybind ? MobileModKeybinds.Label(key) : ActionLabel(action),
+					new Rectangle(option.X + (int)(38 * layout.Scale), option.Y, option.Width - (int)(48 * layout.Scale), option.Height), .64f, right: true);
+			}
+			if (Hit(option)) { SetCustomBinding(action, key); return; }
+		}
+		if (pages > 1) {
+			Rectangle previous = PropertyAt(panel, 268, 405, 84, 34), next = PropertyAt(panel, 498, 405, 84, 34);
+			DrawEditorSurface(sb, previous, EditorPressed(previous));
+			DrawEditorSurface(sb, next, EditorPressed(next));
+			Label(sb, "<", previous, .7f, true, bindingPage == 0 ? Color.Gray : Color.White);
+			Label(sb, ">", next, .7f, true, bindingPage == pages - 1 ? Color.Gray : Color.White);
+			Label(sb, $"{bindingPage + 1} / {pages}", PropertyAt(panel, 354, 405, 142, 34), .7f, true);
+			if (Hit(previous)) bindingPage = Math.Max(0, bindingPage - 1);
+			if (Hit(next)) bindingPage = Math.Min(pages - 1, bindingPage + 1);
+		}
+		Rectangle cancel = PropertyAt(panel, 8, 405, 130, 34);
+		DrawEditorFooterButton(sb, cancel, "Back", T("Back"));
+		if (Hit(cancel)) { selectedRadialSlot = -1; touchEditorView = pickerReturnView; }
+	}
+
+	private void DrawBindingCategory(SpriteBatch sb, Rectangle panel, BindingCategory category, string labelKey)
+	{
+		Rectangle tab = PropertyAt(panel, 8 + (int)category * 191, 43, 184, 35);
+		DrawEditorSurface(sb, tab, category == bindingCategory);
+		Label(sb, T(labelKey), tab, .66f, true);
+		if (Hit(tab) && category != bindingCategory) {
+			bindingCategory = category;
+			bindingPage = 0;
+		}
+	}
+
+	private void DrawCopyPicker(SpriteBatch sb, int width, int height)
+	{
+		Rectangle panel = new((width - (int)(380 * layout.Scale)) / 2, (height - (int)(230 * layout.Scale)) / 2,
+			(int)(380 * layout.Scale), (int)(230 * layout.Scale));
+		sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(0, 0, width, height), Color.Black * .28f);
+		Nine(sb, "Panel", panel, Color.White, 12);
+		Label(sb, T("CopyToPreset"), PropertyAt(panel, 8, 4, 364, 38), .82f, true, display: true);
+		for (int i = 0; i < MobileCustomControls.PresetCount; i++) {
+			Rectangle option = PropertyAt(panel, 10 + (i % 2) * 181, 48 + (i / 2) * 60, 174, 52);
+			DrawEditorSurface(sb, option, i == selectedCustomPreset);
+			Texture2D icon = Texture("WorldName");
+			sb.Draw(icon, new Rectangle(option.X + (int)(8 * layout.Scale), option.Center.Y - (int)(14 * layout.Scale), (int)(28 * layout.Scale), (int)(28 * layout.Scale)), Color.White);
+			MobileJoystickConfig config = MobileJoystickConfig.Instance;
+			string name = config?.CustomPresets != null && i < config.CustomPresets.Count ? config.CustomPresets[i].Name : "Custom " + (i + 1);
+			Label(sb, CustomPresetLabel(name), new Rectangle(option.X + (int)(40 * layout.Scale), option.Y, option.Width - (int)(44 * layout.Scale), option.Height), .68f, true);
+			if (!Hit(option)) continue;
+			if (i != selectedCustomPreset && editorDraft != null) {
+				MobileCustomPreset copy = MobileCustomControls.Clone(editorDraft);
+				copy.Name = name;
+				pendingPresetCopies[i] = copy;
+				RecordCustomEdit();
+			}
+			touchEditorView = pickerReturnView;
+			return;
+		}
+		Rectangle cancel = PropertyAt(panel, 125, 176, 130, 36);
+		DrawEditorFooterButton(sb, cancel, "Back", T("Cancel"));
+		if (Hit(cancel)) touchEditorView = pickerReturnView;
+	}
+
+	internal static string ActionLabel(MobileControlAction action) => action switch {
+		MobileControlAction.Interact => T("MouseRightClick"),
+		MobileControlAction.SwapUseInteract => T("SwapUseInteract"),
+		MobileControlAction.SmartCursor => T("SmartCursor"),
+		MobileControlAction.SmartInteract => T("SmartInteract"),
+		MobileControlAction.AimModeToggle => T("AimMode"),
+		MobileControlAction.Jump => T("Jump"),
+		MobileControlAction.UseItem => T("UseItem"),
+		MobileControlAction.Inventory => T("InventorySlots"),
+		MobileControlAction.TargetLockToggle => T("Lock"),
+		MobileControlAction.Buff => T("QuickBuff"),
+		MobileControlAction.Settings => T("Menu"),
+		MobileControlAction.CycleUseProfile => T("CycleUseProfile"),
+		MobileControlAction.Heal => T("QuickHeal"),
+		MobileControlAction.Grapple => T("Grapple"),
+		MobileControlAction.Loadout1 => T("Loadout1"),
+		MobileControlAction.Mana => T("QuickMana"),
+		MobileControlAction.QuickMount => T("QuickMount"),
+		MobileControlAction.Loadout2 => T("Loadout2"),
+		MobileControlAction.AutoSelect => T("AutoSelect"),
+		MobileControlAction.ZoomIn => T("ZoomIn"),
+		MobileControlAction.Loadout3 => T("Loadout3"),
+		MobileControlAction.Unbound => T("Unbind"),
+		MobileControlAction.ZoomOut => T("ZoomOut"),
+		MobileControlAction.SwitchLoadout => T("SwitchLoadout"),
+		MobileControlAction.ToggleGameControls => T("ToggleGameControls"),
+		MobileControlAction.Mount => T("QuickMount"),
+		MobileControlAction.QuickPotions => T("QuickPotions"),
+		MobileControlAction.Zoom => T("Zoom"),
+		MobileControlAction.Map => T("Map"),
+		MobileControlAction.MapStyle => T("MapStyle"),
+		MobileControlAction.Chat => T("Chat"),
+		MobileControlAction.KeyboardKey => T("FullKeyboard"),
+		MobileControlAction.RadialMenu => T("RadialMenuAction"),
+		_ => action.ToString()
+	};
+
+	private void ApplyCustomDraft()
+	{
+		MobileJoystickConfig config = MobileJoystickConfig.Instance;
+		if (config == null || editorDraft == null) return;
+		MobileCustomControls.Validate(editorDraft);
+		Dictionary<int, MobileCustomPreset> originals = new();
+		foreach (int index in pendingPresetCopies.Keys.Append(selectedCustomPreset).Distinct())
+			originals[index] = MobileCustomControls.Clone(config.CustomPresets[index]);
+		MobileControlLayoutMode oldMode = config.ControlLayout;
+		int oldIndex = config.ActiveCustomPresetIndex;
+		bool wasDirty = modDirty;
+		foreach (KeyValuePair<int, MobileCustomPreset> pair in pendingPresetCopies)
+			config.CustomPresets[pair.Key] = MobileCustomControls.Clone(pair.Value);
+		config.CustomPresets[selectedCustomPreset] = MobileCustomControls.Clone(editorDraft);
+		config.ActiveCustomPresetIndex = selectedCustomPreset;
+		config.ControlLayout = MobileControlLayoutMode.Custom;
+		modDirty = true;
+		if (!Save()) {
+			foreach (KeyValuePair<int, MobileCustomPreset> pair in originals) config.CustomPresets[pair.Key] = pair.Value;
+			config.ActiveCustomPresetIndex = oldIndex;
+			config.ControlLayout = oldMode;
+			modDirty = wasDirty;
+			return;
+		}
+		ResetCustomEditor();
+	}
+
+	private void DiscardCustomDraft()
+	{
+		EndLauncherPropertyEdit();
+		addControlKind = null;
+		editorDraft = null;
+		editorHistory = null;
+		pendingPresetCopies.Clear();
+		selectedControlId = null;
+		selectedRadialSlot = -1;
+		editorDragging = editorSizing = editorGestureChanged = false;
+		touchEditorView = TouchEditorView.Overview;
+		ClickSound();
+	}
+
+	private MobileCustomPreset CustomOverviewPreset(MobileJoystickConfig config)
+		=> defaultCustomPreview ?? config?.CustomPresets?.ElementAtOrDefault(selectedCustomPreset);
+
+	private string CustomEditorPresetLabel(MobileCustomPreset preset)
+		=> defaultCustomPreview != null ? MobileSettingsCatalog.Text("MobileDefaultPresetTarget", selectedCustomPreset + 1)
+			: CustomPresetLabel(preset?.Name ?? "Custom " + (selectedCustomPreset + 1));
+
+	private void OpenCustomOverview()
+	{
+		ResetCustomEditor();
+		touchEditorTab = 2;
+		MobileJoystickConfig config = MobileJoystickConfig.Instance;
+		if (config == null || config.ControlLayout == MobileControlLayoutMode.Custom) return;
+		MobileCustomControls.EnsureInitialized(config);
+		bool IsMobilePreset(MobileCustomPreset preset) => preset.Controls.Any(control => control.Launcher == null
+			&& control.Kind is MobileCustomControlKind.Joystick or MobileCustomControlKind.Button or MobileCustomControlKind.RadialMenu);
+		if (IsMobilePreset(config.CustomPresets[selectedCustomPreset])) return;
+		int mobilePresetIndex = config.CustomPresets.FindIndex(IsMobilePreset);
+		if (mobilePresetIndex >= 0) selectedCustomPreset = mobilePresetIndex;
+		else defaultCustomPreview = MobileCustomControls.CreateDefaults(config)[selectedCustomPreset];
+	}
+
+	private void BeginCustomEdit()
+	{
+		MobileJoystickConfig config = MobileJoystickConfig.Instance;
+		if (config == null) return;
+		MobileCustomControls.EnsureInitialized(config);
+		selectedCustomPreset = Math.Clamp(selectedCustomPreset, 0, MobileCustomControls.PresetCount - 1);
+		editorDraft = MobileCustomControls.Clone(CustomOverviewPreset(config));
+		editorHistory = new MobileControlEditorHistory(editorDraft);
+		pendingPresetCopies.Clear();
+		selectedControlId = null;
+		selectedRadialSlot = -1;
+		addControlKind = null;
+		presetPickerOpen = false;
+		touchEditorView = TouchEditorView.Edit;
+		ClickSound();
+	}
+
+	private void ResetCustomEditor()
+	{
+		EndLauncherPropertyEdit();
+		addControlKind = null;
+		MobileJoystickConfig config = MobileJoystickConfig.Instance;
+		touchEditorView = TouchEditorView.Overview;
+		pickerReturnView = TouchEditorView.Overview;
+		selectedCustomPreset = Math.Clamp(config?.ActiveCustomPresetIndex ?? 0, 0, MobileCustomControls.PresetCount - 1);
+		defaultCustomPreview = null;
+		selectedRadialSlot = -1;
+		selectedControlId = null;
+		editorDraft = null;
+		editorHistory = null;
+		pendingPresetCopies.Clear();
+		presetPickerOpen = false;
+		editorDragging = editorSizing = editorGestureChanged = false;
+	}
+
+	private void SelectControlLayout(MobileControlLayoutMode mode)
+	{
+		touchEditorTab = mode == MobileControlLayoutMode.Advanced ? 1 : 0;
+		MobileJoystickConfig config = MobileJoystickConfig.Instance;
+		if (config != null && config.ControlLayout != mode) {
+			config.ControlLayout = mode;
+			modDirty = true;
+		}
+	}
+
+	private Rectangle EditorAt(float x, float y, float width, float height) => new(
+		touchEditorPanel.X + (int)(x * layout.Scale), touchEditorPanel.Y + (int)(y * layout.Scale),
+		Math.Max(1, (int)(width * layout.Scale)), Math.Max(1, (int)(height * layout.Scale)));
+
+	private bool EditorPressed(Rectangle bounds)
+		=> !editorInputBlocked && down && !waitForRelease && !scrolling && bounds.Contains(pressPosition.ToPoint()) && bounds.Contains(pointer.ToPoint());
+
+	private static string CustomPresetLabel(string name)
+	{
+		for (int i = 1; i <= MobileCustomControls.PresetCount; i++)
+			if (name == "Custom " + i) return MobileSettingsCatalog.Text("CustomPresetName", i);
+		return name;
+	}
+
+	private void DrawEditorDropdownArrow(SpriteBatch sb, Rectangle row)
+	{
+		MobileMenuFrame.DropdownDivider(sb, row, layout.Scale);
+		Texture2D arrow = Texture("WorldDropdown");
+		sb.Draw(arrow, new Vector2(row.Right - 22 * layout.Scale, row.Center.Y), null, Color.White, -MathHelper.PiOver2,
+			arrow.Size() * .5f, 20 * layout.Scale / Math.Max(arrow.Width, arrow.Height), SpriteEffects.None, 0f);
+	}
+
+	private void DrawEditorSurface(SpriteBatch sb, Rectangle bounds, bool selected = false, bool enabled = true)
+	{
+		bool held = enabled && EditorPressed(bounds);
+		string texture = held ? "EditorPressed" : selected ? "EditorSelected" : "EditorButton";
+		MobileMenuFrame.Draw(sb, Texture(texture), bounds, enabled ? Color.White : Color.White * .5f, layout.Scale, 8,
+			new Color(185, 185, 215) * (enabled ? 1f : .5f));
+	}
+
+	private void DrawEditorToolSurface(SpriteBatch sb, Rectangle bounds, bool enabled = true)
+	{
+		MobileMenuFrame.Draw(sb, Texture(enabled && EditorPressed(bounds) ? "EditorPressed" : "EditorToolButton"),
+			bounds, Color.White, layout.Scale, 8);
+	}
+
+	private void DrawEditorPanel(SpriteBatch sb, Rectangle bounds)
+		=> MobileMenuFrame.Draw(sb, Texture("EditorSelected"), bounds, new Color(130, 150, 120, 205), layout.Scale, 8);
+
+	private void DrawEditorTab(SpriteBatch sb, Rectangle bounds, string icon, string text, bool active)
+	{
+		DrawEditorSurface(sb, bounds, active);
+		Texture2D tabIcon = EditorTabTexture(icon);
+		int size = Math.Max(20, (int)(30 * layout.Scale));
+		Rectangle iconBounds = new(bounds.X + (int)(8 * layout.Scale), bounds.Center.Y - size / 2, size, size);
+		sb.Draw(tabIcon, iconBounds, active ? Color.White : Color.White * .65f);
+		Label(sb, text, new Rectangle(iconBounds.Right, bounds.Y, bounds.Right - iconBounds.Right - (int)(5 * layout.Scale), bounds.Height), .75f, true, display: true);
+	}
+
+	private Texture2D EditorTabTexture(string name)
+	{
+		string menuPath = $"MobileJoystick/Assets/MobileMenu/{name}";
+		if (UiTextureAssets.HasAsset(menuPath)) return Texture(name);
+		string inventoryPath = $"MobileJoystick/Assets/MobileInventory/{name}";
+		if (UiTextureAssets.HasAsset(inventoryPath))
+			return UiTextureAssets.Request(inventoryPath, AssetRequestMode.ImmediateLoad).Value;
+		return ControlTexture(name);
+	}
+
+	private void DrawEditorFooterButton(SpriteBatch sb, Rectangle bounds, string icon, string text)
+	{
+		DrawEditorSurface(sb, bounds);
+		Texture2D buttonIcon = UiTextureAssets.HasAsset($"MobileJoystick/Assets/MobileMenu/{icon}") ? Texture(icon) : ControlTexture(icon);
+		if (buttonIcon != null) {
+			int size = Math.Max(20, (int)(28 * layout.Scale));
+			Rectangle iconBounds = new(bounds.X + (int)(10 * layout.Scale), bounds.Center.Y - size / 2, size, size);
+			sb.Draw(buttonIcon, iconBounds, Color.White);
+			Label(sb, text, new Rectangle(iconBounds.Right, bounds.Y, bounds.Right - iconBounds.Right - (int)(8 * layout.Scale), bounds.Height), .76f, true, display: true);
+		}
+		else Label(sb, text, bounds, .76f, true, display: true);
+	}
+
+	private void DrawEditorPresetLegacy(SpriteBatch sb)
+	{
+		Rectangle preset = EditorAt(62, 66, 230, 44);
+		Rectangle edit = EditorAt(300, 66, 226, 44);
+		Nine(sb, "Button", preset, new Color(119, 132, 172));
+		Label(sb, T("CustomFirst"), new Rectangle(preset.X, preset.Y, preset.Width - (int)(30 * layout.Scale), preset.Height), .76f, true);
+		Label(sb, ">", new Rectangle(preset.Right - (int)(30 * layout.Scale), preset.Y, (int)(25 * layout.Scale), preset.Height), .9f, true, Color.White * .85f);
+		Nine(sb, "Button", edit, new Color(130, 190, 211));
+		Texture2D gear = ControlTexture("Settings");
+		if (gear != null) {
+			int size = Math.Max(20, (int)(27 * layout.Scale));
+			Rectangle icon = new(edit.X + (int)(12 * layout.Scale), edit.Center.Y - size / 2, size, size);
+			sb.Draw(gear, icon, Color.White);
+			Label(sb, T("Edit"), new Rectangle(icon.Right, edit.Y, edit.Right - icon.Right, edit.Height), .76f, true, display: true);
+		}
+		else Label(sb, T("Edit"), edit, .76f, true, display: true);
+	}
+
+	private void DrawTouchEditorControls(SpriteBatch sb, MobileControlLayout controls, bool editable)
+	{
+		Color color = Color.White * (MobileJoystickConfig.Instance?.Opacity ?? .78f);
+        NativeControlTheme.Stick(sb, MobileJoystickRole.Move, controls.JoystickCenter,
+            controls.JoystickRadius, PreviewStickOffset(controls.JoystickCenter, controls.JoystickRadius), color);
+        if (controls.AttackRadius > 0f)
+            NativeControlTheme.Stick(sb, MobileJoystickRole.Aim, controls.AttackCenter,
+                controls.AttackRadius, PreviewStickOffset(controls.AttackCenter, controls.AttackRadius), color);
+        foreach (MobileControlButton button in controls.Buttons) {
+            if (button.Action is MobileControlAction.Inventory or MobileControlAction.Settings) continue;
+            MobileControlArtwork.DrawButton(sb, button.Action, button.Center, button.Radius, color,
+                PreviewControlHeld(button.Center, button.Radius), textureName: button.TextureName);
+        }
+		if (editable) {
+			DrawControlLabel(sb, T("Move"), controls.JoystickCenter, controls.JoystickRadius);
+			if (controls.AttackRadius > 0f) DrawControlLabel(sb, T("Aim"), controls.AttackCenter, controls.AttackRadius);
+		}
+	}
+
+	private void DrawControlLabel(SpriteBatch sb, string text, Vector2 center, float radius)
+	{
+		Rectangle bounds = new((int)(center.X - radius), (int)(center.Y - radius), (int)(radius * 2f), (int)(radius * 2f));
+		Label(sb, text, bounds, .55f, true, Color.White * .9f);
+	}
+
+	private void DrawControlTexture(SpriteBatch sb, string name, Vector2 center, float maxSize, Color color)
+        => NativeControlTheme.Legacy(sb, name, center, maxSize, color);
+
+    private static Texture2D ControlTexture(string name) => NativeControlTheme.Texture(name);
+
+	private void UpdateTouchEditorDrag(MobileControlLayout controls)
+	{
+		MobileJoystickConfig config = MobileJoystickConfig.Instance;
+		if (config == null) return;
+		if (pressed && !consumed) {
+			if (Vector2.DistanceSquared(pointer, controls.JoystickCenter) <= controls.JoystickRadius * controls.JoystickRadius) {
+				draggingLeftStick = true;
+				dragStartPointer = pointer;
+				dragStartOffset = new Vector2(config.LeftStickOffsetX, config.LeftStickOffsetY);
+				consumed = true;
+			}
+			else if (Vector2.DistanceSquared(pointer, controls.AttackCenter) <= controls.AttackRadius * controls.AttackRadius) {
+				draggingRightStick = true;
+				dragStartPointer = pointer;
+				dragStartOffset = new Vector2(config.RightStickOffsetX, config.RightStickOffsetY);
+				consumed = true;
+			}
+		}
+
+		if (draggingLeftStick || draggingRightStick) {
+			Vector2 offset = dragStartOffset + pointer - dragStartPointer;
+			if (draggingLeftStick) {
+				config.LeftStickOffsetX = Math.Clamp(offset.X, -800f, 800f);
+				config.LeftStickOffsetY = Math.Clamp(offset.Y, -800f, 800f);
+			}
+			else {
+				config.RightStickOffsetX = Math.Clamp(offset.X, -800f, 800f);
+				config.RightStickOffsetY = Math.Clamp(offset.Y, -800f, 800f);
+			}
+			modDirty = true;
+			consumed = true;
+			if (released || !down) {
+				draggingLeftStick = draggingRightStick = false;
+				Save();
+			}
+		}
+	}
+
+	private void DrawSettings(SpriteBatch sb)
+	{
+		Heading(sb, MobileSettingsCatalog.Heading(category));
+		int activeTab = category == 8 ? 7 : category is 9 or 10 ? 4 : category;
+		for (int slot = 0; slot < MobileSettingsCatalog.VisibleCategories.Length; slot++) {
+			int i = MobileSettingsCatalog.VisibleCategories[slot];
+			Rectangle r = layout.Tab(slot);
+			if (i < 7) sb.Draw(Texture("Tab" + i), r, i == activeTab ? Color.White : Color.White * .65f);
+			else {
+				Nine(sb, "Button", r, i == activeTab ? Color.White : Color.White * .65f);
+				Texture2D icon = NativeControlTheme.Texture("Settings");
+				Rectangle ir = new(r.Center.X - (int)(14 * layout.Scale), r.Center.Y - (int)(14 * layout.Scale), (int)(28 * layout.Scale), (int)(28 * layout.Scale));
+				sb.Draw(icon, ir, Color.White);
+			}
+			if (i == activeTab) sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(r.X + 3, r.Bottom - (int)(3 * layout.Scale), r.Width - 6, Math.Max(2,(int)(3 * layout.Scale))), new Color(212, 220, 255));
+			if (dropdown == null && Hit(r)) { Settings(i); return; }
+		}
+
+		Rectangle viewport = layout.Viewport;
+		float maximum = Math.Max(0, items.Count * 52 - 326);
+		if (dropdown == null && slider == null && viewport.Contains(pointer.ToPoint())) {
+			scroll -= PlayerInput.ScrollWheelDelta / 120f * 40;
+			if (down && !pressed && viewport.Contains(pressPosition.ToPoint()) && Math.Abs(pointer.Y - pressPosition.Y) > 8 * layout.Scale) scrolling = true;
+			if (scrolling && down) scroll -= (pointer.Y - previousPointer.Y) / layout.Scale;
+		}
+		scroll = MathHelper.Clamp(scroll, 0, maximum);
+		if (slider != null && down) Change(slider, MathHelper.Lerp(slider.Min, slider.Max, MathHelper.Clamp((pointer.X - sliderBounds.X) / sliderBounds.Width, 0, 1)));
+
+		sb.End();
+		Rectangle previousScissor = Main.graphics.GraphicsDevice.ScissorRectangle;
+		Main.graphics.GraphicsDevice.ScissorRectangle = viewport;
+		Begin(sb, clip);
+		try {
+			for (int i = 0; i < items.Count; i++) {
+				Rectangle r = layout.Row(i, scroll);
+				if (!r.Intersects(viewport)) continue;
+				DrawSetting(sb, items[i], r, dropdown == null && viewport.Contains(pointer.ToPoint()));
+			}
+		}
+		finally {
+			sb.End();
+			Main.graphics.GraphicsDevice.ScissorRectangle = previousScissor;
+			Begin(sb);
+		}
+		if (maximum > 0) {
+			Rectangle track = layout.At(521, 84, 4, 326);
+			sb.Draw(TextureAssets.MagicPixel.Value, track, Color.Black * .5f);
+			int thumbHeight = Math.Max((int)(25*layout.Scale), (int)(track.Height * 326f / (items.Count*52)));
+			sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(track.X, track.Y + (int)((track.Height-thumbHeight)*scroll/maximum), track.Width, thumbHeight), new Color(126,151,215));
+		}
+		Button(sb, layout.Back, T("Back"));
+		Texture2D arrow = Texture("Back");
+		sb.Draw(arrow, layout.At(22, 438, 25, 21), Color.White);
+		Label(sb, T("SavedWhenYouReturn"), layout.At(315, 430, 200, 36), .65f, true, new Color(175,191,228));
+		if (dropdown == null && Hit(layout.Back)) Back();
+		if (dropdown != null) DrawDropdown(sb);
+	}
+
+	private void DrawSetting(SpriteBatch sb, MobileSetting item, Rectangle r, bool canInput)
+	{
+		float s = layout.Scale;
+		Nine(sb, "CreationRow", r, Color.White);
+		Rectangle label = new(r.X + (int)(11*s), r.Y, (int)((item.Kind == MobileSettingKind.Slider ? 210 : 265)*s), r.Height);
+		Label(sb, item.Label, label, .9f);
+		Rectangle control = new(r.Right - (int)(208*s), r.Y + (int)(7*s), (int)(197*s), r.Height - (int)(14*s));
+		switch (item.Kind) {
+			case MobileSettingKind.Toggle:
+				bool on = item.Read() > .5f;
+				MobileMenuFrame.ToggleBounds(r, s, out Rectangle offRect, out Rectangle onRect);
+				MobileMenuFrame.Toggle(sb, Texture("Button"), Texture("SwitchOn"), offRect, onRect, on, s);
+				Label(sb, T("Off"), offRect, .7f, true, !on ? Color.White : Color.Silver);
+				Label(sb, T("On"), onRect, .7f, true, on ? Color.White : Color.Silver);
+				if (canInput && Hit(offRect)) Change(item, 0);
+				if (canInput && Hit(onRect)) Change(item, 1);
+				break;
+			case MobileSettingKind.Slider:
+				Rectangle bar = MobileMenuFrame.SliderTrack(r, s);
+				float fraction = MathHelper.Clamp((item.Read()-item.Min)/(item.Max-item.Min),0,1);
+				MobileMenuFrame.Slider(sb, Texture("PlayerSliderKnob"), bar, fraction, s);
+				Label(sb, item.Display(), new Rectangle(r.X+(int)(225*s), r.Y, (int)(68*s), r.Height), .8f, true);
+				Rectangle sliderHit = new(bar.X-(int)(12*s), r.Y, bar.Width+(int)(24*s), r.Height);
+				if (canInput && !consumed && pressed && sliderHit.Contains(pointer.ToPoint())) {
+					slider = item; sliderBounds = bar; consumed = true;
+					Change(item, MathHelper.Lerp(item.Min,item.Max,MathHelper.Clamp((pointer.X-bar.X)/bar.Width,0,1)));
+				}
+				break;
+			case MobileSettingKind.Choice:
+				Label(sb, item.Choices[Math.Clamp((int)item.Read(),0,item.Choices.Length-1)], new Rectangle(control.X, control.Y, control.Width-(int)(35*s), control.Height), .7f, true);
+				MobileMenuFrame.DropdownDivider(sb, r, s);
+				sb.Draw(Texture("WorldDropdown"), new Rectangle(r.Right-(int)(37*s), r.Center.Y-(int)(9*s), (int)(24*s), (int)(18*s)), Color.White);
+				if (canInput && Hit(control)) dropdown = item;
+				break;
+			case MobileSettingKind.Action:
+				Button(sb, control, item.Display?.Invoke() ?? T("EditEllipsis"), .68f);
+				if (canInput && Hit(control)) { item.Activate(); settingsDirty = true; }
+				break;
+		}
+	}
+
+	private void Change(MobileSetting item, float value)
+	{
+		if (Math.Abs(item.Read() - value) < .0001f) return;
+		item.Write(value);
+		if (item.ModSetting) modDirty = true;
+		else settingsDirty = true;
+	}
+
+	private void DrawDropdown(SpriteBatch sb)
+	{
+		MobileSetting item = dropdown;
+		sb.Draw(TextureAssets.MagicPixel.Value, layout.Panel, Color.Black * .6f);
+		int h = item.Choices.Length * 44 + 64;
+		Rectangle panel = layout.At(113, (480-h)/2, 310, h);
+		Nine(sb, "CreationPopup", panel, Color.White, 12);
+		Label(sb, item.Label, new Rectangle(panel.X+8,panel.Y+4,panel.Width-16,(int)(46*layout.Scale)), .8f,true);
+		for (int i = 0; i < item.Choices.Length; i++) {
+			Rectangle r = new(panel.X+(int)(10*layout.Scale),panel.Y+(int)((50+i*44)*layout.Scale),panel.Width-(int)(20*layout.Scale),(int)(38*layout.Scale));
+			Nine(sb, (int)item.Read() == i ? "CreationOptionSelected" : "CreationOption", r, Color.White, 8);
+			Label(sb, item.Choices[i], r, .8f, true);
+			if (Hit(r)) { Change(item,i); dropdown=null; break; }
+		}
+		if (!consumed && released && !panel.Contains(pointer.ToPoint())) { dropdown = null; consumed = true; }
+	}
+
+	private Texture2D Texture(string name)
+	{
+		if (!textures.TryGetValue(name, out Texture2D texture)) textures[name] = texture = UiTextureAssets.Request($"MobileJoystick/Assets/MobileMenu/{name}", AssetRequestMode.ImmediateLoad).Value;
+		return texture;
+	}
+
+	private void Heading(SpriteBatch sb, string text)
+	{
+		Nine(sb, "Title", layout.Title, Color.White, 20);
+		Label(sb, text, layout.Title, 1f, true, display: true);
+	}
+
+	private void Button(SpriteBatch sb, Rectangle r, string text, float font = .9f)
+	{
+		Nine(sb, "Button", r, r.Contains(pointer.ToPoint()) ? new Color(230,238,255) : Color.White);
+		Label(sb, text, r, font, true);
+	}
+
+	private void Label(SpriteBatch sb, string text, Rectangle r, float font, bool center = false, Color? color = null, bool right = false, bool display = false)
+	{
+		font *= MobileUiMetrics.FontScale;
+		if (display) font *= MobileUiMetrics.DisplayFontScale;
+		if (page == Page.TouchEditor) font *= 1.45f;
+		DynamicSpriteFont face = display ? FontAssets.DeathText.Value : FontAssets.MouseText.Value;
+		Vector2 size = face.MeasureString(text);
+		float scale = Math.Min(font*layout.Scale, (r.Width-10*layout.Scale)/Math.Max(1,size.X));
+		int top = int.MaxValue, bottom = int.MinValue, lineTop = 0;
+		foreach (char c in text) {
+			if (c == '\n') { lineTop += face.LineSpacing; continue; }
+			if (char.IsWhiteSpace(c) || !face.SpriteCharacters.TryGetValue(c, out var glyph)) continue;
+			top = Math.Min(top, lineTop + glyph.Padding.Y);
+			bottom = Math.Max(bottom, lineTop + glyph.Padding.Y + glyph.Glyph.Height);
+		}
+		float middle = top == int.MaxValue ? size.Y / 2 : (top + bottom) / 2f;
+		Vector2 position = new(right ? r.Right - size.X * scale : center ? r.Center.X - size.X * scale / 2 : r.X, r.Center.Y - middle * scale);
+		position = new Vector2(MathF.Round(position.X), MathF.Round(position.Y));
+		int border = Math.Max(1, (int)MathF.Round(layout.Scale));
+		for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++)
+			if (x != 0 || y != 0) sb.DrawString(face, text, position + new Vector2(x * border, y * border), Color.Black, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+		sb.DrawString(face, text, position, color ?? Color.White, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+	}
+
+	private void Nine(SpriteBatch sb, string name, Rectangle destination, Color tint, int border = 12)
+	{
+		Texture2D tex = Texture(name);
+		int src = Math.Min(border, Math.Min(tex.Width,tex.Height)/2);
+		int b = Math.Min(Math.Max(1, (int)(src*layout.Scale)),Math.Min(destination.Width,destination.Height)/2);
+		int[] sx={0,src,tex.Width-src,tex.Width}, sy={0,src,tex.Height-src,tex.Height};
+		int[] dx={destination.Left,destination.Left+b,destination.Right-b,destination.Right}, dy={destination.Top,destination.Top+b,destination.Bottom-b,destination.Bottom};
+		for (int y=0;y<3;y++) for(int x=0;x<3;x++) {
+			Rectangle dest = new(dx[x],dy[y],dx[x+1]-dx[x],dy[y+1]-dy[y]);
+			if (dest.Width>0 && dest.Height>0) sb.Draw(tex,dest,new Rectangle(sx[x],sy[y],sx[x+1]-sx[x],sy[y+1]-sy[y]),tint);
+		}
+	}
+}

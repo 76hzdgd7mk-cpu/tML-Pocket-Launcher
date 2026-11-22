@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(main LANGUAGES C CXX)
 
+if(TML_MOBILE_TERRARIA_CONVERTER)
+    add_subdirectory(mobile-terraria)
+endif()
+
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

@@ -27,15 +27,15 @@ if ($LASTEXITCODE -ne 0) { throw "Store service publish failed with exit code $L
 
 New-Item -ItemType Directory -Path $assetRoot -Force | Out-Null
 Copy-Item -Path (Join-Path $publishRoot '*') -Destination $assetRoot -Recurse -Force
-& (Join-Path $PSScriptRoot 'prepare-builtin-mods.ps1')
+& (Join-Path $PSScriptRoot 'prepare-game-references.ps1')
+dotnet build (Join-Path $repoRoot 'managed/MobileLauncher.Controls/MobileLauncher.Controls.csproj') -c Release --nologo
+if ($LASTEXITCODE -ne 0) { throw 'Built-in controls patch build failed' }
+Copy-Item -LiteralPath (Join-Path $repoRoot 'managed/MobileLauncher.Controls/bin/Release/net10.0/MobileLauncher.Controls.dll') -Destination $assetRoot -Force
 dotnet build (Join-Path $repoRoot 'external/tML-Pocket-Patches/MobileLauncher.Patches.csproj') -c Release --nologo `
     "-p:LauncherRoot=$repoRoot" "-p:DirectoryBuildPropsPath=$(Join-Path $repoRoot 'managed/Directory.Build.props')"
 if ($LASTEXITCODE -ne 0) { throw 'Built-in patches build failed' }
 Copy-Item -LiteralPath (Join-Path $repoRoot 'external/tML-Pocket-Patches/bin/Release/net10.0/MobileLauncher.Patches.dll') -Destination $assetRoot -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot 'external/tML-Pocket-Patches/LICENSE') -Destination (Join-Path $assetRoot 'RotatingartLauncher-LICENSE.txt') -Force
-$builtinRoot = Join-Path $assetRoot 'BuiltinMods'
-New-Item -ItemType Directory -Path $builtinRoot -Force | Out-Null
-Copy-Item -LiteralPath (Join-Path $repoRoot 'build/builtin-mods/MobileJoystick.tmod') -Destination $builtinRoot -Force
 $hashes = [ordered]@{}
 Get-ChildItem -LiteralPath $assetRoot -Recurse -File | ForEach-Object {
     $relative = $_.FullName.Substring($assetRoot.Length + 1).Replace('\', '/')
@@ -48,7 +48,7 @@ Get-ChildItem -LiteralPath $assetRoot -Recurse -File | ForEach-Object {
         $stream.Dispose()
     }
 }
-foreach ($required in @('MobileLauncher.Host.dll', 'MobileLauncher.Host.deps.json', 'MobileLauncher.Host.runtimeconfig.json', 'MobileLauncher.Bootstrap.dll', 'MobileLauncher.Patches.dll', 'BuiltinMods/MobileJoystick.tmod')) {
+foreach ($required in @('MobileLauncher.Host.dll', 'MobileLauncher.Host.deps.json', 'MobileLauncher.Host.runtimeconfig.json', 'MobileLauncher.Bootstrap.dll', 'MobileLauncher.Patches.dll', 'MobileLauncher.Controls.dll')) {
     if (-not $hashes.Contains($required)) { throw "Launcher publish is missing $required" }
 }
 @{ formatVersion = 3; assembly = 'MobileLauncher.Host.dll'; runtime = '10.0.4'; files = $hashes } |

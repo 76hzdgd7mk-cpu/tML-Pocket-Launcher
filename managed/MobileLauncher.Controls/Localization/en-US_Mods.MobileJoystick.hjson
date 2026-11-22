@@ -1,0 +1,1024 @@
+Configs: {
+	MobileJoystickConfig: {
+		DisplayName: Mobile Joystick Config
+
+		Headers: {
+			General: General Header
+			Layout: Layout Header
+			Touch: Touch Header
+			Text: Text Header
+		}
+
+		EnableMobileControls: {
+			Label: Enable Mobile Controls
+			Tooltip: ""
+		}
+
+		UseMobileInventory: {
+			Label: Mobile inventory
+			Tooltip: Use mobile inventory, crafting, equipment, housing and PvP pages. Native special editors and the native extension view remain available.
+		}
+
+		EnableTouchInput: {
+			Label: Enable Touch Input
+			Tooltip: ""
+		}
+
+		EnableMouseFallback: {
+			Label: Enable Mouse Fallback
+			Tooltip: ""
+		}
+
+		EnablePinchZoom: {
+			Label: Pinch to zoom
+			Tooltip: Spread or pinch two fingers on the gameplay view to zoom in or out.
+		}
+
+		HideGameControls: {
+			Label: Hide game controls
+			Tooltip: Hide joysticks, hotbar and gameplay buttons. A custom control can show them again.
+		}
+
+		HotbarOrientation: {
+			Label: Hotbar orientation
+			Tooltip: Choose a vertical two-column or horizontal one-row hotbar.
+		}
+
+		JoystickUpJumps: {
+			Label: Joystick Up Jumps
+			Tooltip: ""
+		}
+
+		ShowTopButtons: {
+			Label: Show Top Buttons
+			Tooltip: ""
+		}
+
+		UseMobileMinimap: {
+			Label: Mobile Minimap
+			Tooltip: Use a compact landscape minimap while mobile controls are active.
+		}
+
+		ControlScale: {
+			Label: Control Scale
+			Tooltip: ""
+		}
+
+		Opacity: {
+			Label: Opacity
+			Tooltip: ""
+		}
+
+		EdgePadding: {
+			Label: Left/right safe margin
+			Tooltip: ""
+		}
+
+		JoystickDeadzone: {
+			Label: Joystick Deadzone
+			Tooltip: ""
+		}
+
+		AimDistance: {
+			Label: Aim Distance
+			Tooltip: ""
+		}
+
+		LeftStickOffsetX: {
+			Label: Left Stick Offset X
+			Tooltip: ""
+		}
+
+		LeftStickOffsetY: {
+			Label: Left Stick Offset Y
+			Tooltip: ""
+		}
+
+		RightStickOffsetX: {
+			Label: Right Stick Offset X
+			Tooltip: ""
+		}
+
+		RightStickOffsetY: {
+			Label: Right Stick Offset Y
+			Tooltip: ""
+		}
+
+		ControlLayout: {
+			Label: Control Layout
+			Tooltip: ""
+		}
+
+		ActiveCustomPresetIndex: {
+			Label: Active Custom Preset Index
+			Tooltip: ""
+		}
+
+		CustomPresets: {
+			Label: Custom Presets
+			Tooltip: ""
+		}
+
+		QuickStackToNearbyChests: {
+			Label: Quick Stack To Nearby Chests
+			Tooltip: ""
+		}
+
+		UIFontScale: {
+			Label: U I Font Scale
+			Tooltip: ""
+		}
+
+		CursorSensitivity: {
+			Label: Cursor Sensitivity
+			Tooltip: Adjust cursor movement while dragging the aim stick or interaction wheel, without resizing the wheel.
+		}
+
+		CursorOpacity: {
+			Label: Cursor Opacity
+			Tooltip: Set touch reticle and precision grid visibility independently of control opacity.
+		}
+
+		InterfaceLayout: {
+			Label: Interface Layout
+			Tooltip: ""
+		}
+
+		AimReticleSize: {
+			Label: Aim Reticle Size
+			Tooltip: ""
+		}
+
+		AimCrosshairSize: {
+			Label: Aim Crosshair Size
+			Tooltip: ""
+		}
+	}
+
+	MobileControlLayoutMode: {
+		Tooltip: ""
+
+		Simple: {
+			Label: Simple
+			Tooltip: ""
+		}
+
+		Advanced: {
+			Label: Advanced
+			Tooltip: ""
+		}
+
+		Custom: {
+			Label: Custom
+			Tooltip: ""
+		}
+	}
+
+	MobileCustomPreset: {
+		Tooltip: ""
+
+		Name: {
+			Label: Name
+			Tooltip: ""
+		}
+
+		Controls: {
+			Label: Controls
+			Tooltip: ""
+		}
+	}
+
+	MobileCustomControl: {
+		Tooltip: ""
+
+		Id: {
+			Label: Id
+			Tooltip: ""
+		}
+
+		Kind: {
+			Label: Kind
+			Tooltip: ""
+		}
+
+		JoystickRole: {
+			Label: Joystick Role
+			Tooltip: ""
+		}
+
+		Action: {
+			Label: Action
+			Tooltip: ""
+		}
+
+		TextureName: {
+			Label: Texture Name
+			Tooltip: ""
+		}
+
+		X: {
+			Label: X
+			Tooltip: ""
+		}
+
+		Y: {
+			Label: Y
+			Tooltip: ""
+		}
+
+		Size: {
+			Label: Size
+			Tooltip: ""
+		}
+
+		Multitouch: {
+			Label: Multitouch
+			Tooltip: ""
+		}
+
+		RadialActions: {
+			Label: Radial Actions
+			Tooltip: ""
+		}
+
+		RadialModKeybinds: {
+			Tooltip: ""
+			Label: Radial Mod Keybinds
+		}
+
+		ModKeybind: {
+			Tooltip: ""
+			Label: Mod Keybind
+		}
+
+		Launcher: {
+			Label: Launcher
+			Tooltip: ""
+		}
+
+		KeyboardKey: {
+			Label: Keyboard Key
+			Tooltip: ""
+		}
+
+		RadialKeyboardKeys: {
+			Label: Radial Keyboard Keys
+			Tooltip: ""
+		}
+	}
+
+	MobileCustomControlKind: {
+		Tooltip: ""
+
+		Joystick: {
+			Label: Joystick
+			Tooltip: ""
+		}
+
+		Button: {
+			Label: Button
+			Tooltip: ""
+		}
+
+		RadialMenu: {
+			Label: Radial Menu
+			Tooltip: ""
+		}
+
+		DPad: {
+			Label: D Pad
+			Tooltip: ""
+		}
+
+		Touchpad: {
+			Label: Touchpad
+			Tooltip: ""
+		}
+
+		Mousewheel: {
+			Label: Mousewheel
+			Tooltip: ""
+		}
+
+		Text: {
+			Label: Text
+			Tooltip: ""
+		}
+	}
+
+	MobileJoystickRole: {
+		Tooltip: ""
+
+		Move: {
+			Label: Move
+			Tooltip: ""
+		}
+
+		Aim: {
+			Label: Aim
+			Tooltip: ""
+		}
+
+		Unbound: {
+			Tooltip: ""
+			Label: Unbound
+		}
+
+		Grapple: {
+			Tooltip: ""
+			Label: Grapple
+		}
+	}
+
+	MobileControlAction: {
+		Tooltip: ""
+
+		Jump: {
+			Label: Jump
+			Tooltip: ""
+		}
+
+		Grapple: {
+			Label: Grapple
+			Tooltip: ""
+		}
+
+		Heal: {
+			Label: Heal
+			Tooltip: ""
+		}
+
+		Mana: {
+			Label: Mana
+			Tooltip: ""
+		}
+
+		Buff: {
+			Label: Buff
+			Tooltip: ""
+		}
+
+		Mount: {
+			Label: Mount
+			Tooltip: ""
+		}
+
+		SmartInteract: {
+			Label: Smart Interact
+			Tooltip: ""
+		}
+
+		SmartCursor: {
+			Label: Smart Cursor
+			Tooltip: ""
+		}
+
+		AimModeToggle: {
+			Label: Aim Mode Toggle
+			Tooltip: ""
+		}
+
+		TargetLockToggle: {
+			Label: Target Lock Toggle
+			Tooltip: ""
+		}
+
+		Interact: {
+			Label: Mouse Right Click
+			Tooltip: ""
+		}
+
+		UseItem: {
+			Label: Use Item
+			Tooltip: ""
+		}
+
+		Inventory: {
+			Label: Inventory
+			Tooltip: ""
+		}
+
+		Map: {
+			Label: Map
+			Tooltip: ""
+		}
+
+		MapStyle: {
+			Label: Map Style
+			Tooltip: ""
+		}
+
+		Settings: {
+			Label: Settings
+			Tooltip: ""
+		}
+
+		Chat: {
+			Label: Chat
+			Tooltip: ""
+		}
+
+		ZoomIn: {
+			Label: Zoom In
+			Tooltip: ""
+		}
+
+		ZoomOut: {
+			Label: Zoom Out
+			Tooltip: ""
+		}
+
+		Zoom: {
+			Label: Zoom
+			Tooltip: ""
+		}
+
+		QuickPotions: {
+			Label: Quick Potions
+			Tooltip: ""
+		}
+
+		RadialMenu: {
+			Label: Radial Menu
+			Tooltip: ""
+		}
+
+		Unbound: {
+			Label: Unbound
+			Tooltip: ""
+		}
+
+		SwapUseInteract: {
+			Label: Swap Use Interact
+			Tooltip: ""
+		}
+
+		CycleUseProfile: {
+			Label: Cycle Use Profile
+			Tooltip: ""
+		}
+
+		QuickMount: {
+			Label: Quick Mount
+			Tooltip: ""
+		}
+
+		AutoSelect: {
+			Label: Auto Select
+			Tooltip: ""
+		}
+
+		Loadout1: {
+			Label: Loadout1
+			Tooltip: ""
+		}
+
+		Loadout2: {
+			Label: Loadout2
+			Tooltip: ""
+		}
+
+		Loadout3: {
+			Label: Loadout3
+			Tooltip: ""
+		}
+
+		SwitchLoadout: {
+			Label: Switch Loadout
+			Tooltip: ""
+		}
+
+		ModKeybind: {
+			Tooltip: ""
+			Label: Mod Keybind
+		}
+
+		LauncherControl: {
+			Label: Launcher Control
+			Tooltip: ""
+		}
+
+		KeyboardKey: {
+			Label: Keyboard Key
+			Tooltip: ""
+		}
+
+		MapAlphaCycle: {
+			Label: Cycle Map Style
+			Tooltip: Cycle minimap off, framed and transparent overlay modes.
+		}
+
+		ToggleGameControls: {
+			Label: Toggle Game Controls
+			Tooltip: ""
+		}
+	}
+
+	MobileInterfaceLayoutProfile: {
+		Tooltip: ""
+
+		FormatVersion: {
+			Label: Format Version
+			Tooltip: ""
+		}
+
+		Regions: {
+			Label: Regions
+			Tooltip: ""
+		}
+	}
+
+	MobileLauncherControl: {
+		Tooltip: ""
+
+		Data: {
+			Label: Data
+			Tooltip: ""
+		}
+
+		Assets: {
+			Label: Assets
+			Tooltip: ""
+		}
+	}
+
+	MobileHotbarOrientation: {
+		Tooltip: ""
+
+		Vertical: {
+			Label: Vertical
+			Tooltip: ""
+		}
+
+		Horizontal: {
+			Label: Horizontal
+			Tooltip: ""
+		}
+	}
+}
+
+UI: {
+	RecipeBrowserPanel: Recipe Browser · Main panel
+	RecipeBrowserFavorites: Recipe Browser · Favorites
+	GuideQuery: Query
+	RequiredCraftingStation: Crafting station: {0}
+	PlaceGuideQueryItem: Place an item in the Guide slot to see recipes that use it.
+	SwitchToCrafting: Query → Craft
+	SwitchToGuideQuery: Craft → Guide query
+	RalDefaultAppearance: RAL default (drawn)
+	PackNextSources: Next page of source files
+	LauncherFieldmultitouch: Allow simultaneous controls
+	PackUnboundKey: "{0} has no action in the current client bindings."
+	LauncherGroupGeneral: Geometry and appearance (tap to switch)
+	LauncherGroupBindings: Bindings and sectors (tap to switch)
+	LauncherGroupTextures: Texture layers (tap to switch)
+	LauncherRecordKey: Record keyboard key
+	LauncherPressKey: Press a keyboard key…
+	LauncherLayerNormal: Normal
+	LauncherLayerPressed: Pressed
+	LauncherLayerToggled: Toggled
+	LauncherLayerDisabled: Disabled
+	LauncherLayerBackground: Background
+	LauncherLayerKnob: Knob
+	LauncherLayerBackgroundPressed: Pressed background
+	LauncherLayerKnobPressed: Pressed knob
+	LauncherLayerExpanded: Expanded background
+	LauncherLayerSector: Sector
+	LauncherLayerSectorSelected: Selected sector
+	LauncherLayerIndicator: Touch indicator
+	LauncherControlPacks: Launcher control packs
+	PackOpenFolder: Open control pack folder
+	PackRefresh: Refresh source list
+	PackSource: Control pack ZIP / layout JSON
+	PackNoSources: Place ZIP or JSON files in the folder first
+	PackTarget: Preset to replace
+	PackPreview: Check compatibility
+	PackReport: Open compatibility report
+	PackImportReplace: Replace preset and enable
+	PackSummary: "{0} controls, {1} images, {2} warnings"
+	PackImported: Imported into preset {0}
+	PackFailed: Control pack operation failed
+	PackPassThroughWarning: World touch pass-through is disabled to prevent duplicate input.
+	PackOpenAssets: Open PNG folder
+	LauncherAdvancedProperties: Advanced control properties
+	LauncherPolygonPoints: Edit polygon vertices
+	LauncherDuplicate: Duplicate control
+	LauncherPropertyHint: Enter a value; arrows cycle options. PNG paths refer to this pack or UserAssets.
+	LauncherUnsupportedKey: Unsupported key. Use KEYBOARD_*, ACTION_* or TRIGGER_*.
+	LauncherInvalidPosition: X and Y must be between 0 and 1.
+	LauncherKindDPad: D-pad
+	LauncherKindTouchpad: Touchpad
+	LauncherKindMousewheel: Scroll wheel
+	LauncherKindText: Text
+	Save: Save
+	LauncherFieldtype: Control type
+	LauncherFieldname: Name
+	LauncherFieldwidth: Width / screen height
+	LauncherFieldheight: Height / screen height
+	LauncherFieldx: X / screen width
+	LauncherFieldy: Y / screen height
+	LauncherFieldrotation: Rotation (degrees)
+	LauncherFieldopacity: Opacity
+	LauncherFieldborderOpacity: Border opacity
+	LauncherFieldtextOpacity: Text opacity
+	LauncherFieldbgColor: Background ARGB
+	LauncherFieldtextColor: Text ARGB
+	LauncherFieldstrokeColor: Border ARGB
+	LauncherFieldstrokeWidth: Border width
+	LauncherFieldcornerRadius: Corner radius
+	LauncherFieldisVisible: Visible
+	LauncherFieldisPassThrough: Touch pass-through
+	LauncherFieldisSizeRatioLocked: Lock aspect ratio
+	LauncherFieldmode: Input mode
+	LauncherFieldkeycode: Key binding
+	LauncherFieldisToggle: Toggle button
+	LauncherFieldshape: Shape
+	LauncherFielduseTextureAlphaHitTest: Hit test PNG alpha
+	LauncherFieldstickKnobSize: Knob size ratio
+	LauncherFieldstickOpacity: Knob opacity
+	LauncherFieldjoystickKeys: Up / right / down / left keys
+	LauncherFieldupKeycode: Up binding
+	LauncherFieldrightKeycode: Right binding
+	LauncherFielddownKeycode: Down binding
+	LauncherFieldleftKeycode: Left binding
+	LauncherFieldstyle: D-pad style
+	LauncherFieldbuttonSpacing: Direction spacing
+	LauncherFieldbuttonSize: Direction size
+	LauncherFielddeadZone: Deadzone
+	LauncherFieldallowDiagonal: Allow diagonals
+	LauncherFieldactiveColor: Active ARGB
+	LauncherFieldshowLabels: Show direction labels
+	LauncherFieldsectorCount: Sector count (4–12)
+	LauncherFieldexpandedScale: Expanded scale
+	LauncherFielddeadZoneRatio: Center deadzone ratio
+	LauncherFieldexpandDuration: Expansion duration (ms)
+	LauncherFieldshowDividers: Show dividers
+	LauncherFielddividerColor: Divider ARGB
+	LauncherFieldselectedColor: Selected ARGB
+	LauncherFieldlabel: Sector label
+	LauncherFieldiconPath: Sector icon PNG
+	LauncherFielddisplayText: Displayed text
+	LauncherFieldisDoubleClickSimulateJoystick: Double-tap aim and drag
+	LauncherFieldorientation: Scroll direction
+	LauncherFieldreverseDirection: Reverse direction
+	LauncherFieldscrollSensitivity: Pixels per scroll step
+	LauncherFieldscrollRatio: Scroll multiplier
+	LauncherFieldpath: PNG path
+	LauncherFieldenabled: Enable layer
+	LauncherFieldscaleMode: Image fit
+	LauncherFieldtintColor: Tint ARGB (0 = none)
+	LauncherFieldpadding: Image padding ratio
+	LauncherFieldflipHorizontal: Flip horizontally
+	LauncherFieldflipVertical: Flip vertically
+	LauncherFieldclipToShape: Clip to shape
+	LauncherFieldnativeTexture: Built-in texture
+	LauncherFieldholdAction: Held native action
+	LauncherFieldpolygonPoints: Polygon vertices JSON
+	Accessories: Accessories
+	Achievements: Achievements
+	Add: Add
+	Advanced: Advanced
+	Aim: Aim
+	AimAndUse: Aim and use
+	MouseRightClick: Right click
+	AimDistance: Aim distance
+	AimMode: Aim Mode
+	AimOnly: Aim only
+	All: All
+	AllInputs: All inputs
+	Ambient: Ambient
+	Ammo: Ammo
+	Apply: Apply
+	Armor: Armor
+	Audio: Audio
+	AudioHeading: Audio
+	Auto: Auto
+	AutoSelect: Auto Select
+	Autofire: Autofire
+	AutopauseWithInventory: Autopause with inventory
+	Autosave: Autosave
+	Back: Back
+	Background: Background
+	BasicActions: Basic actions
+	FullKeyboard: Full keyboard
+	Bestiary: Bestiary
+	BlockSwap: Block swap
+	Blocks: Blocks
+	BloodAndGore: Blood and gore
+	BorderHue: Border hue
+	BorderLightness: Border lightness
+	BorderOpacity: Border opacity
+	BorderSaturation: Border saturation
+	BossBarStyle: Boss bar style
+	BossHealthText: Boss health text
+	Brightness: Brightness
+	BuildingGrid: Building grid
+	Button: Button
+	Buy: Buy
+	Cancel: Cancel
+	CancelSplit: Cancel split
+	CharacterJourney: Journey
+	CharacterVoicesAreUnavailableInThisVersion: Character voices are unavailable in this version
+	Chat: Chat
+	Chest: Chest
+	ChooseAction: Choose action
+	ChooseTexture: Choose texture
+	Classic: Classic
+	Close: Close
+	CloseShop: Close shop
+	Coins: Coins
+	CoinsAndAmmo: Coins and ammo
+	ColorHue: Hue
+	ColorSaturation: Saturation
+	Connect: Connect
+	Consumables: Consumables
+	Container: Container
+	ControlOpacity: Control opacity
+	ControlSize: Control size
+	ControlTexturePack: Control texture pack
+	Controls: Controls
+	CopyToPreset: Copy to preset
+	Corruption: Corruption
+	CouldNotLoadTexturePackCurrentArtworkWasKept: Could not load texture pack; current artwork was kept.
+	CouldNotOpenTheTexturePackFolder: Could not open the texture pack folder.
+	Craft: Craft
+	Crafting: Crafting
+	CraftingArea: Crafting
+	CraftingIsProvidedByTheNativeInterface: Crafting is provided by the native interface
+	Create: Create
+	CreateASaveToStart: Create a save to start
+	CreatedOn: Created: {0}
+	Crimson: Crimson
+	CrossPlatform: Cross-platform:
+	CrosshairSize: Crosshair size
+	CursorAndBorderColors: Cursor and border colors
+	CursorColors: Cursor colors
+	CursorHue: Cursor hue
+	CursorLightness: Cursor lightness
+	CursorOpacity: Cursor opacity
+	CursorSaturation: Cursor saturation
+	CursorSensitivity: Cursor sensitivity
+	PinchZoom: Pinch to zoom
+	Custom: Custom
+	CustomFirst: Custom 1
+	CustomMode: Custom mode
+	CustomPresetName: Custom {0}
+	MobileDefaultPresetTarget: Mobile defaults (save to preset {0})
+	CycleUseProfile: Cycle Use Profile
+	Defaults: Defaults
+	DeleteControl: Delete control
+	DepositAll: Deposit all
+	Difficulty: Difficulty
+	DisableQuickStackToNearbyChests: Disable quick stack to nearby chests
+	Disabled: Off
+	Discard: Discard
+	DisplayConditionsNotMet: " (display conditions not met)"
+	EdgePadding: Edge padding
+	Edit: Edit
+	Edit3: Edit...
+	EditEllipsis: Edit…
+	Emotes: Emotes
+	EnableMap: Enable map
+	EnableQuickStackToNearbyChests: Enable quick stack to nearby chests
+	Enabled: On
+	EnterAValidIPAddressOrHostName: Enter a valid IP address or host name.
+	EnterYourName: Enter your name...
+	Equip: Equip
+	Equipment: Equipment
+	EquipmentAndLoadouts: Equipment and loadouts
+	Evil: Evil
+	Expert: Expert
+	ExtraSlotsPrefix: "Extra slots "
+	Eyes: Eyes
+	Favorite: Favorite
+	FrameSkip: Frame skip
+	Free: Free
+	Fullscreen: Fullscreen
+	Furniture: Furniture
+	GameControls: Game controls
+	GameControlsHidden: Game controls hidden
+	GameControlsShown: Game controls shown
+	GameZoom: Zoom
+	General: General
+	Grapple: Grapple
+	GrappleAim: Grapple aim
+	Hair: Hair
+	HairColor: Hair Color
+	Hardcore: Hardcore
+	HealthAndManaStyle: Health and mana style
+	HeatDistortion: Heat distortion
+	HiddenSuffix: " (hidden)"
+	Hide: Hide
+	HideGameControls: Hide game controls
+	High: High
+	HighlightNewItems: Highlight new items
+	Hold: Hold
+	Host: Host
+	HostLaunchFailedSeeTheLog: Host launch failed. See the log.
+	Hotbar: Hotbar
+	HotbarOrientation: Hotbar orientation
+	MobileMinimap: Mobile minimap
+	Horizontal: Horizontal
+	Housing: Housing
+	HoverControl: Hover control
+	IPAddress: IP Address:
+	Interact: Interact
+	Interface: Interface
+	InterfaceLayoutCouldNotBeSavedCheckFilePermissionsAndRetry: Interface layout could not be saved. Check file permissions and retry.
+	InterfaceLayoutEditor: Interface layout editor
+	InvasionProgress: Invasion progress
+	Inventory: Inventory
+	InventoryControls: Inventory controls
+	InventorySlots: Inventory
+	ToggleGameControls: Hide/show game controls
+	Invite: Invite
+	InviteFriends: Invite friends
+	InviteOnly: Invite only
+	InviteOnlyRequiresSteamNetworking: Invite-only requires Steam networking.
+	ItemGrid: Item grid
+	ItemNames: Item names
+	Join: Join
+	Journey: Journey
+	Joystick: Joystick
+	JoystickRole: Joystick role
+	Jump: Jump
+	KeyBindings: Key bindings
+	LabelSeparator: ": "
+	Large: Large
+	LeftStickUpToJump: Left stick up to jump
+	LightingMode: Lighting mode
+	Loadout1: Loadout 1
+	Loadout2: Loadout 2
+	Loadout3: Loadout 3
+	Local: Local
+	Lock: Lock
+	LockCalamityMeters: Lock Calamity meters
+	LootAll: Loot all
+	Low: Low
+	Map: Map
+	MapStyle: Map Style
+	Master: Master
+	Materials: Materials
+	MaxPlayers: Max players:
+	Medium: Medium
+	Mediumcore: Mediumcore
+	Menu: Menu
+	MinimapScale: Minimap scale
+	MobileCrossPlatformSessionsAreUnavailableInTModLoader: Mobile cross-platform sessions are unavailable in tModLoader.
+	Mod: Mod
+	ModConfiguration: Mod configuration
+	ModConfigurationAllMods: Mod configuration (all mods)
+	ModKeybind: Mod keybind
+	ModKeybinds: Mod keybinds
+	ModUI: Mod UI
+	CalamityDifficulty: Calamity · Difficulty
+	CalamityFlightBar: Calamity · Flight Time
+	ModdedEquipmentExtensionsAreUnavailable: Modded equipment extensions are unavailable
+	MouseTouchSimulation: Mouse touch simulation
+	Move: Move
+	MoveOnly: Move only
+	Multiplayer: Multiplayer
+	MultitouchLabel: Multitouch:
+	Music: Music
+	Name: Name
+	NativeMinimapBorder: Native minimap border
+	New: New
+	NewPlayer: New Player
+	NewWorld: New World
+	NoCompatibleExternalModUIIsAvailable: No compatible external mod UI is available.
+	NoCompatibleModUI: No compatible mod UI
+	NoMatchingRecipes: No matching recipes
+	NoModKeybindsAreLoaded: No mod keybinds are loaded
+	NoSavedSessionsTapAdd: No saved sessions. Tap Add
+	NoValue: No value
+	None: None
+	Normal: Classic
+	Off: Off
+	On: On
+	Opacity: Opacity
+	OpaqueTooltips: Opaque tooltips
+	Open: Open
+	OpenTexturePackFolder: Open texture pack folder
+	OpenUse: Open / Use
+	Other: Other
+	Pants: Pants
+	Parallax: Parallax
+	Password: Password:
+	PlaceZipTexturePacksHereThenSelectTheControlTexturePackAbove: Place .zip texture packs here, then select the control texture pack above:
+	PlacementPreview: Placement preview
+	Play: Play
+	Port: Port:
+	PortMustBeBetween1And65535: Port must be between 1 and 65535.
+	Price: Price
+	Quality: Quality
+	QuickBuff: Quick Buff
+	QuickHeal: Quick Heal
+	QuickMana: Quick Mana
+	QuickMount: Quick Mount
+	QuickPotions: Quick Potions
+	QuickStack: Quick stack
+	QuickStackInventory: Quick stack
+	RadialMenu: Radial menu
+	RadialMenuAction: Radial Menu
+	Random: Random
+	Randomize: Randomize
+	Remember: Remember:
+	Remote: Remote
+	Rename: Rename
+	ResetRegion: Reset region
+	ResolutionClickToCycle: Resolution (click to cycle)
+	Restock: Restock
+	Resume: Resume
+	ReticleSize: Reticle size
+	ReverseArmorSetKey: Reverse armor set key
+	Ruler: Ruler
+	SaveExit: Save & exit
+	SavedSessions: Saved sessions
+	SavedWhenYouReturn: Saved when you return
+	SaySomething: Say something...
+	Search: Search
+	Seed: Seed
+	SelectAHeadThenClickARoom: Select a head, then click a room
+	SelectPlayer: Select Player
+	SelectWorld: Select World
+	Sell: Sell
+	Send: Send
+	Settings: Settings
+	SettingsCouldNotBeSavedCheckFilePermissionsAndRetry: Settings could not be saved. Check file permissions and retry.
+	Shirt: Shirt
+	Shoes: Shoes
+	Show: Show
+	ShownSuffix: " (shown)"
+	Simple: Simple
+	Size: Size
+	SizeLabel: Size:
+	Skin: Skin
+	Small: Small
+	SmartAxeAfterPickaxe: Smart axe after pickaxe
+	SmartBlockPlacement: Smart block placement
+	SmartCursor: Smart Cursor
+	SmartCursorDisabled: Smart cursor disabled
+	SmartCursorEnabled: Smart cursor enabled
+	SmartDoors: Smart doors
+	SmartInteract: Smart Interact
+	Softcore: Softcore
+	Sort: Sort
+	SortContainer: Sort container
+	Sound: Sound
+	SplitStack: Split stack
+	StickDeadzone: Stick deadzone
+	StormEffects: Storm effects
+	Style: Style
+	SwapUseInteract: Swap Use/Interact
+	SwitchEquipmentLoadout: Switch equipment loadout
+	SwitchLoadout: Switch Loadout
+	TapAnyControlToEditItOrHoldAndDragToMoveIt: Tap any control to edit it, or hold and drag to move it.
+	TapAnywhereToAddANewButton: Tap anywhere to add a new button
+	TapAnywhereToAddANewJoystick: Tap anywhere to add a new joystick
+	TapAnywhereToAddANewRadialMenu: Tap anywhere to add a new radial menu
+	TargetLockDisabled: Target lock disabled
+	TargetLockEnabled: Target lock enabled
+	TargetLockMode: Target lock mode
+	Team: Team
+	Texture: Texture
+	TexturePackFailedToLoadDetailsWereWrittenToTheClientLog: Texture pack failed to load; details were written to the client log.
+	TheActiveTexturePackHasNoAvailableTextures: The active texture pack has no available textures.
+	TheHostLauncherIsUnavailableInThisVersion: The host launcher is unavailable in this version.
+	Toggle: Toggle
+	TogglePvP: Toggle PvP
+	ToggleSmartCursor: Toggle smart cursor
+	Tools: Tools
+	TopShortcuts: Top shortcuts
+	Touch: Touch
+	TouchControls: Touch controls
+	TouchInput: Touch input
+	TryTheseControlsAndMoveThemWhereTheyFeelComfortableOrEditYourOwnCustomLayout:
+		'''
+		Try these controls and move them where they feel comfortable,
+		or edit your own custom layout.
+		'''
+	UIFontSize: UI font size
+	UIScale: UI scale
+	UnableToSaveSettings: Unable to save settings
+	Unbind: Unbound
+	Unbound: Unbound
+	Vertical: Vertical
+	Undershirt: Undershirt
+	Unfavorite: Unfavorite
+	Use: Use
+	UseAddToJoinALocalTModLoaderSessionByIP: Use Add to join a local tModLoader session by IP
+	UseItem: Use Item
+	UseTwoSticksToMoveAndAimSuitableForAdvancedPlay: Use two sticks to move and aim. Suitable for advanced play.
+	UseTwoSticksToMoveAndAimWithSeparateShortcutButtons: Use two sticks to move and aim, with separate shortcut buttons.
+	Vacuum: Vacuum
+	Vanity: Vanity
+	Video: Video
+	Voice: Voice
+	Waves: Waves
+	Weapons: Weapons
+	WindSway: Wind sway
+	WorldGeneral: General
+	Zoom: Zoom
+	ZoomIn: Zoom In
+	ZoomOut: Zoom Out
+}

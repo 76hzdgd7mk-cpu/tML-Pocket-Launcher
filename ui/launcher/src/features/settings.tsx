@@ -20,6 +20,7 @@ import { useNativeFileBrowser } from './native/files';
 import {
   NativeRuntimeSettings,
   NativeControlsSettings,
+  NativeLayoutManagement,
   NativeStorageSettings,
 } from './native/settings';
 
@@ -57,13 +58,25 @@ const settingsTabs: TabItem<SettingsTab>[] = [
 ];
 
 export function SettingsPage() {
-  const { state, update } = useWorkspaceActions();
+  const { state, update, nativeMode } = useWorkspaceActions();
+  const items: TabItem<SettingsTab>[] = nativeMode
+    ? [
+        ...settingsTabs.slice(0, 3),
+        {
+          value: 'control-management',
+          label: '控制管理',
+          id: 'settings-tab-control-management',
+          content: <NativeLayoutManagement />,
+        },
+        ...settingsTabs.slice(3),
+      ]
+    : settingsTabs;
   return (
     <WorkspaceTabs
       value={state.settingsTab}
       onChange={(settingsTab) => update((current) => ({ ...current, settingsTab }))}
       label="设置分类"
-      items={settingsTabs}
+      items={items}
     />
   );
 }

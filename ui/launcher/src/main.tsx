@@ -12,6 +12,7 @@ import './styles/animate-ui.css';
 import './styles/primitive-controls.css';
 import './styles/navigation.css';
 import './styles/native-workspace.css';
+import './styles/controls-editor.css';
 import './styles/steam-workspace.css';
 import './styles/file-browser.css';
 import './styles/launch-transition.css';

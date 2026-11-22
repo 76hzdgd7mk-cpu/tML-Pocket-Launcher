@@ -359,7 +359,9 @@ function PageContent() {
           ) : nativeWorkspace === 'resource-versions' ? (
             <NativeReleaseCatalog />
           ) : nativeWorkspace === 'resource-mods' ? (
-            <NativeWorkshopCatalog />
+            <NativeWorkshopCatalog appId={1281930} />
+          ) : nativeWorkspace === 'resource-assets' ? (
+            <NativeWorkshopCatalog appId={105600} />
           ) : nativeWorkspace === 'resource-packs' ? (
             <NativePacks catalog />
           ) : (

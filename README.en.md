@@ -8,7 +8,7 @@
 
 ## Status
 
-Experimental, targeting **Android 9 / API 28+ on arm64-v8a**. A physical device reached the game menu with tML `2026.09.3.1`, Terraria `1.4.4.9` resources and the bundled MobileJoystick client mod. This does not establish compatibility with every device, release, mod, world or multiplayer setup.
+Experimental, targeting **Android 9 / API 28+ on arm64-v8a**.
 
 This is an independent community project, not an official Re-Logic, tModLoader, Valve or GOG product.
 
@@ -19,8 +19,8 @@ This is an independent community project, not an official Re-Logic, tModLoader, 
 - SteamKit2 login, Steam Guard, entitlement verification and Terraria resource transport.
 - Official GOG web authorization, version selection and Linux installer downloads.
 - Read `.tmod` metadata without loading the game; search, enable, disable, check dependencies and manage mod packs.
-- Browse Workshop and retrieve public metadata/CDN files where anonymous transport is available.
-- Bundled MobileJoystick `0.1.4` for touch controls and in-game layout editing.
+- Browse separate Terraria and tModLoader Workshop catalogs, filter items, and download supported content for installation.
+- Embedded MobileJoystick patch for touch controls, with a fullscreen layout editor under Control Management. Its floating menu switches between touch controls and game interface editing.
 - Built-in Android adapters, render scaling and optional FPS/120 FPS/experimental hosting patches.
 - Landscape and portrait launcher layouts, themes, custom backgrounds, motion settings and launch logs.
 
@@ -28,9 +28,9 @@ Steam resources require an online login and fresh Terraria entitlement check bef
 
 ## Boundaries
 
-The launcher builds its own host, compatibility patches and bundled touch mod. It **does not compile tModLoader or managed FNA**, and the APK must not contain `tModLoader.dll`, managed `FNA.dll` or Terraria Content. Users supply game packages separately.
+The APK bundles the official prebuilt tModLoader `2026.09.3.1` release for automatic offline installation on first launch. Additional tModLoader versions can be downloaded or imported. Vanilla Terraria resources are supplied separately.
 
-Only one active tML distribution is currently installed. Authenticated Workshop UGC transport, GOG multipart installers and downloads resumed after process death are not supported. Optional hosting and high-frame-rate settings remain experimental. Ordinary browser mode uses demonstration state; Android uses device state.
+Only one active tML distribution is currently installed. Workshop uses an existing Steam session or attempts anonymous access; individual item permissions may block downloads, and real-device Workshop transfers remain unverified. GOG multipart installers and downloads resumed after process death are not supported. Optional hosting and high-frame-rate settings remain experimental. Ordinary browser mode uses demonstration state; Android uses device state.
 
 ## Build
 

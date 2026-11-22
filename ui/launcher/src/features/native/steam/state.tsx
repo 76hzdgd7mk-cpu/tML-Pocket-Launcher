@@ -63,7 +63,7 @@ export function SteamProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<SteamAccount | null>(null);
   const [connectionError, setConnectionError] = useState('');
   const downloads = useDownloads();
-  const download = downloads.task?.method === 'store.steam.download' ? downloads.task : null;
+  const download = downloads.tasks.find((task) => task.method === 'store.steam.download') ?? null;
   const [details, setDetails] = useState<SteamGameDetails | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState('');

@@ -119,7 +119,7 @@ and imported-game compatibility require physical-device verification.
 
 原生参考为 [AndroidLiquidGlass / Backdrop](https://github.com/Kyant0/AndroidLiquidGlass) 的 `LiquidButton` 和 `LiquidBottomTabs` 示例，包括 `blur`、`vibrancy`、`lens` 和交互高光。该库基于 Compose；浏览器原型用 WebGL 透镜模拟折射，尚未集成此原生依赖，效果也不等同于 Compose 原生透镜。正式 Android 阶段需按现有 View/Controller 边界评估 Compose 控件承载方式、系统版本与设备性能，并提供静态表面回退。
 
-This document specifies navigation and behavior. The ordinary browser preview demonstrates workflows. The Android application implements offline UI hosting, imports, official tML releases, local mods/packs, declarative patches, runtime entry and SteamKit/GOG account-resource integrations. Owned-account transfers need live account validation; Steam-only Workshop transfers remain unavailable as described in the implementation document.
+This document specifies navigation and behavior. The ordinary browser preview demonstrates workflows. The Android application implements offline UI hosting, imports, official tML releases, local mods/packs, declarative patches, runtime entry, SteamKit Workshop catalog/download integration, and Steam/GOG account-resource flows. Workshop transfers use the selected Steam app ID and require live-device validation; anonymous access remains subject to per-item permissions.
 
 ## Navigation
 

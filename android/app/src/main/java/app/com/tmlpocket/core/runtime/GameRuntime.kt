@@ -1,9 +1,11 @@
 package app.com.tmlpocket.core.runtime
 
 import android.content.Context
+import android.system.Os
 import android.util.Log
 import app.com.tmlpocket.core.platform.AndroidBridge
 import app.com.tmlpocket.core.platform.NativeCoreClr
+import app.com.tmlpocket.feature.installation.MobileTerrariaConverter
 import app.com.tmlpocket.feature.launcher.LauncherSettings
 import app.com.tmlpocket.feature.patches.PatchRepository
 import app.com.tmlpocket.feature.renderers.AndroidRendererPluginPackageSource
@@ -15,8 +17,6 @@ import java.io.File
 
 object GameRuntime {
     private const val TAG = "tMLPocketCoreClr"
-    private const val ANDROID_CRYPTO_LIBRARY =
-        "shared/Microsoft.NETCore.App/10.0.4/libSystem.Security.Cryptography.Native.Android.so"
     private val cryptoLoadLock = Any()
     private var cryptoLibraryLoaded = false
 
@@ -47,6 +47,10 @@ object GameRuntime {
         setEnvironment("TML_TMODLOADER_ASSEMBLY", prepared.tmlAssembly)
         setEnvironment("TML_ANDROID_CONTENT", prepared.contentDirectory)
         setEnvironment("TML_ANDROID_TERRARIA_ROOT", prepared.terrariaDirectory)
+        val controlArt = runCatching {
+            MobileTerrariaConverter.prepareControlArt(context, File(prepared.terrariaDirectory))
+        }.onFailure { Log.w(TAG, "Mobile Terraria control art is unavailable", it) }.getOrNull()
+        setEnvironment("TML_MOBILE_CONTROL_ART", controlArt?.absolutePath.orEmpty())
         setEnvironment("TML_ANDROID_CACHE", context.cacheDir.absolutePath)
         setEnvironment("FNA_PLATFORM_BACKEND", "SDL2")
         setEnvironment("FNA3D_OPENGL_FORCE_ES3", "1")
@@ -79,8 +83,10 @@ object GameRuntime {
         synchronized(cryptoLoadLock) {
             if (cryptoLibraryLoaded) return
 
-            val library = File(runtimeRoot, ANDROID_CRYPTO_LIBRARY)
+            val library = File(runtimeRoot, AssetBootstrap.ANDROID_CRYPTO_LIBRARY)
             check(library.isFile) { "Android crypto provider is missing: ${library.absolutePath}" }
+            // Runtime archives extracted by older releases may still have writable libraries.
+            Os.chmod(library.absolutePath, AssetBootstrap.cryptoLibraryMode)
             System.load(library.absolutePath)
             cryptoLibraryLoaded = true
             Log.i(TAG, "Loaded Android crypto provider")

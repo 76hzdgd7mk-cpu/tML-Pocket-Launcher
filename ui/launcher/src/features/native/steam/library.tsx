@@ -147,7 +147,7 @@ export function SteamLibraryPage() {
             </div>
           </dl>
           {download?.status === 'running' ? (
-            <Button className="steam-primary" onClick={downloads.show}>
+            <Button className="steam-primary" onClick={() => downloads.show(download.id)}>
               <Icon name="download" />
               查看下载进度
             </Button>

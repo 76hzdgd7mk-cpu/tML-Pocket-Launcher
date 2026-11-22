@@ -1,8 +1,10 @@
 package app.com.tmlpocket.core.runtime
 
 import android.content.Context
+import android.system.Os
+import android.system.OsConstants
 import app.com.tmlpocket.feature.installation.GamePackageInstaller
-import app.com.tmlpocket.feature.mods.BundledModInstaller
+import app.com.tmlpocket.feature.mods.LegacyTouchMod
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
@@ -19,13 +21,12 @@ object AssetBootstrap {
     private const val TAG = "tMLPocketCoreClr"
     private const val RUNTIME_ASSET = "runtime/dotnet.tar.xz"
     private const val LAUNCHER_ASSET = "launcher"
+    internal const val ANDROID_CRYPTO_LIBRARY =
+        "shared/Microsoft.NETCore.App/10.0.4/libSystem.Security.Cryptography.Native.Android.so"
+    internal val cryptoLibraryMode = OsConstants.S_IRUSR or OsConstants.S_IXUSR
 
     @Synchronized
-    fun prepareBuiltinMods(context: Context) {
-        BundledModInstaller(File(context.filesDir, "userdata")).install {
-            context.assets.open("launcher/BuiltinMods/MobileJoystick.tmod")
-        }
-    }
+    fun migrateTouchMod(context: Context) = LegacyTouchMod.migrate(File(context.filesDir, "userdata"))
 
     @Synchronized
     fun prepareLauncher(context: Context): Pair<File, File> {
@@ -62,7 +63,7 @@ object AssetBootstrap {
             GamePackageInstaller(context.filesDir).installation()
                 ?: error("请先导入 Terraria 资源包和 tModLoader 发行包")
         val (runtimeRoot, launcherRoot) = prepareLauncher(context)
-        prepareBuiltinMods(context)
+        migrateTouchMod(context)
         val assembly = File(launcherRoot, "MobileLauncher.Host.dll")
         val userData = File(context.filesDir, "userdata").apply { mkdirs() }
         return PreparedGame(
@@ -129,8 +130,12 @@ object AssetBootstrap {
                     output.mkdirs()
                 } else if (!entry.isSymbolicLink && !entry.isLink) {
                     output.parentFile?.mkdirs()
-                    BufferedOutputStream(FileOutputStream(output)).use { tar.copyTo(it) }
-                    if (name == "dotnet" || name.endsWith(".so")) {
+                    FileOutputStream(output).use { stream ->
+                        // Remove write permission before publishing any executable content.
+                        if (name == ANDROID_CRYPTO_LIBRARY) Os.fchmod(stream.fd, cryptoLibraryMode)
+                        BufferedOutputStream(stream).use { tar.copyTo(it) }
+                    }
+                    if (name != ANDROID_CRYPTO_LIBRARY && (name == "dotnet" || name.endsWith(".so"))) {
                         require(output.setExecutable(true, false)) {
                             "failed to mark runtime file executable: ${output.absolutePath}"
                         }

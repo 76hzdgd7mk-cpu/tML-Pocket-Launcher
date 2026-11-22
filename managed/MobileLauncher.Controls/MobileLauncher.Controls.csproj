@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <MonoMod_ReallySkipCheckTargetRuntime>true</MonoMod_ReallySkipCheckTargetRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="../../build/game-references/*.dll" Private="false" />
+    <Reference Include="../../external/monomod/*.dll" Private="false" />
+    <EmbeddedResource Include="Assets/asset-aliases.json;Assets/TexturePacks/AndroidMobileControls.json;Localization/*.hjson">
+      <LogicalName>%(Identity)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

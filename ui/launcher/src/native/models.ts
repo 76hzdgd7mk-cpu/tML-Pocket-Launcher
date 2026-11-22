@@ -1,5 +1,14 @@
 import type { Preferences } from '../domain/types';
 
+export interface NativeModDependency {
+  name: string;
+  title: string;
+  requiredVersion: string;
+  installedVersion: string;
+  optional: boolean;
+  status: 'missing' | 'outdated' | 'disabled' | 'enabled';
+}
+
 export interface NativeMod {
   id: string;
   title: string;
@@ -8,6 +17,7 @@ export interface NativeMod {
   author: string;
   description: string;
   deps: string[];
+  dependencies?: NativeModDependency[];
   side: number;
   size: number;
   enabled: boolean;
@@ -62,7 +72,8 @@ export interface NativeSnapshot {
   ready: boolean;
   runtime: boolean;
   terraria: string | null;
-  terrariaSource?: 'steam' | 'gog' | null;
+  terrariaSource?: 'steam' | 'gog' | 'android' | null;
+  desktopTerrariaSource?: 'steam' | 'gog' | null;
   tml: string | null;
   installedVersions?: NativeInstalledVersion[];
   mods: NativeMod[];

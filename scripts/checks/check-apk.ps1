@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [string]$ApkPath
+    [string]$ApkPath,
+    [switch]$MobileTerrariaTextureFallback
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,10 +37,11 @@ foreach ($required in @(
     'assets/launcher/MobileLauncher.Bootstrap.dll',
     'assets/launcher/MobileLauncher.Patches.dll',
     'assets/launcher/RotatingartLauncher-LICENSE.txt',
-    'assets/launcher/BuiltinMods/MobileJoystick.tmod',
+    'assets/launcher/MobileLauncher.Controls.dll',
     'assets/launcher/Stores/MobileLauncher.Stores.dll',
     'assets/launcher/Stores/MobileLauncher.Stores.runtimeconfig.json',
     'assets/launcher/Stores/SteamKit2.dll',
+    'assets/tmodloader-default/tModLoader.zip',
     'assets/ui/index.html',
     'assets/ui/icons.svg',
     'assets/ui/animate-ui-license.txt',
@@ -52,13 +54,18 @@ foreach ($required in @(
 
 $gameEntries = @($entries | Where-Object {
     $_ -like 'assets/game/*' -or
+    $_ -like 'assets/launcher/BuiltinMods/*' -or
     $_ -match '(?i)(^|/)(tModLoader|FNA)\.dll$' -or
     $_ -match '(?i)^assets/(launcher/)?Content/'
 })
 if ($gameEntries.Count -gt 0) {
-    throw "APK must contain only launcher/runtime files, but includes: $($gameEntries -join ', ')"
+    throw "APK contains loose game resources: $($gameEntries -join ', ')"
 }
-Write-Output 'Verified launcher-only APK: no game assemblies, managed FNA, or game Content'
+$fallbackPath = 'assets/mobile-terraria/texture-fallback.zip'
+if (($entries -contains $fallbackPath) -ne $MobileTerrariaTextureFallback.IsPresent) {
+    throw 'APK texture fallback presence does not match -MobileTerrariaTextureFallback'
+}
+Write-Output 'Verified game assemblies are confined to the bundled release archive'
 if ($entries -contains 'assets/ui/preview.html' -or @($entries | Where-Object { $_ -like 'assets/ui/*.map' -or $_ -like 'assets/ui/assets/*.map' }).Count -gt 0) {
     throw 'Production UI must not contain development previews or source maps'
 }
@@ -68,6 +75,48 @@ if ($entries -contains 'assets/ui/preview.html' -or @($entries | Where-Object { 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path -LiteralPath $ApkPath))
 try {
+    $defaultTml = $archive.GetEntry('assets/tmodloader-default/tModLoader.zip').Open()
+    $algorithm = [Security.Cryptography.SHA256]::Create()
+    try {
+        $hash = [BitConverter]::ToString($algorithm.ComputeHash($defaultTml)).Replace('-', '')
+        if ($hash -ne '5AAED81B245044286C3ADE200F8BAC9162EF932EE8FF11A31E05DA49A186C07B') {
+            throw 'Bundled tModLoader ZIP does not match the official v2026.09.3.1 release.'
+        }
+        Write-Output 'Verified bundled tModLoader v2026.09.3.1'
+    } finally {
+        $algorithm.Dispose()
+        $defaultTml.Dispose()
+    }
+    if ($MobileTerrariaTextureFallback) {
+        $fallbackStream = $archive.GetEntry($fallbackPath).Open()
+        try {
+            $fallback = [IO.Compression.ZipArchive]::new($fallbackStream, [IO.Compression.ZipArchiveMode]::Read)
+            try {
+                if ($fallback.Entries.Count -eq 0) { throw 'Texture fallback ZIP is empty' }
+                $fallbackNames = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+                foreach ($entry in $fallback.Entries) {
+                    if ($entry.FullName -cnotmatch '^Images/(?:[\w. -]+/)*[\w. -]+\.xnb$' -or
+                        $entry.FullName -match '(?:^|/)\.{1,2}(?:/|$)' -or
+                        -not $fallbackNames.Add($entry.FullName) -or $entry.Length -lt 10) {
+                        throw "Invalid texture fallback entry: $($entry.FullName)"
+                    }
+                    $reader = [IO.BinaryReader]::new($entry.Open())
+                    try {
+                        if ([Text.Encoding]::ASCII.GetString($reader.ReadBytes(3)) -ne 'XNB') {
+                            throw "Invalid XNB texture: $($entry.FullName)"
+                        }
+                    } finally {
+                        $reader.Dispose()
+                    }
+                }
+                Write-Output "Verified $($fallback.Entries.Count) embedded XNB textures"
+            } finally {
+                $fallback.Dispose()
+            }
+        } finally {
+            $fallbackStream.Dispose()
+        }
+    }
     $prefix = 'lib/arm64-v8a/'
     $systemLibraries = @('libc.so', 'libm.so', 'libdl.so', 'liblog.so', 'libandroid.so', 'libOpenSLES.so', 'libGLESv1_CM.so', 'libGLESv2.so', 'libGLESv3.so', 'libEGL.so', 'libvulkan.so', 'libz.so', 'libjnigraphics.so', 'libaaudio.so')
     $pending = [Collections.Generic.Queue[string]]::new()

@@ -7,29 +7,35 @@ import java.nio.ByteOrder
 import java.security.MessageDigest
 import java.util.zip.Deflater
 import java.util.zip.DeflaterOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import app.com.tmlpocket.feature.launcher.ui.SteamWorkshopPreview
 
 class ModRepositoryTest {
     @get:Rule val temporary = TemporaryFolder()
 
     @Test
-    fun bundledControlsPreserveOtherModsPacksAndBackUpConflictingCopies() {
+    fun legacyTouchMigrationBacksUpOldModAndPreservesOtherSelectionsAndPacks() {
         val user = temporary.newFolder("bundled-user")
         val repo = ModRepository(user)
         repo.importFile(fixture("Library"))
         repo.setEnabled(setOf("Library"), true)
-        repo.savePack("mine")
         val root = File(user, "Mods")
+        File(root, "enabled.json").writeText("""["Library","MobileJoystick"]""")
+        repo.savePack("mine")
         val previous = File(root, "MobileJoystick.tmod").apply { writeText("previous custom copy") }
         val duplicate = File(root, "touch-custom-name.tmod")
         fixture("MobileJoystick").copyTo(duplicate)
-        val packageBytes = fixture("MobileJoystick").readBytes()
-        val installer = BundledModInstaller(user)
-        installer.install { packageBytes.inputStream() }
-        assertArrayEquals(packageBytes, previous.readBytes())
+        val legacyConfig = File(user, "ModConfigs/MobileJoystick_MobileJoystickConfig.json").apply {
+            parentFile!!.mkdirs()
+            writeText("""{"Opacity":0.5}""")
+        }
+        LegacyTouchMod.migrate(user)
+        assertFalse(previous.exists())
         assertFalse(duplicate.exists())
         assertEquals(2, File(root, ".launcher-backup").listFiles()!!.size)
         assertTrue(
@@ -37,36 +43,32 @@ class ModRepositoryTest {
                 it.readText() == "previous custom copy"
             }
         )
-        assertEquals(setOf("Library", "MobileJoystick"), enabled(repo))
-        installer.install { packageBytes.inputStream() }
+        assertEquals(setOf("Library"), enabled(repo))
+        LegacyTouchMod.migrate(user)
         assertEquals(2, File(root, ".launcher-backup").listFiles()!!.size)
-        repo.setEnabled(setOf("Library", "MobileJoystick"), false)
-        assertEquals(setOf("MobileJoystick"), enabled(repo))
+        repo.setEnabled(setOf("Library"), false)
+        assertEquals(emptySet<String>(), enabled(repo))
         repo.applyPack("mine")
-        assertEquals(setOf("Library", "MobileJoystick"), enabled(repo))
-        assertFails { repo.delete("MobileJoystick") }
+        assertEquals(setOf("Library"), enabled(repo))
         assertFails { repo.importFile(fixture("MobileJoystick")) }
-        assertTrue(
-            (0 until repo.list().length())
-                .map { repo.list().getJSONObject(it) }
-                .single { it.getString("id") == "MobileJoystick" }
-                .getBoolean("builtin")
-        )
+        assertEquals(1, repo.list().length())
+        assertEquals("""{"Opacity":0.5}""", legacyConfig.readText())
     }
 
     @Test
-    fun invalidBundledPackageNeverReplacesWorkingControlsOrEnabledSelection() {
-        val user = temporary.newFolder("invalid-bundle")
-        val installer = BundledModInstaller(user)
-        val bytes = fixture("MobileJoystick").readBytes()
-        installer.install { bytes.inputStream() }
-        val root = File(user, "Mods")
-        val before = File(root, "enabled.json").readText()
-        assertFails { installer.install { "corrupt package".byteInputStream() } }
-        assertFails { installer.install { fixture("OtherMod").inputStream() } }
-        assertArrayEquals(bytes, File(root, "MobileJoystick.tmod").readBytes())
-        assertEquals(before, File(root, "enabled.json").readText())
-        assertTrue(root.listFiles()!!.none { it.extension == "tmp" })
+    fun touchSettingsReadLegacyJsonAndMergeSeparateEditors() {
+        val user = temporary.newFolder("touch-settings")
+        val legacy = File(user, "ModConfigs/MobileJoystick_MobileJoystickConfig.json")
+        legacy.parentFile!!.mkdirs()
+        legacy.writeText("""{"Opacity":0.5,"AimDistance":500}""")
+        val settings = app.com.tmlpocket.feature.launcher.MobileControlsSettings(user)
+        assertEquals(0.5, settings.read().getDouble("Opacity"), 0.001)
+        settings.save(org.json.JSONObject("""{"category":"controls","settings":{"Opacity":0.6}}"""))
+        settings.save(org.json.JSONObject("""{"category":"interface","settings":{"UIFontScale":1.2}}"""))
+        assertEquals(0.6, settings.read().getDouble("Opacity"), 0.001)
+        assertEquals(1.2, settings.read().getDouble("UIFontScale"), 0.001)
+        assertEquals(500, settings.read().getInt("AimDistance"))
+        assertFails { settings.save(org.json.JSONObject("""{"category":"interface","settings":{"Opacity":1}}""")) }
     }
 
     @Test
@@ -78,6 +80,51 @@ class ModRepositoryTest {
         assertEquals(listOf("Library@1.0"), meta.dependencies)
         file.appendBytes(byteArrayOf(1))
         assertFails { TmodReader.read(file, verifyHash = true) }
+    }
+
+    @Test
+    fun extractsWorkshopIconBeforeFallbackIcons() {
+        val png = byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
+        val gif = "GIF89a".toByteArray()
+        val file = fixture(
+            "IconMod",
+            icons = listOf("icon.png" to png, "icon_workshop.gif" to gif),
+        )
+
+        val icon = TmodReader.readIcon(file)
+
+        assertTrue(icon!!.startsWith("data:image/gif;base64,"))
+        assertTrue(icon.endsWith(java.util.Base64.getEncoder().encodeToString(gif)))
+    }
+
+    @Test
+    fun installsCompatibleModFromWorkshopBundleWithMultipleBuilds() {
+        val userData = temporary.newFolder("workshop-mod")
+        val repo = ModRepository(userData)
+        val archive = temporary.newFile("workshop.zip")
+        ZipOutputStream(archive.outputStream()).use { output ->
+            for (loaderVersion in listOf("2026.10.1.0", "2026.11.1.0")) {
+                output.putNextEntry(ZipEntry("$loaderVersion/VersionedMod.tmod"))
+                fixture("VersionedMod", loaderVersion = loaderVersion).inputStream().use { it.copyTo(output) }
+                output.closeEntry()
+            }
+        }
+
+        val installedId = WorkshopContentInstaller(userData, repo)
+            .install(1281930, "123", "Test Mod", archive, "v2026.10.3.0")
+
+        assertEquals("VersionedMod", installedId)
+        assertEquals("2026.10.1.0", repo.list().getJSONObject(0).getString("loaderVersion"))
+    }
+
+    @Test
+    fun workshopPreviewAllowlistRejectsUntrustedAndDowngradeUrls() {
+        assertTrue(SteamWorkshopPreview.isAllowed("https://steamuserimages-a.akamaihd.net/ugc/123/preview.png"))
+        assertTrue(SteamWorkshopPreview.isAllowed("https://images.steamusercontent.com/ugc/123/preview.webp"))
+        assertFalse(SteamWorkshopPreview.isAllowed("http://steamuserimages-a.akamaihd.net/ugc/123/preview.png"))
+        assertFalse(SteamWorkshopPreview.isAllowed("https://evil.example/preview.png"))
+        assertFalse(SteamWorkshopPreview.isAllowed("https://steamuserimages-a.akamaihd.net.evil.example/preview.png"))
+        assertFalse(SteamWorkshopPreview.isAllowed("https://user@steamuserimages-a.akamaihd.net/preview.png"))
     }
 
     @Test
@@ -123,6 +170,38 @@ class ModRepositoryTest {
         assertFails { repo.delete("../outside") }
     }
 
+    @Test
+    fun reportsMissingOutdatedDisabledAndOptionalDependencies() {
+        val repo = ModRepository(temporary.newFolder("dependencies"))
+        repo.importFile(fixture("Library"))
+        repo.importFile(fixture("Core"))
+        repo.importFile(fixture("Upgrade"))
+        repo.importFile(
+            fixture(
+                "Demo",
+                listOf("Library@1.0", "Missing", "Upgrade@2.0", "Core"),
+                weakDeps = listOf("Optional"),
+            )
+        )
+        repo.setEnabled(setOf("Core"), true)
+        val entries = repo.list()
+        val dependencies = (0 until entries.length())
+            .map(entries::getJSONObject)
+            .single { it.getString("id") == "Demo" }
+            .getJSONArray("dependencies")
+        val byName = (0 until dependencies.length()).map(dependencies::getJSONObject)
+            .associateBy { it.getString("name") }
+
+        assertEquals("disabled", byName.getValue("Library").getString("status"))
+        assertEquals("missing", byName.getValue("Missing").getString("status"))
+        assertEquals("outdated", byName.getValue("Upgrade").getString("status"))
+        assertEquals("2.0", byName.getValue("Upgrade").getString("requiredVersion"))
+        assertEquals("1.0", byName.getValue("Upgrade").getString("installedVersion"))
+        assertEquals("enabled", byName.getValue("Core").getString("status"))
+        assertTrue(byName.getValue("Optional").getBoolean("optional"))
+        assertFalse(byName.getValue("Missing").getBoolean("optional"))
+    }
+
     private fun enabled(repo: ModRepository): Set<String> {
         val array = repo.list()
         return (0 until array.length())
@@ -136,6 +215,9 @@ class ModRepositoryTest {
         name: String,
         deps: List<String> = emptyList(),
         compressed: Boolean = false,
+        icons: List<Pair<String, ByteArray>> = emptyList(),
+        loaderVersion: String = "2026.10.1.0",
+        weakDeps: List<String> = emptyList(),
     ): File {
         val info =
             ByteArrayOutputStream()
@@ -147,6 +229,11 @@ class ModRepositoryTest {
                     string("modReferences")
                     deps.forEach { string(it) }
                     string("")
+                    if (weakDeps.isNotEmpty()) {
+                        string("weakReferences")
+                        weakDeps.forEach { string(it) }
+                        string("")
+                    }
                     string("")
                 }
                 .toByteArray()
@@ -163,11 +250,17 @@ class ModRepositoryTest {
                 .apply {
                     string(name)
                     string("1.0")
-                    integer(1)
+                    integer(1 + icons.size)
                     string("Info")
                     integer(info.size)
                     integer(packed.size)
+                    icons.forEach { (entry, bytes) ->
+                        string(entry)
+                        integer(bytes.size)
+                        integer(bytes.size)
+                    }
                     write(packed)
+                    icons.forEach { (_, bytes) -> write(bytes) }
                 }
                 .toByteArray()
         val file = temporary.newFile()
@@ -175,7 +268,7 @@ class ModRepositoryTest {
             ByteArrayOutputStream()
                 .apply {
                     write("TMOD".toByteArray())
-                    string("2026.10.1.0")
+                    string(loaderVersion)
                     write(MessageDigest.getInstance("SHA-1").digest(payload))
                     write(ByteArray(256))
                     integer(payload.size)

@@ -36,11 +36,13 @@ Pop-Location
 .\scripts\checks\check-apk.ps1 -ApkPath android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
 ```
 
-The patch assembly and MobileJoystick project are checked out from `external/tML-Pocket-Patches` and `external/tML-Pocket-Mods`. Launcher build scripts pass `LauncherRoot` so both external projects use this checkout's game references and MonoMod dependencies.
+The general patch assembly is checked out from `external/tML-Pocket-Patches`. The touch patch is built from `managed/MobileLauncher.Controls`. Both use this checkout's game references and MonoMod dependencies.
 
 When preparing APK assets, the launcher script also passes `DirectoryBuildPropsPath` to the external patch build so it reads `managed/Directory.Build.props`. Android Studio does not need a shell environment variable for these shared settings.
 
-The APK includes Android CoreCLR, the launcher/store managed hosts and Android native libraries. It must not contain tModLoader.dll, FNA.dll or Terraria Content. The app downloads official tML ZIPs from GitHub Releases or imports local ZIPs. Terraria imports accept Steam ZIPs and GOG Linux `.sh` installers; downloads use SteamKit/GOG account authorization. Steam resources require a fresh online ownership check before launch; GOG resources require no login at launch.
+The APK includes Android CoreCLR, launcher/store hosts, Android native libraries, and the official tModLoader 2026.09.3.1 release ZIP. Gradle downloads and verifies the release when preparing the APK. Use `-PdefaultTmlArchive=<absolute path>` to provide a previously downloaded copy of the same ZIP. On first launch, the launcher installs the bundled release if the user has no version history.
+
+The app can download or import additional tML releases. Terraria imports accept Steam ZIPs and GOG Linux `.sh` installers. Downloads use SteamKit/GOG account authorization. Steam resources require a fresh online ownership check before launch. GOG resources require no login at launch.
 
 Gradle also runs `scripts/build/prepare-launcher-ui.ps1` and packages the approved
 UI under `assets/ui`. Source maps and the phone preview wrapper are excluded.
@@ -53,6 +55,32 @@ These fixtures do not perform live downloads or establish device compatibility.
 See [implemented Android paths and limits](android-launcher.md).
 
 ## Runtime validation
+
+The optional mobile Terraria converter uses C++ and JNI on Android arm64. Build its profile
+from the target tModLoader image layout and compiled shaders,
+desktop Terraria sound and font inventory and XACT metadata, and the texture
+fallback ZIP produced by `prepare-mobile-terraria-textures.ps1`.
+
+```powershell
+.\scripts\build\prepare-mobile-terraria-android.ps1 -OutputPath build/mobile-terraria-android-profile.zip -TargetTml 2026.09.3.1 -TerrariaContent $terrariaContent -TmlContent $tmlContent -ImageLayout $imageLayout -TextureFallback $textureFallback
+$profile = (Resolve-Path build/mobile-terraria-android-profile.zip).Path
+Push-Location android
+.\gradlew.bat :app:installDebug :app:installDebugAndroidTest "-PmobileTerrariaProfile=$profile"
+Pop-Location
+adb shell am instrument -w app.com.tmlpocket.test/app.com.tmlpocket.feature.installation.MobileTerrariaConversionTest
+```
+
+To prepare mobile resources, select the profile's tModLoader version and use
+**Games → Add game → Android Terraria → Convert resources**. The launcher
+stores and selects the resulting files in `games/terraria-android`. Start the
+game from **Home → Launch game**. The Installed tab can select desktop
+Terraria resources again.
+
+The instrumentation run reads the installed Terraria APK and checks the
+converted file count and music bank. Its result includes the app-private output
+path. Keep several GB free on the device for the converted content. The profile
+is specific to the desktop target. The test build uses the mobile APK as the
+source of music, sound effects, fonts, and available textures.
 
 Install the APK, import Terraria Content, select/download or import tML, and launch. Confirm the game reaches its main menu, then test touch controls, text input and a second launch. Existing tests and package checks validate infrastructure; they do not establish compatibility with every tML release.
 
@@ -79,4 +107,4 @@ If a Java stack trace shows `PipeImpl` → `UnixDomainSockets.connect` → `Inva
 
 Use a precompiled Terraria 1.4.4.9 / tML 2026.09.3.1 release as `TML_REFERENCE_ROOT`, or stage it with the command above. The chosen source path is remembered only in ignored `build/game-references/source.txt`. Do not point it at the tML source checkout. The launcher's build compiles MobileJoystick and its own patch assembly, never the game or FNA.
 
-Gradle uses the normal tML packager to convert mod textures with isolated `build/mod-packaging-userdata`. It bundles `launcher/BuiltinMods/MobileJoystick.tmod`, `MobileLauncher.Patches.dll` and the upstream GPL text. The real-assembly runtime harness adapts upstream frame-pacing checks and MobileJoystick input regressions; it exercises the existing game assembly's accumulator, hook rollback/reload, rapid taps, dual-contact move/aim, sustained attack and release using synthetic state, without creating any worlds. It does not establish real-device multiplayer interoperability or a sustained hardware frame rate.
+Gradle bundles `MobileLauncher.Controls.dll` with its textures and localization, `MobileLauncher.Patches.dll` and upstream GPL text. The runtime harness checks attachment and removal against the real game assembly, embedded resources, frame pacing and touch input using synthetic contacts.

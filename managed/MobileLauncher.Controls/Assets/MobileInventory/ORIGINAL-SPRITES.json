@@ -1,0 +1,722 @@
+{
+  "Bag": {
+    "sprite": "53A078DB",
+    "sheet": "UI6",
+    "region": [
+      203,
+      940,
+      32,
+      32
+    ]
+  },
+  "BlockSwapOff": {
+    "sprite": "8FDB71F9",
+    "sheet": "UI6",
+    "region": [
+      295,
+      588,
+      36,
+      36
+    ]
+  },
+  "BlockSwapOn": {
+    "sprite": "8FDB71F9",
+    "sheet": "UI6",
+    "region": [
+      259,
+      588,
+      36,
+      36
+    ]
+  },
+  "Category0": {
+    "sprite": "DB2557E8",
+    "sheet": "UI6",
+    "region": [
+      1912,
+      784,
+      38,
+      38
+    ]
+  },
+  "Category10": {
+    "sprite": "90A6D11A",
+    "sheet": "UI6",
+    "region": [
+      969,
+      784,
+      38,
+      38
+    ]
+  },
+  "Category11": {
+    "sprite": "8F318C46",
+    "sheet": "UI6",
+    "region": [
+      667,
+      1016,
+      32,
+      30
+    ]
+  },
+  "Category2": {
+    "sprite": "463E0EB0",
+    "sheet": "UI6",
+    "region": [
+      1805,
+      876,
+      36,
+      34
+    ]
+  },
+  "Category4": {
+    "sprite": "AF846BAE",
+    "sheet": "UI6",
+    "region": [
+      967,
+      1044,
+      30,
+      30
+    ]
+  },
+  "Category5": {
+    "sprite": "810A1A2F",
+    "sheet": "UI6",
+    "region": [
+      508,
+      864,
+      36,
+      34
+    ]
+  },
+  "Category6": {
+    "sprite": "8D284C4E",
+    "sheet": "UI6",
+    "region": [
+      303,
+      824,
+      36,
+      36
+    ]
+  },
+  "Category7": {
+    "sprite": "A0ED4E00",
+    "sheet": "UI6",
+    "region": [
+      964,
+      1112,
+      22,
+      22
+    ]
+  },
+  "Category8": {
+    "sprite": "2846ABA9",
+    "sheet": "UI6",
+    "region": [
+      1835,
+      1040,
+      30,
+      30
+    ]
+  },
+  "Category9": {
+    "sprite": "002D0A86",
+    "sheet": "UI6",
+    "region": [
+      1552,
+      812,
+      38,
+      38
+    ]
+  },
+  "Craft": {
+    "sprite": "A9544B31",
+    "sheet": "UI6",
+    "region": [
+      661,
+      1048,
+      30,
+      30
+    ]
+  },
+  "CraftEmpty": {
+    "sprite": "A9544B31",
+    "sheet": "UI6",
+    "region": [
+      661,
+      1048,
+      30,
+      30
+    ]
+  },
+  "Defense": {
+    "sprite": "9EBCFEDD",
+    "sheet": "UI6",
+    "region": [
+      129,
+      264,
+      38,
+      48
+    ]
+  },
+  "Deposit": {
+    "sprite": "57C8D68C",
+    "sheet": "UI6",
+    "region": [
+      924,
+      760,
+      40,
+      40
+    ]
+  },
+  "EmptyAccessory": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      2010,
+      192,
+      34,
+      34
+    ]
+  },
+  "EmptyAmmo": {
+    "sprite": "56930B98",
+    "sheet": "UI6",
+    "region": [
+      728,
+      584,
+      14,
+      28
+    ]
+  },
+  "EmptyBody": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      1942,
+      192,
+      34,
+      34
+    ]
+  },
+  "EmptyCoin": {
+    "sprite": "E47018AB",
+    "sheet": "UI6",
+    "region": [
+      1167,
+      356,
+      12,
+      16
+    ]
+  },
+  "EmptyDye": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      1976,
+      124,
+      34,
+      34
+    ]
+  },
+  "EmptyGrapple": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      1976,
+      158,
+      34,
+      34
+    ]
+  },
+  "EmptyHead": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      1942,
+      124,
+      34,
+      34
+    ]
+  },
+  "EmptyLegs": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      1942,
+      260,
+      34,
+      34
+    ]
+  },
+  "EmptyLightPet": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      1976,
+      226,
+      34,
+      34
+    ]
+  },
+  "EmptyMinecart": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      1976,
+      192,
+      34,
+      34
+    ]
+  },
+  "EmptyMount": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      1976,
+      260,
+      34,
+      34
+    ]
+  },
+  "EmptyPet": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      2010,
+      158,
+      34,
+      34
+    ]
+  },
+  "EmptyVanityAccessory": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      2010,
+      124,
+      34,
+      34
+    ]
+  },
+  "EmptyVanityBody": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      1942,
+      226,
+      34,
+      34
+    ]
+  },
+  "EmptyVanityHead": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      1942,
+      158,
+      34,
+      34
+    ]
+  },
+  "EmptyVanityLegs": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      1942,
+      294,
+      34,
+      34
+    ]
+  },
+  "Equipment": {
+    "sprite": "64DF11C8",
+    "sheet": "UI6",
+    "region": [
+      495,
+      1048,
+      28,
+      32
+    ]
+  },
+  "EquipmentGlyphs": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      1942,
+      124,
+      102,
+      238
+    ]
+  },
+  "Favorite": {
+    "sprite": "AF846BAE",
+    "sheet": "UI6",
+    "region": [
+      967,
+      1044,
+      30,
+      30
+    ]
+  },
+  "Grid": {
+    "sprite": "4F7CAA61",
+    "sheet": "UI6",
+    "region": [
+      426,
+      840,
+      14,
+      14
+    ]
+  },
+  "House": {
+    "sprite": "BD34C35C",
+    "sheet": "UI6",
+    "region": [
+      155,
+      1112,
+      22,
+      24
+    ]
+  },
+  "InventorySort": {
+    "sprite": "538C4AC8",
+    "sheet": "UI46",
+    "region": [
+      522,
+      0,
+      40,
+      40
+    ]
+  },
+  "Link": {
+    "sprite": "002D0A86",
+    "sheet": "UI6",
+    "region": [
+      1552,
+      812,
+      38,
+      38
+    ]
+  },
+  "Loadout": {
+    "sprite": "5B4C13DC",
+    "sheet": "UI6",
+    "region": [
+      1942,
+      192,
+      34,
+      34
+    ]
+  },
+  "Loot": {
+    "sprite": "DF41AB13",
+    "sheet": "UI6",
+    "region": [
+      569,
+      740,
+      40,
+      40
+    ]
+  },
+  "Pvp": {
+    "sprite": "D93ACD32",
+    "sheet": "UI6",
+    "region": [
+      1541,
+      928,
+      32,
+      32
+    ]
+  },
+  "QuickStack": {
+    "sprite": "B1190A52",
+    "sheet": "UI6",
+    "region": [
+      170,
+      856,
+      36,
+      36
+    ]
+  },
+  "QuickStackCurrent": {
+    "sprite": "BF0509D0",
+    "sheet": "UI6",
+    "region": [
+      977,
+      740,
+      40,
+      40
+    ]
+  },
+  "QuickStackNearby": {
+    "sprite": "B1190A52",
+    "sheet": "UI6",
+    "region": [
+      170,
+      856,
+      36,
+      36
+    ]
+  },
+  "Restock": {
+    "sprite": "C1260DBF",
+    "sheet": "UI6",
+    "region": [
+      1723,
+      852,
+      36,
+      36
+    ]
+  },
+  "Ruler": {
+    "sprite": "8ABC98A5",
+    "sheet": "UI6",
+    "region": [
+      614,
+      144,
+      36,
+      36
+    ]
+  },
+  "Search": {
+    "sprite": "82882C78",
+    "sheet": "UI6",
+    "region": [
+      1682,
+      852,
+      36,
+      36
+    ]
+  },
+  "Settings": {
+    "sprite": "BF169C3B",
+    "sheet": "UI6",
+    "region": [
+      351,
+      972,
+      32,
+      32
+    ]
+  },
+  "SliderKnob": {
+    "sprite": "5902E24E",
+    "sheet": "UI6",
+    "region": [
+      1133,
+      1068,
+      26,
+      32
+    ]
+  },
+  "SliderTrack": {
+    "sprite": "A76DE499",
+    "sheet": "UI6",
+    "region": [
+      1370,
+      368,
+      178,
+      16
+    ]
+  },
+  "Slot": {
+    "sprite": "3251BC48",
+    "sheet": "UI6",
+    "region": [
+      1214,
+      716,
+      52,
+      52
+    ]
+  },
+  "SlotFavorite": {
+    "sprite": "BB08AD19",
+    "sheet": "UI6",
+    "region": [
+      867,
+      712,
+      52,
+      52
+    ]
+  },
+  "SlotFavoriteSelected": {
+    "sprite": "09287109",
+    "sheet": "UI6",
+    "region": [
+      1818,
+      660,
+      52,
+      52
+    ]
+  },
+  "SlotGreen": {
+    "sprite": "99247754",
+    "sheet": "UI6",
+    "region": [
+      1932,
+      660,
+      52,
+      52
+    ]
+  },
+  "SlotNew": {
+    "sprite": "0ED2CAE3",
+    "sheet": "UI6",
+    "region": [
+      1702,
+      604,
+      52,
+      52
+    ]
+  },
+  "SlotOccupied": {
+    "sprite": "00FCF607",
+    "sheet": "UI6",
+    "region": [
+      1043,
+      572,
+      52,
+      52
+    ]
+  },
+  "SlotPink": {
+    "sprite": "475C8CD7",
+    "sheet": "UI6",
+    "region": [
+      389,
+      512,
+      52,
+      52
+    ]
+  },
+  "SlotPurple": {
+    "sprite": "BF1941E9",
+    "sheet": "UI6",
+    "region": [
+      1228,
+      660,
+      52,
+      52
+    ]
+  },
+  "SlotSelected": {
+    "sprite": "C58E1946",
+    "sheet": "UI6",
+    "region": [
+      1816,
+      604,
+      52,
+      52
+    ]
+  },
+  "SlotTeal": {
+    "sprite": "F8B93B39",
+    "sheet": "UI6",
+    "region": [
+      1027,
+      628,
+      52,
+      52
+    ]
+  },
+  "Sort": {
+    "sprite": "7AE39604",
+    "sheet": "UI6",
+    "region": [
+      315,
+      740,
+      40,
+      40
+    ]
+  },
+  "Split": {
+    "sprite": "5F568D15",
+    "sheet": "UI6",
+    "region": [
+      1053,
+      856,
+      36,
+      36
+    ]
+  },
+  "TabSelected": {
+    "sprite": "5F38AB7E",
+    "sheet": "UI6",
+    "region": [
+      243,
+      628,
+      52,
+      52
+    ]
+  },
+  "Tool": {
+    "sprite": "F8B93B39",
+    "sheet": "UI6",
+    "region": [
+      1027,
+      628,
+      52,
+      52
+    ]
+  },
+  "ToolOutline": {
+    "sprite": "B3158A52",
+    "sheet": "UI6",
+    "region": [
+      1984,
+      68,
+      52,
+      52
+    ]
+  },
+  "ToolSelected": {
+    "sprite": "47898558",
+    "sheet": "UI6",
+    "region": [
+      300,
+      628,
+      52,
+      52
+    ]
+  },
+  "Trash": {
+    "sprite": "0BDE99F1",
+    "sheet": "UI6",
+    "region": [
+      1554,
+      1068,
+      28,
+      28
+    ]
+  },
+  "Unfavorite": {
+    "sprite": "CA1C3500",
+    "sheet": "UI6",
+    "region": [
+      1837,
+      796,
+      38,
+      38
+    ]
+  },
+  "VisibilityOff": {
+    "sprite": "C411B0B9",
+    "sheet": "UI6",
+    "region": [
+      1944,
+      1048,
+      30,
+      30
+    ]
+  },
+  "VisibilityOn": {
+    "sprite": "D7049250",
+    "sheet": "UI6",
+    "region": [
+      1870,
+      1048,
+      32,
+      28
+    ]
+  }
+}

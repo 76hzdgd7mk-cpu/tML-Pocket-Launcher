@@ -9,12 +9,14 @@ interface LaunchState {
   phase: Phase;
   stage: number;
   message: string;
+  source?: 'steam' | 'gog' | 'android' | null;
   error?: string;
   origin: DOMRect;
 }
-const LaunchContext = createContext<{ start(trigger: HTMLElement): void; active: boolean } | null>(
-  null,
-);
+const LaunchContext = createContext<{
+  start(trigger: HTMLElement): void;
+  active: boolean;
+} | null>(null);
 const stageIndex = { resources: 0, ownership: 0, mods: 1, handoff: 2 };
 
 export function LaunchTransitionProvider({ children }: { children: ReactNode }) {
@@ -42,9 +44,15 @@ export function LaunchTransitionProvider({ children }: { children: ReactNode }) 
     trigger.current = element;
     history.current = [];
     setLogs(null);
-    launcher.closeDialog(false);
     const origin = element.getBoundingClientRect();
-    setLaunch({ phase: 'checking', stage: 0, message: '正在检查游戏资源…', origin });
+    launcher.closeDialog(false);
+    setLaunch({
+      phase: 'checking',
+      stage: 0,
+      message: '正在检查游戏资源…',
+      origin,
+      source: launcher.nativeState?.terrariaSource,
+    });
     void nativeRequest('launch', {
       motion: launcher.motionEnabled,
       transition: {
@@ -81,7 +89,11 @@ export function LaunchTransitionProvider({ children }: { children: ReactNode }) 
         const stage = snapshot.launchStage ? stageIndex[snapshot.launchStage] : undefined;
         setLaunch((current) =>
           current?.phase === 'checking'
-            ? { ...current, stage: stage ?? current.stage, message: snapshot.message }
+            ? {
+                ...current,
+                stage: stage ?? current.stage,
+                message: snapshot.message,
+              }
             : current,
         );
       }),
@@ -241,7 +253,7 @@ export function LaunchTransitionProvider({ children }: { children: ReactNode }) 
                       variant="primary"
                       onClick={() => {
                         locked.current = false;
-                        start(trigger.current || surface.current!);
+                        start(trigger.current?.isConnected ? trigger.current : surface.current!);
                       }}
                     >
                       重新尝试
@@ -253,7 +265,11 @@ export function LaunchTransitionProvider({ children }: { children: ReactNode }) 
               <footer className="game-launch-bottom">
                 <span>
                   <i />
-                  {launcher.nativeState?.terrariaSource === 'steam' ? 'Steam 资源' : '本地启动'}
+                  {launch.source === 'android'
+                    ? 'Android 版资源'
+                    : launch.source === 'steam'
+                      ? 'Steam 资源'
+                      : '本地启动'}
                 </span>
                 <button ref={logButton} onClick={() => void readLogs()}>
                   <Icon name="file" />

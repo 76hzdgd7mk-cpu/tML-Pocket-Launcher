@@ -66,6 +66,7 @@ export function nativeRequest<T = unknown>(method: string, params: object = {}):
               'store.steam.download',
               'store.gog.download',
               'store.gog.authorize',
+              'terraria.mobile.convert',
             ].includes(method)
           ? 60 * 60 * 1000
           : 90_000,

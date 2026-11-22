@@ -280,6 +280,53 @@ internal sealed class SteamSession : IAuthenticator, IDisposable
         }
     }
 
+    internal async Task<T> WithWorkshopConnectionAsync<T>(
+        Func<ISteamConnection, CancellationToken, Task<T>> operation,
+        CancellationToken ct)
+    {
+        ISteamConnection? authenticated;
+        bool signedOut;
+        int attempt;
+        lock (sync)
+        {
+            authenticated = phase == "ready" && connection is { IsConnected: true } ? connection : null;
+            signedOut = phase == "signedOut";
+            attempt = generation;
+        }
+
+        if (authenticated != null)
+        {
+            var result = await operation(authenticated, ct);
+            lock (sync)
+            {
+                if (attempt != generation || connection != authenticated || phase != "ready" || !authenticated.IsConnected)
+                    throw new InvalidOperationException("Steam 会话已改变，请重试工坊操作");
+            }
+            return result;
+        }
+
+        if (!signedOut)
+            throw new InvalidOperationException("Steam 会话当前不可用，请恢复连接后重试工坊操作");
+
+        Exception? lastFailure = null;
+        for (var index = 0; index < Routes.Length; index++)
+        {
+            ct.ThrowIfCancellationRequested();
+            using var anonymous = connectionFactory(Routes[index]);
+            try
+            {
+                await anonymous.ConnectAsync(ct);
+                await anonymous.LogOnAnonymousAsync(ct);
+                return await operation(anonymous, ct);
+            }
+            catch (Exception failure) when (IsTransient(failure) && index < Routes.Length - 1 && !ct.IsCancellationRequested)
+            {
+                lastFailure = failure;
+            }
+        }
+        throw new IOException("Steam 匿名工坊连接失败，请登录 Steam 后重试", lastFailure);
+    }
+
     public async Task<string> DownloadAsync(string root, Action<string, int> progress, CancellationToken ct)
     {
         await VerifyOwnershipAsync(ct);
@@ -316,7 +363,7 @@ internal sealed class SteamSession : IAuthenticator, IDisposable
                 if (key.Result != EResult.OK) throw new IOException($"Steam 无权下载资源库 {id}：{key.Result}");
                 var code = await content.GetManifestRequestCode(id, Terraria, manifestId).WaitAsync(ct);
                 if (code == 0) throw new IOException("Steam 未授予清单访问权限");
-                var manifest = await WithServerAsync(servers, content, id,
+                var manifest = await WithServerAsync(servers, content, Terraria, id,
                     (server, auth) => cdn.DownloadManifestAsync(id, manifestId, code, server, key.DepotKey, cdnAuthToken: auth), ct);
                 selected.Add((id, key.DepotKey, manifest));
             }
@@ -341,7 +388,7 @@ internal sealed class SteamSession : IAuthenticator, IDisposable
                         if (chunk.UncompressedLength > 16 * 1024 * 1024 || chunk.Offset + chunk.UncompressedLength > item.File.TotalSize)
                             throw new InvalidDataException("Steam 分块长度超出文件范围");
                         var bytes = new byte[chunk.UncompressedLength];
-                        var count = await WithServerAsync(servers, content, item.Id,
+                        var count = await WithServerAsync(servers, content, Terraria, item.Id,
                             (server, auth) => cdn.DownloadDepotChunkAsync(item.Id, chunk, server, bytes, item.Key, cdnAuthToken: auth), ct);
                         output.Position = checked((long)chunk.Offset);
                         await output.WriteAsync(bytes.AsMemory(0, count), ct);
@@ -358,7 +405,7 @@ internal sealed class SteamSession : IAuthenticator, IDisposable
         finally { Directory.Delete(directory, true); }
     }
 
-    private static async Task<T> WithServerAsync<T>(Server[] servers, SteamContent content, uint depot, Func<Server, string?, Task<T>> download, CancellationToken ct)
+    internal static async Task<T> WithServerAsync<T>(Server[] servers, SteamContent content, uint appId, uint depot, Func<Server, string?, Task<T>> download, CancellationToken ct)
     {
         Exception? last = null;
         foreach (var server in servers)
@@ -369,7 +416,7 @@ internal sealed class SteamSession : IAuthenticator, IDisposable
                 try { return await download(server, null).WaitAsync(TimeSpan.FromSeconds(60), ct); }
                 catch (SteamKitWebRequestException error) when (error.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
-                    var token = await content.GetCDNAuthToken(Terraria, depot, server.Host ?? throw new IOException("Steam CDN 地址无效")).WaitAsync(ct);
+                    var token = await content.GetCDNAuthToken(appId, depot, server.Host ?? throw new IOException("Steam CDN 地址无效")).WaitAsync(ct);
                     if (token.Result != EResult.OK) throw new IOException("Steam CDN 授权失败");
                     return await download(server, token.Token).WaitAsync(TimeSpan.FromSeconds(60), ct);
                 }

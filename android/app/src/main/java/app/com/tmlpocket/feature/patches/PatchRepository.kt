@@ -25,7 +25,7 @@ class PatchRepository(private val directory: File) {
             Builtin(
                 "mobile-touch",
                 "MobileJoystick 触摸适配",
-                "原生多点触摸接入 FNA，为内置模组提供触控；隐藏桌面鼠标。",
+                "连接 FNA 原生多点触摸，并加载双摇杆、触屏背包、菜单和自定义界面布局。",
                 "1.0.14",
             ),
             Builtin("mobile-fullscreen", "全屏显示", "按实际 Surface 同步显示与全屏呈现，适配系统栏和窗口重建。", "1.1.2"),
