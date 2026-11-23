@@ -61,7 +61,7 @@ internal object MobileTerrariaConverter {
         check(Looper.myLooper() != Looper.getMainLooper()) { "Run conversion on a worker thread" }
         val info = checkNotNull(MobileTerrariaPackage.installed(context)) { "Mobile Terraria is not installed" }
         val archives = MobileTerrariaPackage.archives(info)
-        require(MobileTerrariaPackage.inspectArchives(archives)) { "Unsupported mobile Terraria APK layout" }
+        require(MobileTerrariaPackage.inspectArchives(archives)) { "不支持的 Terraria PE 安装包结构" }
         val parent = checkNotNull(destination.parentFile)
         require(parent.canonicalFile.toPath().startsWith(context.filesDir.canonicalFile.toPath())) {
             "Conversion output must be in app-private storage"

@@ -10,5 +10,5 @@ internal object MobileTerrariaConverter {
 
     @Suppress("UNUSED_PARAMETER")
     fun convertInstalled(context: Context, destination: File, progress: MobileTerrariaPackage.Progress): JSONObject =
-        error("此 APK 未包含 Android 版 Terraria 转换器")
+        error("此 APK 未包含 Terraria PE 转换器")
 }

@@ -425,7 +425,7 @@ class GamePackageInstaller(private val filesDir: File) {
                 val report = readJson(requiredFile(root, "conversion-report.json"))
                 check(report.optBoolean("complete") && report.getJSONArray("missing").length() == 0 &&
                     report.getInt("required_files") == files.count { it.isFile && it.toPath().startsWith(content.toPath()) }) {
-                    "Android 版 Terraria 资源转换不完整"
+                    "Terraria PE 资源转换不完整"
                 }
                 for (name in listOf("Wave Bank.xwb", "Sound Bank.xsb", "TerrariaMusic.xgs",
                     "PixelShader.xnb", "ScreenShader.xnb", "TileShader.xnb")) requiredFile(content, name)

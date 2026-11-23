@@ -752,11 +752,11 @@ internal class LauncherController(private val context: Context) {
 
     private fun prepareMobileTerraria(cancelled: () -> Boolean) {
         val target = MobileTerrariaPackage.targetTml(context)
-            ?: error("此 APK 未包含 Android 版 Terraria 转换器")
+            ?: error("此 APK 未包含 Terraria PE 转换器")
         val tml = installer.packageStatus(PackageKind.TMODLOADER)
-        check(tml == target) { "Android 版 Terraria 需要选择 tModLoader $target" }
+        check(tml == target) { "Terraria PE 转换需要选择 tModLoader $target" }
         val info = MobileTerrariaPackage.installed(context)
-            ?: error("请先安装 Android 版 Terraria")
+            ?: error("请先安装 Terraria PE")
         val fingerprint = MobileTerrariaPackage.fingerprint(info)
         if (!installer.mobileTerrariaIsCurrent(fingerprint, target)) {
             installer.installMobileTerraria(
@@ -769,7 +769,7 @@ internal class LauncherController(private val context: Context) {
                 MobileTerrariaConverter.convertInstalled(context, destination) { stage, current, total ->
                     if (cancelled()) return@convertInstalled false
                     val (label, value) = when (stage) {
-                        "extract" -> "正在提取 Android 版 Terraria 资源…" to 0
+                        "extract" -> "正在提取 Terraria PE 资源…" to 0
                         "assets" -> "正在转换贴图、字体和音效（$current/$total）…" to (5 + current * 55 / total)
                         "music" -> "正在转换音乐（$current/$total）…" to (60 + current * 29 / total)
                         else -> "正在校验转换资源…" to 90
@@ -778,7 +778,7 @@ internal class LauncherController(private val context: Context) {
                     true
                 }
                 check(MobileTerrariaPackage.installed(context)?.let(MobileTerrariaPackage::fingerprint) == fingerprint) {
-                    "转换期间 Android 版 Terraria 已更新，请重新转换"
+                    "转换期间 Terraria PE 已更新，请重新转换"
                 }
             }
         }

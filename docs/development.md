@@ -56,7 +56,7 @@ See [implemented Android paths and limits](android-launcher.md).
 
 ## Runtime validation
 
-The optional mobile Terraria converter uses C++ and JNI on Android arm64. Build its profile
+The optional Terraria PE resource converter uses C++ and JNI on Android arm64. Build its profile
 from the target tModLoader image layout and compiled shaders,
 desktop Terraria sound and font inventory and XACT metadata, and the texture
 fallback ZIP produced by `prepare-mobile-terraria-textures.ps1`.
@@ -71,15 +71,15 @@ adb shell am instrument -w app.com.tmlpocket.test/app.com.tmlpocket.feature.inst
 ```
 
 To prepare mobile resources, select the profile's tModLoader version and use
-**Games → Add game → Android Terraria → Convert resources**. The launcher
+**Games → Add game → Terraria PE → Convert resources**. The launcher
 stores and selects the resulting files in `games/terraria-android`. Start the
 game from **Home → Launch game**. The Installed tab can select desktop
 Terraria resources again.
 
-The instrumentation run reads the installed Terraria APK and checks the
+The instrumentation run reads the installed Terraria PE APK and checks the
 converted file count and music bank. Its result includes the app-private output
-path. Keep several GB free on the device for the converted content. The profile
-is specific to the desktop target. The test build uses the mobile APK as the
+path. Keep at least 2 GiB free on the device during conversion. The profile
+is specific to the desktop target. The test build uses the Terraria PE APK as the
 source of music, sound effects, fonts, and available textures.
 
 Install the APK, import Terraria Content, select/download or import tML, and launch. Confirm the game reaches its main menu, then test touch controls, text input and a second launch. Existing tests and package checks validate infrastructure; they do not establish compatibility with every tML release.

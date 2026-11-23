@@ -126,13 +126,13 @@ export function NativeGamesPage() {
                       onClick={() => importInfo('terraria')}
                     />
                     <NativeAcquireAction
-                      title="Android 版 Terraria"
-                      label="检测 Android 版 Terraria"
+                      title="Terraria PE"
+                      label="检测 Terraria PE"
                       description="从本机安装包转换游戏资源"
                       symbol="game"
                       onClick={() =>
                         openDialog({
-                          title: 'Android 版 Terraria',
+                          title: 'Terraria PE',
                           description: '本机 Terraria 资源',
                           body: <MobileTerrariaInspection />,
                         })
@@ -182,7 +182,7 @@ function MobileTerrariaInspection() {
   if (error) return <p role="alert">安装包检查失败。{error}</p>;
   if (!result) return <p role="status">正在检查本机安装包…</p>;
   if (result.status === 'not-installed')
-    return <p role="status">本机未检测到 505 Games 发行的 Android 版 Terraria。</p>;
+    return <p role="status">本机未检测到 505 Games 发行的 Terraria PE。</p>;
   return (
     <div className="native-stack">
       <p>
@@ -191,7 +191,7 @@ function MobileTerrariaInspection() {
       {result.status === 'unsupported' ? (
         <p>安装包缺少受支持的 Unity 资源容器。</p>
       ) : !result.targetTml ? (
-        <p>此 APK 未包含 Android 版 Terraria 转换配置。</p>
+        <p>此 APK 未包含 Terraria PE 转换配置。</p>
       ) : nativeState?.tml !== result.targetTml ? (
         <p>请先安装并选择 tModLoader {result.targetTml}。</p>
       ) : converting ? (
@@ -226,7 +226,7 @@ function MobileTerrariaInspection() {
               () => {
                 closeDialog(false);
                 navigate('home');
-                notify('Android 版 Terraria 资源已就绪。');
+                notify('Terraria PE 资源已就绪。');
               },
               (failure: Error) => setConversionError(failure.message),
             );
