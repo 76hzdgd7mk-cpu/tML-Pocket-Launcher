@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../../components/ui';
+import { useTranslation } from '../../i18n';
 import { nativeRequest } from '../../native/bridge';
 
 export const componentTypes = [
@@ -71,10 +72,12 @@ export function Range({
   step: number;
   onChange: (value: number) => void;
 }) {
+  const { t } = useTranslation();
+  const translatedLabel = t(label);
   return (
     <label className="controls-field">
       <span>
-        {label} <output>{Number(value.toFixed(2))}</output>
+        {translatedLabel} <output>{Number(value.toFixed(2))}</output>
       </span>
       <input
         type="range"
@@ -82,7 +85,7 @@ export function Range({
         max={max}
         step={step}
         value={value}
-        aria-label={label}
+        aria-label={translatedLabel}
         onChange={(event) => onChange(event.target.valueAsNumber)}
       />
     </label>
@@ -100,6 +103,7 @@ export function ExtendedControlFields({
   edit: (changes: Partial<ControlData>, assets?: Record<string, string>) => void;
   actions: readonly (readonly [string, string])[];
 }) {
+  const { t } = useTranslation();
   const { type } = data;
   const [textureError, setTextureError] = useState('');
   const [pickingTexture, setPickingTexture] = useState(false);
@@ -128,7 +132,7 @@ export function ExtendedControlFields({
         checked={(data[key] as boolean | undefined) ?? fallback}
         onChange={(event) => edit({ [key]: event.target.checked })}
       />
-      {label}
+      {t(label)}
     </label>
   );
   const range = (
@@ -150,14 +154,14 @@ export function ExtendedControlFields({
   );
   const select = (key: string, label: string, options: readonly (readonly [string, string])[]) => (
     <label className="controls-field">
-      {label}
+      {t(label)}
       <select
         value={String(data[key] ?? options[0][0])}
         onChange={(event) => edit({ [key]: event.target.value })}
       >
         {options.map(([value, text]) => (
           <option key={value} value={value}>
-            {text}
+            {t(text)}
           </option>
         ))}
       </select>
@@ -170,7 +174,7 @@ export function ExtendedControlFields({
         {!actions.some(([key]) => key === value) && <option value={value}>{value}</option>}
         {actions.map(([key, name]) => (
           <option key={key} value={key}>
-            {name}
+            {t(name)}
           </option>
         ))}
       </select>
@@ -195,7 +199,7 @@ export function ExtendedControlFields({
   );
   const color = (key: string, label: string, fallback: number) => (
     <label className="controls-color">
-      {label}
+      {t(label)}
       <input
         type="color"
         value={'#' + (Number(data[key] ?? fallback) >>> 0).toString(16).padStart(8, '0').slice(-6)}
@@ -232,7 +236,7 @@ export function ExtendedControlFields({
   return (
     <>
       <label className="controls-field">
-        控件名称
+        {t('控件名称')}
         <input
           value={data.name ?? ''}
           maxLength={64}
@@ -270,18 +274,20 @@ export function ExtendedControlFields({
         )}
       {type === 'button' && (
         <>
-          {binding('按键绑定', String(data.keycode ?? 'UNKNOWN'), (keycode) => edit({ keycode }))}
+          {binding(t('按键绑定'), String(data.keycode ?? 'UNKNOWN'), (keycode) =>
+            edit({ keycode }),
+          )}
           {toggle('isToggle', '点按切换按下状态')}
           {data.shape === 'POLYGON' && (
             <details className="controls-details">
-              <summary>多边形顶点</summary>
+              <summary>{t('多边形顶点')}</summary>
               {points.map((point, index) => (
                 <div className="controls-point" key={index}>
                   {(['x', 'y'] as const).map((axis) => (
                     <label key={axis}>
                       {axis.toUpperCase()}
                       <input
-                        aria-label={`顶点 ${index + 1} ${axis}`}
+                        aria-label={t('顶点 {number} {axis}', { number: index + 1, axis })}
                         type="number"
                         min={0}
                         max={1}
@@ -302,10 +308,10 @@ export function ExtendedControlFields({
                     </label>
                   ))}
                   <Button
-                    aria-label={`删除顶点 ${index + 1}`}
+                    aria-label={t('删除顶点 {number}', { number: index + 1 })}
                     onClick={() => edit({ polygonPoints: points.filter((_, i) => i !== index) })}
                   >
-                    删除
+                    {t('删除')}
                   </Button>
                 </div>
               ))}
@@ -323,7 +329,7 @@ export function ExtendedControlFields({
                   })
                 }
               >
-                添加顶点
+                {t('添加顶点')}
               </Button>
             </details>
           )}
@@ -339,7 +345,7 @@ export function ExtendedControlFields({
           {range('stickOpacity', '摇杆帽不透明度', 0.7, 0, 1, 0.05)}
           {data.mode !== 'MOUSE' &&
             directions.map(([, label, key], i) =>
-              binding(label, joystickKeys[i] ?? key, (value) =>
+              binding(t(label), joystickKeys[i] ?? key, (value) =>
                 edit({
                   joystickKeys: directions.map((entry, j) =>
                     i === j ? value : (joystickKeys[j] ?? entry[2]),
@@ -357,7 +363,7 @@ export function ExtendedControlFields({
             ['SQUARE', '方形'],
           ])}
           {directions.map(([field, label, key]) =>
-            binding(label, String(data[field] ?? key), (value) => edit({ [field]: value })),
+            binding(t(label), String(data[field] ?? key), (value) => edit({ [field]: value })),
           )}
           {toggle('allowDiagonal', '允许斜向', true)}
           {toggle('showLabels', '显示方向标签')}
@@ -369,7 +375,7 @@ export function ExtendedControlFields({
       )}
       {type === 'radialmenu' && (
         <details className="controls-details">
-          <summary>轮盘扇区</summary>
+          <summary>{t('轮盘扇区')}</summary>
           {range('sectorCount', '扇区数量', 8, 4, 12, 1)}
           {range('expandedScale', '展开倍率', 2.5, 1, 8, 0.1)}
           {range('expandDuration', '展开时长（毫秒）', 150, 0, 3000, 25)}
@@ -380,14 +386,14 @@ export function ExtendedControlFields({
           {sectors.map((sector, index) => (
             <div className="controls-point" key={index}>
               <label className="controls-field">
-                {`扇区 ${index + 1} 标签`}
+                {t('扇区 {number} 标签', { number: index + 1 })}
                 <input
                   value={sector.label}
                   maxLength={32}
                   onChange={(event) => changeSector(index, { label: event.target.value })}
                 />
               </label>
-              {binding(`扇区 ${index + 1} 绑定`, sector.keycode, (keycode) =>
+              {binding(t('扇区 {number} 绑定', { number: index + 1 }), sector.keycode, (keycode) =>
                 changeSector(index, { keycode }),
               )}
             </div>
@@ -408,7 +414,7 @@ export function ExtendedControlFields({
       )}
       {type === 'text' && (
         <label className="controls-field">
-          显示文字
+          {t('显示文字')}
           <input
             value={String(data.displayText ?? 'Text')}
             maxLength={120}
@@ -418,21 +424,21 @@ export function ExtendedControlFields({
       )}
       {!!textureSlots[type]?.length && (
         <details className="controls-details">
-          <summary>控件贴图</summary>
+          <summary>{t('控件贴图')}</summary>
           <fieldset disabled={pickingTexture}>
             {textureSlots[type].map(([slot, label]) => (
               <div className="controls-texture" key={slot}>
-                <span>{label}</span>
+                <span>{t(label)}</span>
                 <Button onClick={() => void pickTexture(slot)}>
-                  {textures[slot]?.path ? '更换 PNG' : '选择 PNG'}
+                  {textures[slot]?.path ? t('更换 PNG') : t('选择 PNG')}
                 </Button>
                 {textures[slot]?.path && (
                   <>
                     <Button onClick={() => setTexture(slot, { path: '', enabled: false })}>
-                      清除
+                      {t('清除')}
                     </Button>
                     <label className="controls-field">
-                      贴图缩放
+                      {t('贴图缩放')}
                       <select
                         value={textures[slot].scaleMode ?? 'FIT'}
                         onChange={(event) => setTexture(slot, { scaleMode: event.target.value })}
@@ -445,7 +451,7 @@ export function ExtendedControlFields({
                           ['TILE', '平铺'],
                         ].map(([value, name]) => (
                           <option key={value} value={value}>
-                            {name}
+                            {t(name)}
                           </option>
                         ))}
                       </select>
@@ -462,7 +468,7 @@ export function ExtendedControlFields({
                 )}
               </div>
             ))}
-            {textureError && <p role="alert">{textureError}</p>}
+            {textureError && <p role="alert">{t(textureError)}</p>}
           </fieldset>
         </details>
       )}

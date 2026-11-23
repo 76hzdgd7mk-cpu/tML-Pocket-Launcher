@@ -13,6 +13,7 @@ import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.widget.FrameLayout
+import app.com.tmlpocket.R
 import app.com.tmlpocket.core.platform.AndroidBridge
 import app.com.tmlpocket.core.runtime.GameRuntime
 import app.com.tmlpocket.feature.game.startup.GameStartupOverlay
@@ -24,7 +25,7 @@ import org.libsdl.app.SDL
 /** Owns the SDL process; installation and downloads stay in the launcher Activity. */
 class GameActivity : SDLActivity() {
     private lateinit var startupOverlay: GameStartupOverlay
-    @Volatile private var latestDetail = "正在准备运行时…"
+    @Volatile private var latestDetail = ""
     @Volatile private var startupVisible = true
     private var crashSession: String? = null
     @Volatile private var failed = false
@@ -236,7 +237,12 @@ class GameActivity : SDLActivity() {
                 LauncherSettings(this).read().optBoolean("motion", true),
             )
         addContentView(startupOverlay, FrameLayout.LayoutParams(-1, -1))
-        updateStartupStatus("正在启动 tModLoader", latestDetail, -1)
+        val strings = LauncherSettings(this).localizedContext()
+        updateStartupStatus(
+            strings.getString(R.string.launch_starting_tml),
+            strings.getString(R.string.launch_prepare),
+            -1,
+        )
     }
 
     companion object {

@@ -7,7 +7,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
     channel: process.env.PLAYWRIGHT_CHANNEL || 'msedge',
   });
   try {
-    const page = await browser.newPage({ viewport: { width: 914, height: 411 } });
+    const page = await browser.newPage({ locale: 'zh-CN', viewport: { width: 914, height: 411 } });
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await page.addInitScript(() => {

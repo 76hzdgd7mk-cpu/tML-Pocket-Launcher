@@ -3,6 +3,7 @@ package app.com.tmlpocket.core.runtime
 import android.content.Context
 import android.system.Os
 import android.util.Log
+import app.com.tmlpocket.R
 import app.com.tmlpocket.core.platform.AndroidBridge
 import app.com.tmlpocket.core.platform.NativeCoreClr
 import app.com.tmlpocket.feature.installation.MobileTerrariaConverter
@@ -21,7 +22,12 @@ object GameRuntime {
     private var cryptoLibraryLoaded = false
 
     fun launch(context: Context, arguments: Array<String>) {
-        AndroidBridge.setStartupStatus("准备出发", "正在准备 Android 运行环境…", -1)
+        val strings = LauncherSettings(context).localizedContext()
+        AndroidBridge.setStartupStatus(
+            strings.getString(R.string.launch_ready),
+            strings.getString(R.string.launch_prepare),
+            -1,
+        )
         val prepared = AssetBootstrap.prepare(context, arguments)
         loadAndroidCryptoProvider(prepared.runtimeRoot)
         setEnvironment("DOTNET_ROOT", prepared.runtimeRoot)
@@ -66,7 +72,11 @@ object GameRuntime {
         }
 
         Log.i(TAG, "Launching ${prepared.assemblyPath} with CoreCLR root ${prepared.runtimeRoot}")
-        AndroidBridge.setStartupStatus("正在进入游戏", "正在加载 tModLoader，等待游戏首帧…", -1)
+        AndroidBridge.setStartupStatus(
+            strings.getString(R.string.launch_entering),
+            strings.getString(R.string.launch_waiting_frame),
+            -1,
+        )
         val result =
             NativeCoreClr.nativeLaunch(
                 prepared.assemblyPath,
@@ -107,9 +117,10 @@ object GameRuntime {
                 Log.i(TAG, "Using SDL_GPU with the Vulkan backend")
             } else {
                 Log.w(TAG, "Vulkan is unavailable on this device; using native OpenGL ES 3")
+                val strings = LauncherSettings(context).localizedContext()
                 AndroidBridge.setStartupStatus(
-                    "使用系统渲染器",
-                    "此设备未报告 Vulkan 支持，已回退到 OpenGL ES 3",
+                    strings.getString(R.string.launch_system_renderer),
+                    strings.getString(R.string.launch_vulkan_unavailable),
                     -1,
                 )
             }

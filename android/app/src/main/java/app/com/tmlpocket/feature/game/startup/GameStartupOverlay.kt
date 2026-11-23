@@ -21,10 +21,12 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import app.com.tmlpocket.R
+import app.com.tmlpocket.feature.launcher.LauncherSettings
 
 /** Matching startup surface in the SDL process. All rows participate in normal layout. */
 class GameStartupOverlay(context: Context, version: String, private val motion: Boolean) :
     FrameLayout(context) {
+    private val strings = LauncherSettings(context).localizedContext()
     private val density = resources.displayMetrics.density
 
     private fun dp(value: Int) = (value * density).toInt()
@@ -33,10 +35,10 @@ class GameStartupOverlay(context: Context, version: String, private val motion: 
     private val ink = Color.rgb(230, 236, 223)
     private val muted = Color.rgb(124, 149, 149)
     private val green = Color.rgb(185, 215, 164)
-    private val title = text("准备出发", if (compact) 20f else 24f, ink)
-    private val subtitle = text("你的世界，即将继续。", 11f, muted)
-    private val detail = text("正在准备 Android 运行环境…", 12f, Color.rgb(185, 198, 192))
-    private val note = text("首次启动可能需要更长时间", 10f, muted)
+    private val title = text(strings.getString(R.string.launch_ready), if (compact) 20f else 24f, ink)
+    private val subtitle = text(strings.getString(R.string.launch_subtitle), 11f, muted)
+    private val detail = text(strings.getString(R.string.launch_prepare), 12f, Color.rgb(185, 198, 192))
+    private val note = text(strings.getString(R.string.launch_first_time), 10f, muted)
     private val emblem = Emblem(context)
     private val steps = Steps(context)
     private val actions =
@@ -107,8 +109,8 @@ class GameStartupOverlay(context: Context, version: String, private val motion: 
             },
         )
         val footer = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL }
-        footer.addView(text("•  本地启动", 10f, muted), LinearLayout.LayoutParams(0, dp(44), 1f))
-        footer.addView(button("查看日志") { showLogs() }, LinearLayout.LayoutParams(-2, dp(44)))
+        footer.addView(text(strings.getString(R.string.launch_local), 10f, muted), LinearLayout.LayoutParams(0, dp(44), 1f))
+        footer.addView(button(strings.getString(R.string.launch_view_logs)) { showLogs() }, LinearLayout.LayoutParams(-2, dp(44)))
         content.addView(footer)
         val scroll =
             ScrollView(context).apply {
@@ -135,10 +137,18 @@ class GameStartupOverlay(context: Context, version: String, private val motion: 
             history.addLast(message.take(8000))
             if (history.size > 30) history.removeFirst()
         }
-        title.text = if (titleText == "Startup failed") "暂时无法启动" else titleText.take(80)
-        detail.text = message.take(1000)
-        steps.stage = if (titleText.contains("进入") || titleText.contains("Loading")) 3 else 2
-        note.text = if (percent in 0..99) "运行环境准备 $percent%" else "首次启动可能需要更长时间"
+        val entering = strings.getString(R.string.launch_entering)
+        title.text = when (titleText) {
+            "Startup failed" -> strings.getString(R.string.launch_failed)
+            "正在进入游戏" -> entering
+            else -> titleText.take(80)
+        }
+        detail.text = when (message) {
+            "正在加载 tModLoader，等待游戏画面…" -> strings.getString(R.string.launch_waiting_frame)
+            else -> message.take(1000)
+        }
+        steps.stage = if (title.text == entering || titleText.contains("Loading")) 3 else 2
+        note.text = if (percent in 0..99) strings.getString(R.string.launch_progress, percent) else strings.getString(R.string.launch_first_time)
     }
 
     fun failed(message: String, returned: () -> Unit) {
@@ -149,15 +159,15 @@ class GameStartupOverlay(context: Context, version: String, private val motion: 
         animate().cancel()
         emblem.stop()
         returnAction = returned
-        title.text = "暂时无法启动"
+        title.text = strings.getString(R.string.launch_failed)
         subtitle.visibility = GONE
         detail.text = message.take(1000)
-        note.text = "可查看日志了解原因"
+        note.text = strings.getString(R.string.launch_check_logs)
         steps.visibility = GONE
         history.addLast(message.take(16000))
         actions.removeAllViews()
         actions.addView(
-            button("返回启动器") { returned() }
+            button(strings.getString(R.string.launch_return)) { returned() }
                 .apply {
                     setTextColor(0xff213627.toInt())
                     background =
@@ -215,7 +225,7 @@ class GameStartupOverlay(context: Context, version: String, private val motion: 
                 setPadding(dp(20), dp(12), dp(20), dp(12))
                 setBackgroundColor(0xff162225.toInt())
             }
-        panel.addView(text("启动日志", 14f, ink))
+        panel.addView(text(strings.getString(R.string.launch_logs), 14f, ink))
         val body =
             text(history.joinToString("\n\n").ifBlank { detail.text.toString() }, 11f, muted)
                 .apply {
@@ -227,7 +237,7 @@ class GameStartupOverlay(context: Context, version: String, private val motion: 
             ScrollView(context).apply { addView(body) },
             LinearLayout.LayoutParams(-1, 0, 1f),
         )
-        panel.addView(button("关闭日志") { logDialog?.dismiss() })
+        panel.addView(button(strings.getString(R.string.launch_close_logs)) { logDialog?.dismiss() })
         logDialog =
             Dialog(context).apply {
                 setContentView(panel)

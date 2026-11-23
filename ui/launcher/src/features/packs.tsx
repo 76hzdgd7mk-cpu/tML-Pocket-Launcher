@@ -1,36 +1,38 @@
+import { useTranslation } from '../i18n';
 import { useRef, useState } from 'react';
 import { Button, EmptyState, Icon } from '../components/ui';
 import { modTitle, parsePack, resolveMods } from '../domain/mods';
 import type { Mod, ModPack } from '../domain/types';
-import { useModActions } from './mod-actions';
+import { describeModResolutionError, useModActions } from './mod-actions';
 
 function usePackActions() {
+  const { t } = useTranslation();
   const actions = useModActions();
   const { state, installed, update, openDialog, closeDialog, notice, notify, plan } = actions;
   const edit = (pack?: ModPack) =>
     openDialog({
-      title: pack ? '重命名模组包' : '保存当前启用清单',
-      description: '只保存模组内部名称及目标配置；不会复制模组文件或存档。',
+      title: pack ? t('重命名模组包') : t('保存当前启用清单'),
+      description: t('只保存模组内部名称及目标配置；不会复制模组文件或存档。'),
       body: <PackNameEditor pack={pack} />,
     });
   const apply = (pack: ModPack, add = false) => {
     if (pack.profile !== state.profile) {
-      notice('配置版本不匹配', '请先选择这个清单对应的 tML 配置。');
+      notice(t('配置版本不匹配'), t('请先选择这个清单对应的 tML 配置。'));
       return;
     }
     let closure: Mod[];
     try {
       closure = resolveMods(pack.mods, installed, true);
     } catch (error) {
-      notice('清单依赖无法解析', String(error));
+      notice(t('清单依赖无法解析'), describeModResolutionError(error, t));
       return;
     }
     if (closure.some((mod) => !installed.some((local) => local.id === mod.id))) {
-      notice('清单中有未安装模组', '先使用「下载缺失模组」补齐，再应用启用清单。');
+      notice(t('清单中有未安装模组'), t('先使用「下载缺失模组」补齐，再应用启用清单。'));
       return;
     }
     if (closure.some((mod) => mod.channel !== state.profile)) {
-      notice('清单版本不兼容', '请检查模组与当前 tML 配置。');
+      notice(t('清单版本不兼容'), t('请检查模组与当前 tML 配置。'));
       return;
     }
     const ids = closure.map((mod) => mod.id);
@@ -65,7 +67,9 @@ function usePackActions() {
   const details = (pack: ModPack) =>
     openDialog({
       title: pack.name,
-      description: '模组启用清单 · ' + (pack.profile === 'stable' ? '稳定配置' : '预览配置'),
+      description: t('模组启用清单 · {profile}', {
+        profile: t(pack.profile === 'stable' ? '稳定配置' : '预览配置'),
+      }),
       body: (
         <>
           <div className="mod-plan">
@@ -73,22 +77,22 @@ function usePackActions() {
               pack.mods.map((id) => (
                 <div key={id}>
                   <strong>{modTitle(id)}</strong>
-                  <span>{installed.some((mod) => mod.id === id) ? '已安装' : '未安装'}</span>
+                  <span>{installed.some((mod) => mod.id === id) ? t('已安装') : t('未安装')}</span>
                 </div>
               ))
             ) : (
-              <p>这是空的启用清单。</p>
+              <p>{t('这是空的启用清单。')}</p>
             )}
           </div>
           <div className="pack-options">
             <Button variant="soft" data-action="mw-pack-apply" onClick={() => apply(pack)}>
-              仅启用此清单
+              {t('仅启用此清单')}
             </Button>
             <Button data-action="mw-pack-add" onClick={() => apply(pack, true)}>
-              加入当前启用
+              {t('加入当前启用')}
             </Button>
             <Button data-action="mw-pack-download" onClick={() => plan(pack.mods)}>
-              下载缺失模组
+              {t('下载缺失模组')}
             </Button>
             <Button
               data-action="mw-pack-update"
@@ -105,23 +109,23 @@ function usePackActions() {
                 details(replacement);
               }}
             >
-              用当前启用更新
+              {t('用当前启用更新')}
             </Button>
             <Button data-action="mw-pack-rename" onClick={() => edit(pack)}>
-              重命名
+              {t('重命名')}
             </Button>
             <Button data-action="mw-pack-export" onClick={() => exportPack(pack)}>
-              导出 JSON
+              {t('导出 JSON')}
             </Button>
             <Button
               data-action="mw-pack-delete"
               onClick={() =>
                 openDialog({
-                  title: '删除模组包清单？',
-                  description: '只删除此启用清单，保留模组文件和存档。',
+                  title: t('删除模组包清单？'),
+                  description: t('只删除此启用清单，保留模组文件和存档。'),
                   actions: (
                     <>
-                      <Button onClick={() => closeDialog()}>取消</Button>
+                      <Button onClick={() => closeDialog()}>{t('取消')}</Button>
                       <Button
                         variant="primary"
                         data-action="mw-confirm-delete-pack"
@@ -133,14 +137,14 @@ function usePackActions() {
                           closeDialog(false);
                         }}
                       >
-                        删除清单
+                        {t('删除清单')}
                       </Button>
                     </>
                   ),
                 })
               }
             >
-              删除清单
+              {t('删除清单')}
             </Button>
           </div>
         </>
@@ -150,16 +154,17 @@ function usePackActions() {
   return { ...actions, edit, details };
 }
 export function PacksPanel() {
+  const { t } = useTranslation();
   const { state, installed, update, notify, edit, details } = usePackActions();
   const file = useRef<HTMLInputElement>(null);
   return (
     <>
       <div className="pack-toolbar">
         <Button variant="soft" symbol="plus" data-action="mw-save-pack" onClick={() => edit()}>
-          保存当前清单
+          {t('保存当前清单')}
         </Button>
         <Button symbol="folder" data-action="mw-import-pack" onClick={() => file.current?.click()}>
-          导入清单
+          {t('导入清单')}
         </Button>
       </div>
       {state.packs.length ? (
@@ -175,9 +180,12 @@ export function PacksPanel() {
               <span>
                 <strong>{pack.name}</strong>
                 <small>
-                  {pack.mods.length} 项 · {pack.profile === 'stable' ? '稳定配置' : '预览配置'} ·{' '}
-                  {pack.mods.filter((id) => !installed.some((mod) => mod.id === id)).length}{' '}
-                  项未安装
+                  {t('{count} 项 · {profile} · {missing} 项未安装', {
+                    count: pack.mods.length,
+                    profile: t(pack.profile === 'stable' ? '稳定配置' : '预览配置'),
+                    missing: pack.mods.filter((id) => !installed.some((mod) => mod.id === id))
+                      .length,
+                  })}
                 </small>
               </span>
               <Icon name="chevron" />
@@ -187,13 +195,15 @@ export function PacksPanel() {
       ) : (
         <EmptyState
           symbol="mod"
-          title="保存一套模组组合"
-          description="保存启用清单，方便切换、分享或补齐缺失模组。这里的清单不包含 .tmod 文件。"
+          title={t('保存一套模组组合')}
+          description={t(
+            '保存启用清单，方便切换、分享或补齐缺失模组。这里的清单不包含 .tmod 文件。',
+          )}
         />
       )}
       <p className="list-caption">
         <Icon name="file" />
-        清单包管理 · 不加载模组，也不编译源码
+        {t('清单包管理 · 不加载模组，也不编译源码')}
       </p>
       <input
         ref={file}
@@ -223,22 +233,23 @@ export function PacksPanel() {
   );
 }
 function PackNameEditor({ pack }: { pack?: ModPack }) {
+  const { t } = useTranslation();
   const { state, installed, update, closeDialog, notify } = usePackActions();
-  const [name, setName] = useState(pack?.name || '我的模组组合');
+  const [name, setName] = useState(pack?.name || t('我的模组组合'));
   return (
     <>
       <label className="pack-name-field">
-        名称
+        {t('名称')}
         <input
           id="pack-name"
           maxLength={64}
           value={name}
-          aria-label="模组包名称"
+          aria-label={t('模组包名称')}
           onChange={(event) => setName(event.target.value)}
         />
       </label>
       <div className="dialog-actions feature-actions">
-        <Button onClick={() => closeDialog()}>取消</Button>
+        <Button onClick={() => closeDialog()}>{t('取消')}</Button>
         <Button
           variant="primary"
           data-action="mw-confirm-save-pack"
@@ -263,7 +274,7 @@ function PackNameEditor({ pack }: { pack?: ModPack }) {
             closeDialog(false);
           }}
         >
-          保存
+          {t('保存')}
         </Button>
       </div>
     </>

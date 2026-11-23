@@ -1,3 +1,5 @@
+import type { LanguagePreference } from '../i18n';
+
 export type Page = 'home' | 'games' | 'mods' | 'patches' | 'settings';
 export type Profile = 'stable' | 'preview';
 export type ModTab = 'installed' | 'browse' | 'packs';
@@ -22,6 +24,7 @@ export type Tool =
   | 'logs'
   | 'activity';
 export interface Preferences {
+  language: LanguagePreference;
   theme: 'dark' | 'light' | 'system' | 'tml';
   themeStyle: 'default' | 'tml';
   orientation: 'landscape' | 'portrait';

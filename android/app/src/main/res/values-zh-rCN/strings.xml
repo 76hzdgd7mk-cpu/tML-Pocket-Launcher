@@ -1,0 +1,26 @@
+<resources>
+    <string name="launch_ready">准备出发</string>
+    <string name="launch_subtitle">你的世界，即将继续。</string>
+    <string name="launch_prepare">正在准备 Android 运行环境…</string>
+    <string name="launch_first_time">首次启动可能需要更长时间</string>
+    <string name="launch_local">• 本地启动</string>
+    <string name="launch_view_logs">查看日志</string>
+    <string name="launch_failed">暂时无法启动</string>
+    <string name="launch_progress">运行环境准备 %1$d%%</string>
+    <string name="launch_check_logs">可查看日志了解原因</string>
+    <string name="launch_return">返回启动器</string>
+    <string name="launch_logs">启动日志</string>
+    <string name="launch_close_logs">关闭日志</string>
+    <string name="launch_starting_tml">正在启动 tModLoader</string>
+    <string name="launch_entering">正在进入游戏</string>
+    <string name="launch_waiting_frame">正在加载 tModLoader，等待游戏首帧…</string>
+    <string name="launch_system_renderer">使用系统渲染器</string>
+    <string name="launch_vulkan_unavailable">此设备未报告 Vulkan 支持，已回退到 OpenGL ES 3</string>
+    <string name="close">关闭</string>
+    <string name="copy_report">复制报告</string>
+    <string name="game_crashed">游戏异常退出</string>
+    <string name="game_crash_report">游戏崩溃报告</string>
+    <string name="webview_update_title">请更新 Android System WebView</string>
+    <string name="webview_update_detail">启动器需要支持安全消息接口的系统 WebView。请更新后重新打开。</string>
+    <string name="share">分享</string>
+</resources>

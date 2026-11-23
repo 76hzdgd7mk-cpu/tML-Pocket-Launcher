@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Badge, Button } from '../../components/ui';
+import { useTranslation } from '../../i18n';
 import { useLauncher } from '../../state/launcher';
 import { nativeRequest } from '../../native/bridge';
-import { useDownloads } from './download-state';
+import { translateDownloadProgress, useDownloads } from './download-state';
 
 interface GogAccount {
   phase: string;
@@ -19,6 +20,7 @@ interface GogInstaller {
 }
 
 export function NativeGogPanel() {
+  const { t } = useTranslation();
   const { nativeState } = useLauncher();
   const downloads = useDownloads();
   const [account, setAccount] = useState<GogAccount | null>(null);
@@ -69,11 +71,17 @@ export function NativeGogPanel() {
       <div className="resource-row">
         <div className="resource-copy">
           <strong>{account?.account || 'GOG'}</strong>
-          <p role="status">{account?.message || '正在准备商店连接…'}</p>
+          <p role="status">
+            {account?.message
+              ? account.phase === 'error'
+                ? account.message
+                : t(account.message)
+              : t('正在准备商店连接…')}
+          </p>
         </div>
         {ready && (
           <Badge tone={account?.owned ? 'green' : ''}>
-            {account?.owned ? '拥有 Terraria' : '未拥有游戏'}
+            {account?.owned ? t('拥有 Terraria') : t('未拥有游戏')}
           </Badge>
         )}
       </div>
@@ -88,7 +96,7 @@ export function NativeGogPanel() {
           disabled={pending}
           onClick={() => void run('store.gog.authorize')}
         >
-          打开 GOG 官方登录
+          {t('打开 GOG 官方登录')}
         </Button>
       )}
       {ready && account?.owned && (
@@ -108,13 +116,13 @@ export function NativeGogPanel() {
                   .finally(() => setPending(false));
               }}
             >
-              读取可下载版本
+              {t('读取可下载版本')}
             </Button>
             {installers.length > 0 && (
               <label className="native-field">
-                <span>Terraria Linux 资源版本</span>
+                <span>{t('Terraria Linux 资源版本')}</span>
                 <select
-                  aria-label="Terraria Linux 资源版本"
+                  aria-label={t('Terraria Linux 资源版本')}
                   value={selection}
                   onChange={(event) => setSelection(event.target.value)}
                 >
@@ -140,7 +148,7 @@ export function NativeGogPanel() {
               })
             }
           >
-            下载 Terraria 资源
+            {t('下载 Terraria 资源')}
           </Button>
         </>
       )}
@@ -152,22 +160,24 @@ export function NativeGogPanel() {
             void run('store.gog.logout');
           }}
         >
-          退出登录
+          {t('退出登录')}
         </Button>
       )}
       {nativeState?.busy && nativeState.operation.startsWith('store.gog.') && (
         <div role="status" className="native-store-progress">
-          <p>{nativeState.message}</p>
+          <p>{translateDownloadProgress(nativeState.message, t)}</p>
           <progress
+            aria-label={t('下载进度')}
             max={100}
             value={nativeState.progress >= 0 ? nativeState.progress : undefined}
           />
-          <Button onClick={() => void nativeRequest('cancel')}>取消任务</Button>
+          <Button onClick={() => void nativeRequest('cancel')}>{t('取消任务')}</Button>
         </div>
       )}
       <p className="list-caption">
-        在独立的 GOG 官方页面完成授权；仅提取安装包中的游戏数据。密码不会保存；登录令牌由 Android
-        Keystore 加密保存。
+        {t(
+          '在独立的 GOG 官方页面完成授权；仅提取安装包中的游戏数据。密码不会保存；登录令牌由 Android Keystore 加密保存。',
+        )}
       </p>
     </div>
   );

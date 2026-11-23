@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Badge, Button, EmptyState, Icon, IconButton } from '../../components/ui';
+import { useTranslation } from '../../i18n';
 import { nativeRequest } from '../../native/bridge';
 import type { NativeRelease, ReleasePage } from '../../native/models';
 import { useLauncher } from '../../state/launcher';
@@ -13,6 +14,7 @@ import {
 } from './resource-layout';
 
 export function NativeReleaseCatalog() {
+  const { t, locale } = useTranslation();
   const launcher = useLauncher();
   const { nativeState, closeDialog, openDialog } = launcher;
   const { instances, importInfo } = useNativeActions(launcher);
@@ -21,7 +23,8 @@ export function NativeReleaseCatalog() {
   const [page, setPage] = useState(1);
   const [more, setMore] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [failure, setFailure] = useState('');
+  const [failure, setFailure] = useState<Error | string>();
+  const failureMessage = failure instanceof Error ? failure.message : failure && t(failure);
   const [channel, setChannel] = useState('all');
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('latest');
@@ -34,7 +37,7 @@ export function NativeReleaseCatalog() {
     retryRequest.current = { page: next, replace };
     const token = ++generation.current;
     setLoading(true);
-    setFailure('');
+    setFailure(undefined);
     try {
       const result = await nativeRequest<ReleasePage>('releases', { page: next });
       if (token !== generation.current) return;
@@ -49,7 +52,7 @@ export function NativeReleaseCatalog() {
       setPage(next + 1);
     } catch (error) {
       if (token === generation.current)
-        setFailure(error instanceof Error ? error.message : '版本列表读取失败，请重试。');
+        setFailure(error instanceof Error ? error : '版本列表读取失败，请重试。');
     } finally {
       if (token === generation.current) {
         pending.current = false;
@@ -83,11 +86,14 @@ export function NativeReleaseCatalog() {
     );
   const install = (release: NativeRelease) =>
     openDialog({
-      title: `安装 ${release.tag}`,
-      description: `${(release.size / 1048576).toFixed(1)} MB · 官方发行包。独立安装并设为当前版本；同版本重新安装只替换该版本文件。保留模组与存档。`,
+      title: t('安装 {version}', { version: release.tag }),
+      description: t(
+        '{size} MB · 官方发行包。独立安装并设为当前版本；同版本重新安装只替换该版本文件。保留模组与存档。',
+        { size: (release.size / 1048576).toFixed(1) },
+      ),
       actions: (
         <>
-          <Button onClick={() => closeDialog()}>取消</Button>
+          <Button onClick={() => closeDialog()}>{t('取消')}</Button>
           <Button
             variant="primary"
             onClick={() =>
@@ -95,22 +101,30 @@ export function NativeReleaseCatalog() {
                 method: 'download',
                 params: { id: release.id },
                 name: `tModLoader ${release.tag}`,
-                source: 'GitHub · 官方发行包',
+                source: t('GitHub · 官方发行包'),
               })
             }
           >
-            下载并安装
+            {t('下载并安装')}
           </Button>
         </>
       ),
     });
   return (
     <ResourceBrowserLayout
-      title="tModLoader 发行版本"
-      summary={`${visible.length} 个匹配 · 已加载 ${items.length} 个版本${more ? '，可继续加载' : ''}`}
+      title={t('tModLoader 发行版本')}
+      summary={t(
+        more
+          ? '{matches} 个匹配 · 已加载 {loaded} 个版本，可继续加载'
+          : '{matches} 个匹配 · 已加载 {loaded} 个版本',
+        {
+          matches: visible.length.toLocaleString(locale),
+          loaded: items.length.toLocaleString(locale),
+        },
+      )}
       toolbar={
         <>
-          <div className="resource-channels" role="group" aria-label="发行通道">
+          <div className="resource-channels" role="group" aria-label={t('发行通道')}>
             {[
               ['all', '全部'],
               ['stable', '稳定版'],
@@ -123,13 +137,13 @@ export function NativeReleaseCatalog() {
                 onClick={() => setChannel(id)}
               >
                 {channel === id && <Icon name="check" />}
-                {label}
+                {t(label)}
               </Button>
             ))}
           </div>
           <IconButton
             symbol="refresh"
-            label="刷新版本列表"
+            label={t('刷新版本列表')}
             disabled={loading || nativeState?.busy}
             onClick={() => void load(1, true)}
           />
@@ -138,40 +152,40 @@ export function NativeReleaseCatalog() {
       filters={
         <>
           <ResourceSearch
-            label="搜索游戏版本"
+            label={t('搜索游戏版本')}
             value={query}
             onChange={setQuery}
-            placeholder="版本号或发行名称"
+            placeholder={t('版本号或发行名称')}
           />
           <ResourceSelect
-            label="排序方式"
+            label={t('排序方式')}
             value={sort}
             onChange={setSort}
             options={[
-              ['latest', '发行较新优先'],
-              ['oldest', '发行较早优先'],
-              ['name', '版本号'],
+              ['latest', t('发行较新优先')],
+              ['oldest', t('发行较早优先')],
+              ['name', t('版本号')],
             ]}
           />
           <div className="resource-source">
-            <span>版本来源</span>
+            <span>{t('版本来源')}</span>
             <Badge>GitHub · tModLoader</Badge>
-            <p>筛选作用于已加载版本。不同版本独立安装，模组与存档共用。</p>
+            <p>{t('筛选作用于已加载版本。不同版本独立安装，模组与存档共用。')}</p>
           </div>
-          <Button onClick={() => importInfo('tml')}>导入 ZIP</Button>
-          <Button onClick={instances}>管理已安装版本</Button>
+          <Button onClick={() => importInfo('tml')}>{t('导入 ZIP')}</Button>
+          <Button onClick={instances}>{t('管理已安装版本')}</Button>
           <ResourceReset onClick={reset} />
         </>
       }
     >
-      {failure && (
+      {failureMessage && (
         <div className="resource-catalog-error" role="alert">
-          <p>{failure}</p>
+          <p>{failureMessage}</p>
           <Button
             disabled={loading || nativeState?.busy}
             onClick={() => void load(retryRequest.current.page, retryRequest.current.replace)}
           >
-            重试
+            {t('重试')}
           </Button>
         </div>
       )}
@@ -184,29 +198,33 @@ export function NativeReleaseCatalog() {
             <h3>{release.name}</h3>
             <div className="resource-card-meta">
               <strong>{release.tag}</strong>
-              <Badge>{release.preview ? '预览版' : '稳定版'}</Badge>
+              <Badge>{t(release.preview ? '预览版' : '稳定版')}</Badge>
               {nativeState?.tml?.replace(/^v/, '') === release.tag.replace(/^v/, '') && (
-                <Badge tone="green">当前版本</Badge>
+                <Badge tone="green">{t('当前版本')}</Badge>
               )}
             </div>
-            <p>{(release.size / 1048576).toFixed(1)} MB · tModLoader 官方发行包</p>
+            <p>
+              {t('{size} MB · tModLoader 官方发行包', {
+                size: (release.size / 1048576).toFixed(1),
+              })}
+            </p>
           </div>
           <div className="resource-card-end">
             <span className="resource-provider">GitHub</span>
             <Button disabled={nativeState?.busy} onClick={() => install(release)}>
               <Icon name="download" />
-              下载
+              {t(locale === 'en' ? '下载此版本' : '下载')}
             </Button>
           </div>
         </article>
       ))}
-      {!loading && !failure && !visible.length && (
+      {!loading && !failureMessage && !visible.length && (
         <EmptyState
           symbol="search"
-          title={items.length ? '没有匹配的版本' : '暂未找到发行版本'}
-          description={
-            more ? '可调整筛选或继续加载更多官方版本。' : '请调整关键词、切换发行通道或刷新列表。'
-          }
+          title={t(items.length ? '没有匹配的版本' : '暂未找到发行版本')}
+          description={t(
+            more ? '可调整筛选或继续加载更多官方版本。' : '请调整关键词、切换发行通道或刷新列表。',
+          )}
         >
           <ResourceReset onClick={reset} />
         </EmptyState>
@@ -214,16 +232,16 @@ export function NativeReleaseCatalog() {
       {loading && (
         <div className="resource-loading" role="status">
           <span />
-          正在读取官方版本…
+          {t('正在读取官方版本…')}
         </div>
       )}
-      {more && !failure && (
+      {more && !failureMessage && (
         <Button
           className="resource-load-more"
           disabled={loading || nativeState?.busy}
           onClick={() => void load(page)}
         >
-          加载更多
+          {t('加载更多')}
         </Button>
       )}
     </ResourceBrowserLayout>

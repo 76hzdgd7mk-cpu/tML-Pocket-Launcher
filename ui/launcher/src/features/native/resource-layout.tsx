@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button, Icon } from '../../components/ui';
 import { Select } from '../../components/form-controls';
+import { useTranslation } from '../../i18n';
 
 export function ResourceBrowserLayout({
   title,
@@ -15,6 +16,7 @@ export function ResourceBrowserLayout({
   filters: ReactNode;
   children: ReactNode;
 }) {
+  const { t } = useTranslation();
   const root = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   useEffect(() => {
@@ -45,7 +47,7 @@ export function ResourceBrowserLayout({
       >
         <summary>
           <Icon name="sliders" />
-          <span>搜索与筛选</span>
+          <span>{t('搜索与筛选')}</span>
           <Icon name="chevron" />
         </summary>
         <div className="resource-filter-body">{filters}</div>
@@ -61,13 +63,14 @@ export function ResourceSearch({
   label,
   value,
   onChange,
-  placeholder = '搜索名称',
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <label className="resource-search">
       <span>{label}</span>
@@ -76,7 +79,7 @@ export function ResourceSearch({
           type="search"
           aria-label={label}
           value={value}
-          placeholder={placeholder}
+          placeholder={placeholder ?? t('搜索名称')}
           onChange={(event) => onChange(event.target.value)}
         />
         <Icon name="search" />
@@ -105,9 +108,10 @@ export function ResourceSelect({
 }
 
 export function ResourceReset({ onClick }: { onClick: () => void }) {
+  const { t } = useTranslation();
   return (
     <Button className="resource-reset" onClick={onClick}>
-      重置筛选
+      {t('重置筛选')}
     </Button>
   );
 }

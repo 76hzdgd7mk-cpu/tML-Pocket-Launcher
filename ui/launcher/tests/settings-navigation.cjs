@@ -9,7 +9,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     channel: process.env.PLAYWRIGHT_CHANNEL || 'msedge',
   });
   try {
-    const page = await browser.newPage({ reducedMotion: 'reduce' });
+    const page = await browser.newPage({ locale: 'zh-CN', reducedMotion: 'reduce' });
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('console', (message) => {
@@ -208,7 +208,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
       0,
     );
 
-    const fallback = await browser.newPage();
+    const fallback = await browser.newPage({ locale: 'zh-CN' });
     fallback.on('pageerror', (error) => errors.push(error.message));
     await fallback.addInitScript(() =>
       Object.defineProperty(document, 'startViewTransition', {
@@ -226,6 +226,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await fallback.getByText('开源与许可', { exact: true }).waitFor();
 
     const phone = await browser.newPage({
+      locale: 'zh-CN',
       viewport: { width: 1280, height: 1000 },
       reducedMotion: 'reduce',
     });

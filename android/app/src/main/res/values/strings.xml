@@ -1,3 +1,27 @@
 <resources>
     <string name="app_name">tML Pocket Launcher</string>
+    <string name="launch_ready">Getting ready</string>
+    <string name="launch_subtitle">Your world will be ready shortly.</string>
+    <string name="launch_prepare">Preparing the Android runtime…</string>
+    <string name="launch_first_time">The first launch may take longer</string>
+    <string name="launch_local">• Local launch</string>
+    <string name="launch_view_logs">View logs</string>
+    <string name="launch_failed">Unable to launch</string>
+    <string name="launch_progress">Preparing the runtime · %1$d%%</string>
+    <string name="launch_check_logs">Check the logs for details</string>
+    <string name="launch_return">Back to launcher</string>
+    <string name="launch_logs">Launch logs</string>
+    <string name="launch_close_logs">Close logs</string>
+    <string name="launch_starting_tml">Starting tModLoader</string>
+    <string name="launch_entering">Opening the game</string>
+    <string name="launch_waiting_frame">Loading tModLoader and waiting for the first frame…</string>
+    <string name="launch_system_renderer">Using the system renderer</string>
+    <string name="launch_vulkan_unavailable">Vulkan is unavailable. Using OpenGL ES 3.</string>
+    <string name="close">Close</string>
+    <string name="copy_report">Copy report</string>
+    <string name="game_crashed">The game closed unexpectedly</string>
+    <string name="game_crash_report">Game crash report</string>
+    <string name="webview_update_title">Update Android System WebView</string>
+    <string name="webview_update_detail">Update Android System WebView to use the launcher, then reopen it.</string>
+    <string name="share">Share</string>
 </resources>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from '../../i18n';
 import { nativeRequest } from '../../native/bridge';
 import { useLauncher } from '../../state/launcher';
 
@@ -7,6 +8,29 @@ export type DownloadMethod =
   | 'store.steam.download'
   | 'store.gog.download'
   | 'workshop.download';
+
+export function translateDownloadProgress(
+  message: string,
+  t: ReturnType<typeof useTranslation>['t'],
+) {
+  const store = /^(?<store>Steam|GOG)：下载资源 (?<done>\d+)\/(?<total>\d+) MB$/.exec(message);
+  if (store?.groups) return t('{store}：下载资源 {done}/{total} MB', store.groups);
+
+  const manifest = /^Steam：读取资源清单 (?<id>\d+)$/.exec(message);
+  if (manifest?.groups) return t('Steam：读取资源清单 {id}', manifest.groups);
+
+  const workshop = /^正在下载工坊内容 · (?<size>\d+(?:\/\d+)? MB)$/.exec(message);
+  if (workshop?.groups) return t('正在下载工坊内容 · {size}', workshop.groups);
+
+  const release = /^正在下载 (?<version>.+) · (?<size>\d+ MB)$/.exec(message);
+  if (release?.groups) return t('正在下载 {version} · {size}', release.groups);
+
+  const extracting = /^正在解压：(?<filename>.+)$/.exec(message);
+  if (extracting?.groups) return t('正在解压：{filename}', extracting.groups);
+
+  return t(message);
+}
+
 export interface DownloadRequest {
   method: DownloadMethod;
   params?: object;
@@ -34,6 +58,7 @@ interface DownloadsContextValue {
 const DownloadsContext = createContext<DownloadsContextValue | null>(null);
 
 export function DownloadsProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { nativeState, dialog, openDialog, closeDialog, notify } = useLauncher();
   const [tasks, setTasks] = useState<DownloadTask[]>([]);
   const [focusedId, setFocusedId] = useState<number>();
@@ -43,8 +68,8 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
   const show = (id: number) => {
     setFocusedId(id);
     openDialog({
-      title: '下载与安装',
-      description: '最小化后可在下载任务中查看进度。',
+      title: t('下载与安装'),
+      description: t('最小化后可在下载任务中查看进度。'),
       surface: 'download',
     });
   };
@@ -56,7 +81,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (nativeState?.busy) {
-      notify('已有任务正在进行，请先完成或取消。');
+      notify(t('已有任务正在进行，请先完成或取消。'));
       return;
     }
     const id = retryId ?? ++sequence.current;
@@ -82,13 +107,13 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
           message: '下载、校验与安装已完成。',
           installedModId: typeof result === 'object' ? (result?.modId ?? undefined) : undefined,
         });
-        notify(`${request.name} 已下载、校验并安装。`, '任务');
+        notify(t('{name} 已下载、校验并安装。', { name: request.name }), '任务');
       })
       .catch((failure: unknown) => {
         const error =
           failure instanceof Error && failure.message.trim()
             ? failure.message
-            : '下载未完成，请重试。';
+            : t('下载未完成，请重试。');
         const cancelled = cancelRequested.current;
         saveTask({
           ...request,
@@ -99,7 +124,8 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
           message: error,
           error,
         });
-        if (!cancelled) notify(`${request.name} 下载未完成，可在下载任务中查看原因。`, '任务');
+        if (!cancelled)
+          notify(t('{name} 下载未完成，可在下载任务中查看原因。', { name: request.name }), '任务');
       })
       .finally(() => {
         activeId.current = undefined;
@@ -109,9 +135,11 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
     const id = activeId.current;
     if (id === undefined || cancelRequested.current) return;
     const setCancelling = (cancelling: boolean) =>
-      setTasks((current) => current.map((task) =>
-        task.id === id && task.status === 'running' ? { ...task, cancelling } : task,
-      ));
+      setTasks((current) =>
+        current.map((task) =>
+          task.id === id && task.status === 'running' ? { ...task, cancelling } : task,
+        ),
+      );
     cancelRequested.current = true;
     setCancelling(true);
     void nativeRequest('cancel').catch((failure: Error) => {
@@ -123,8 +151,14 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
   };
   const currentTasks = tasks.map((task) =>
     task.status === 'running' && nativeState?.busy && nativeState.operation === task.method
-      ? { ...task, message: nativeState.message, progress: nativeState.progress }
-      : task,
+      ? {
+          ...task,
+          message: translateDownloadProgress(nativeState.message, t),
+          progress: nativeState.progress,
+        }
+      : task.status === 'running' || task.status === 'completed'
+        ? { ...task, message: t(task.message) }
+        : task,
   );
   return (
     <DownloadsContext.Provider

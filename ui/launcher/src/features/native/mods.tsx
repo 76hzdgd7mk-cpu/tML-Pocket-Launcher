@@ -9,11 +9,13 @@ import {
   Switch,
   WorkspaceTabs,
 } from '../../components/ui';
+import { useTranslation } from '../../i18n';
 import { useLauncher } from '../../state/launcher';
 import { nativeRequest } from '../../native/bridge';
 import { ModDependencies } from './mod-dependencies';
 
 export function NativeModsPage() {
+  const { t } = useTranslation();
   const { state, update, nativeState, openDialog, closeDialog, openWorkspace } = useLauncher();
   useEffect(() => {
     if (state.modTab !== 'browse') return;
@@ -38,23 +40,25 @@ export function NativeModsPage() {
     pending.forEach((mod) => requestedIcons.current.add(mod.id));
     void nativeRequest<Record<string, string>>('mods.icons', {
       ids: pending.map((mod) => mod.id),
-    }).then((loaded) => {
-      setIcons((current) => ({ ...current, ...loaded }));
-    }).catch(() => {
-      pending.forEach((mod) => requestedIcons.current.delete(mod.id));
-    });
+    })
+      .then((loaded) => {
+        setIcons((current) => ({ ...current, ...loaded }));
+      })
+      .catch(() => {
+        pending.forEach((mod) => requestedIcons.current.delete(mod.id));
+      });
   }, [filteredMods, nativeState?.busy]);
   const run = (method: string, params: object = {}) =>
     void nativeRequest(method, params).catch((error: Error) =>
-      openDialog({ title: '操作未完成', description: error.message }),
+      openDialog({ title: t('操作未完成'), description: error.message }),
     );
   const confirmDelete = (id: string, title: string) =>
     openDialog({
-      title: `删除 ${title}`,
-      description: '模组文件将从当前目录删除，依赖它的模组会一并停用；存档保留。',
+      title: t('删除 {name}', { name: title }),
+      description: t('模组文件将从当前目录删除，依赖它的模组会一并停用；存档保留。'),
       actions: (
         <>
-          <Button onClick={() => closeDialog()}>取消</Button>
+          <Button onClick={() => closeDialog()}>{t('取消')}</Button>
           <Button
             variant="primary"
             onClick={() => {
@@ -62,7 +66,7 @@ export function NativeModsPage() {
               run('mods.delete', { id });
             }}
           >
-            删除模组
+            {t('删除模组')}
           </Button>
         </>
       ),
@@ -74,13 +78,13 @@ export function NativeModsPage() {
           <Icon name="search" />
           <input
             type="search"
-            aria-label="搜索已安装模组"
-            placeholder="搜索名称或作者"
+            aria-label={t('搜索已安装模组')}
+            placeholder={t('搜索名称或作者')}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>
-        <div className="filter-group" role="group" aria-label="筛选模组">
+        <div className="filter-group" role="group" aria-label={t('筛选模组')}>
           {[
             ['all', '全部'],
             ['enabled', '已启用'],
@@ -92,19 +96,18 @@ export function NativeModsPage() {
               key={key}
               onClick={() => setFilter(key)}
             >
-              {label}
+              {t(label)}
             </Button>
           ))}
         </div>
         <IconButton
           symbol="sliders"
-          label="模组批量操作"
+          label={t('模组批量操作')}
           disabled={nativeState?.busy || !mods.some((mod) => !mod.error && !mod.builtin)}
           onClick={() =>
             openDialog({
-              title: '批量管理',
-              description:
-                '作用于全部可管理模组。停用时会联动停用依赖项，下次启动生效。',
+              title: t('批量管理'),
+              description: t('作用于全部可管理模组。停用时会联动停用依赖项，下次启动生效。'),
               body: (
                 <div className="pack-options">
                   {[true, false].map((enabled) => (
@@ -120,7 +123,7 @@ export function NativeModsPage() {
                         });
                       }}
                     >
-                      {enabled ? '全部启用' : '全部停用'}
+                      {t(enabled ? '全部启用' : '全部停用')}
                     </Button>
                   ))}
                 </div>
@@ -132,22 +135,26 @@ export function NativeModsPage() {
       {!mods.length ? (
         <EmptyState
           symbol="mod"
-          title="还没有模组"
-          description="使用右上角「添加模组」下载或导入 .tmod 文件。"
+          title={t('还没有模组')}
+          description={t('使用右上角「添加模组」下载或导入 .tmod 文件。')}
         />
       ) : !filteredMods.length ? (
-        <EmptyState symbol="search" title="没有匹配的模组" description="试试其他关键词或清除筛选。">
+        <EmptyState
+          symbol="search"
+          title={t('没有匹配的模组')}
+          description={t('试试其他关键词或清除筛选。')}
+        >
           <Button
             onClick={() => {
               setQuery('');
               setFilter('all');
             }}
           >
-            清除筛选
+            {t('清除筛选')}
           </Button>
         </EmptyState>
       ) : (
-        <section className="panel native-mod-list" aria-label="已安装模组">
+        <section className="panel native-mod-list" aria-label={t('已安装模组')}>
           {filteredMods.map((mod) => (
             <div className="resource-row native-mod-row" key={mod.id}>
               <span className="resource-icon">
@@ -155,8 +162,8 @@ export function NativeModsPage() {
               </span>
               <div className="resource-copy">
                 <h3>
-                  {mod.title} <Badge>{mod.version || '无法读取'}</Badge>{' '}
-                  {mod.builtin && <Badge tone="green">内置触控</Badge>}
+                  {mod.title} <Badge>{mod.version || t('无法读取')}</Badge>{' '}
+                  {mod.builtin && <Badge tone="green">{t('内置触控')}</Badge>}
                 </h3>
                 <p>
                   {mod.author || mod.id} · {(mod.size / 1048576).toFixed(1)} MB
@@ -166,23 +173,23 @@ export function NativeModsPage() {
               <div className="native-mod-actions">
                 {!mod.error && (
                   <Button
-                    aria-label={`查看 ${mod.title} 的依赖`}
+                    aria-label={t('查看 {name} 的依赖', { name: mod.title })}
                     onClick={() =>
                       openDialog({
-                        title: `${mod.title} · 模组依赖`,
-                        description: '根据已安装模组和启用状态检查。',
+                        title: t('{name} · 模组依赖', { name: mod.title }),
+                        description: t('根据已安装模组和启用状态检查。'),
                         body: <ModDependencies mod={mod} />,
                       })
                     }
                   >
-                    依赖
+                    {t('依赖')}
                   </Button>
                 )}
                 {!mod.builtin && (
                   <>
                     <Switch
                       disabled={nativeState?.busy || !!mod.error}
-                      label={`启用${mod.title}`}
+                      label={t('启用{name}', { name: mod.title })}
                       checked={mod.enabled}
                       onChange={(enabled) => run('mods.enable', { ids: [mod.id], enabled })}
                     />
@@ -190,7 +197,7 @@ export function NativeModsPage() {
                       disabled={nativeState?.busy}
                       onClick={() => confirmDelete(mod.id, mod.title)}
                     >
-                      删除
+                      {t('删除')}
                     </Button>
                   </>
                 )}
@@ -207,12 +214,12 @@ export function NativeModsPage() {
       <WorkspaceTabs
         value={state.modTab === 'browse' ? 'installed' : state.modTab}
         onChange={(modTab) => update((current) => ({ ...current, modTab }))}
-        label="模组分类"
+        label={t('模组分类')}
         items={[
-          { value: 'installed', label: '已安装', count: mods.length, content: installed },
+          { value: 'installed', label: t('已安装'), count: mods.length, content: installed },
           {
             value: 'packs',
-            label: '模组包',
+            label: t('模组包'),
             count: nativeState?.packs.length || 0,
             content: packs,
           },

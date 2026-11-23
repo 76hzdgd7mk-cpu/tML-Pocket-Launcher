@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import type { useTranslation } from '../../../i18n';
 import { nativeRequest } from '../../../native/bridge';
 import { useLauncher } from '../../../state/launcher';
 import { useDownloads } from '../download-state';
@@ -57,6 +58,22 @@ export const isSteamAuthenticating = (phase: string) =>
   ['connecting', 'reconnecting', 'authenticating', 'email', 'device', 'confirmation'].includes(
     phase,
   );
+
+export function translateSteamAccountMessage(
+  account: SteamAccount | null,
+  t: ReturnType<typeof useTranslation>['t'],
+) {
+  if (!account) return '';
+  const { phase, message } = account;
+  if (phase === 'error' || phase === 'disconnected') return message;
+  if (phase === 'connecting') {
+    const attempt = /^正在连接 Steam · (?<route>.+)（(?<current>\d+)\/(?<total>\d+)）$/.exec(
+      message,
+    );
+    if (attempt?.groups) return t('正在连接 Steam · {route}（{current}/{total}）', attempt.groups);
+  }
+  return t(message);
+}
 
 export function SteamProvider({ children }: { children: ReactNode }) {
   const { nativeMode, nativeWorkspace, openWorkspace } = useLauncher();

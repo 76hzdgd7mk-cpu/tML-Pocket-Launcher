@@ -1,9 +1,11 @@
+import { useTranslation } from '../i18n';
 import { Badge, Button, ContextNote, Icon, WorkspaceTabs } from '../components/ui';
 import { useGameActions } from './game-actions';
 import { SteamBrand } from './native/steam/brand';
 import { profileTitle } from '../state/launcher';
 
 export function AccountRows({ detailed = false }: { detailed?: boolean }) {
+  const { t } = useTranslation();
   const { accounts } = useGameActions();
   return (
     <>
@@ -12,15 +14,20 @@ export function AccountRows({ detailed = false }: { detailed?: boolean }) {
           {platform === 'steam' ? <SteamBrand /> : <span className="brand-word gog">gog.com</span>}
           <div className="account-copy">
             <strong>
-              尚未连接
-              {detailed ? ` ${platform === 'steam' ? 'Steam' : 'GOG'} 账户` : ''}
+              {detailed
+                ? t('尚未连接 {platform} 账户', {
+                    platform: platform === 'steam' ? 'Steam' : 'GOG',
+                  })
+                : t('尚未连接')}
             </strong>
             <small>
-              {detailed ? '登录后验证已购 Terraria，并选择资源下载版本' : '验证购买后下载资源'}
+              {detailed
+                ? t('登录后验证已购 Terraria，并选择资源下载版本')
+                : t('验证购买后下载资源')}
             </small>
           </div>
           <Button data-action={`account-${platform}`} onClick={() => accounts(platform)}>
-            连接账户 <Icon name="chevron" />
+            {t('连接账户')} <Icon name="chevron" />
           </Button>
         </div>
       ))}
@@ -28,6 +35,7 @@ export function AccountRows({ detailed = false }: { detailed?: boolean }) {
   );
 }
 function Sources() {
+  const { t } = useTranslation();
   const { accounts, importInfo, versions } = useGameActions();
   return (
     <>
@@ -64,16 +72,16 @@ function Sources() {
             ) : (
               <span className="brand-word gog">gog.com</span>
             )}
-            <h2>{source.title}</h2>
-            <p>{source.detail}</p>
+            <h2>{t(source.title)}</h2>
+            <p>{t(source.detail)}</p>
             <small>
-              {source.id === 'local' ? '选择文件' : '连接账户'} <Icon name="arrow" />
+              {source.id === 'local' ? t('选择文件') : t('连接账户')} <Icon name="arrow" />
             </small>
           </Button>
         ))}
       </div>
       <div className="section-title">
-        <h2>tModLoader 发行包</h2>
+        <h2>{t('tModLoader 发行包')}</h2>
       </div>
       <section className="panel">
         <div className="resource-row">
@@ -81,14 +89,14 @@ function Sources() {
             <img src="/tmodloader.png" alt="" />
           </span>
           <div className="resource-copy">
-            <h3>官方版本与本地导入</h3>
-            <p>浏览稳定版与预览版，或导入已下载的发行 ZIP。</p>
+            <h3>{t('官方版本与本地导入')}</h3>
+            <p>{t('浏览稳定版与预览版，或导入已下载的发行 ZIP。')}</p>
           </div>
           <div className="resource-actions">
             <Button variant="soft" data-action="versions" onClick={versions}>
-              选择版本
+              {t('选择版本')}
             </Button>
-            <Button onClick={() => importInfo('tml')}>导入 ZIP</Button>
+            <Button onClick={() => importInfo('tml')}>{t('导入 ZIP')}</Button>
           </div>
         </div>
       </section>
@@ -96,14 +104,17 @@ function Sources() {
   );
 }
 function Installed() {
+  const { t } = useTranslation();
   const { state, getTerraria, instances, versions, importInfo } = useGameActions();
   return (
     <>
       <div className="two-column">
         <section className="panel">
           <div className="panel-header">
-            <h2>游戏资源</h2>
-            <Badge tone={state.demo ? 'green' : ''}>{state.demo ? '已就绪' : '等待准备'}</Badge>
+            <h2>{t('游戏资源')}</h2>
+            <Badge tone={state.demo ? 'green' : ''}>
+              {state.demo ? t('已就绪') : t('等待准备')}
+            </Badge>
           </div>
           {['terraria', 'tml'].map((kind) => (
             <div className="resource-row" key={kind}>
@@ -115,30 +126,32 @@ function Installed() {
                 <p>
                   {state.demo
                     ? kind === 'tml'
-                      ? profileTitle(state.profile) + ' · GitHub Releases'
-                      : '示例资源包 · 本地导入'
+                      ? t('{profile} · GitHub Releases', {
+                          profile: t(profileTitle(state.profile)),
+                        })
+                      : t('示例资源包 · 本地导入')
                     : kind === 'tml'
-                      ? '选择适合模组的官方版本'
-                      : '运行游戏所需的原版资源'}
+                      ? t('选择适合模组的官方版本')
+                      : t('运行游戏所需的原版资源')}
                 </p>
                 <Badge tone={state.demo ? 'green' : ''}>
-                  {state.demo ? (kind === 'tml' ? '已安装' : '已校验') : '尚未安装'}
+                  {state.demo ? (kind === 'tml' ? t('已安装') : t('已校验')) : t('尚未安装')}
                 </Badge>
               </div>
               <div className="resource-actions">
                 {kind === 'tml' ? (
                   <>
                     <Button variant="soft" data-action="instances" onClick={instances}>
-                      选择版本
+                      {t('选择版本')}
                     </Button>
                     <Button data-action="versions" onClick={versions}>
-                      下载版本
+                      {t('下载版本')}
                     </Button>
-                    <Button onClick={() => importInfo('tml')}>导入</Button>
+                    <Button onClick={() => importInfo('tml')}>{t('导入')}</Button>
                   </>
                 ) : (
                   <Button variant="soft" data-action="get-terraria" onClick={getTerraria}>
-                    {state.demo ? '管理资源' : '获取资源'}
+                    {state.demo ? t('管理资源') : t('获取资源')}
                   </Button>
                 )}
               </div>
@@ -146,44 +159,45 @@ function Installed() {
           ))}
           <div className="panel-note">
             <Icon name="info" />
-            安装完成后验证资源完整性，失败时保留上一个可用版本。
+            {t('安装完成后验证资源完整性，失败时保留上一个可用版本。')}
           </div>
         </section>
         <section className="panel">
           <div className="panel-header">
-            <h2>关联账户</h2>
+            <h2>{t('关联账户')}</h2>
           </div>
           <AccountRows />
-          <div className="panel-note">本地导入无需登录账户。</div>
+          <div className="panel-note">{t('本地导入无需登录账户。')}</div>
         </section>
       </div>
-      <ContextNote>游戏版本与资源统一管理；下载任务可在任意页面打开。</ContextNote>
+      <ContextNote>{t('游戏版本与资源统一管理；下载任务可在任意页面打开。')}</ContextNote>
     </>
   );
 }
 export function GamesPage() {
+  const { t } = useTranslation();
   const { state, update } = useGameActions();
   return (
     <WorkspaceTabs
       value={state.gameTab}
       onChange={(gameTab) => update((current) => ({ ...current, gameTab }))}
-      label="游戏资源分类"
+      label={t('游戏资源分类')}
       items={[
         {
           value: 'installed',
-          label: '已安装',
+          label: t('已安装'),
           data: { 'data-game-tab': 'installed' },
           content: <Installed />,
         },
         {
           value: 'sources',
-          label: '获取资源',
+          label: t('获取资源'),
           data: { 'data-game-tab': 'sources' },
           content: <Sources />,
         },
         {
           value: 'accounts',
-          label: '账户',
+          label: t('账户'),
           data: { 'data-game-tab': 'accounts' },
           content: (
             <>
@@ -191,10 +205,12 @@ export function GamesPage() {
                 <AccountRows detailed />
                 <div className="panel-note">
                   <Icon name="lock" />
-                  登录、验证与下载分别展示状态；退出账户时可选择清除已保存的会话。
+                  {t('登录、验证与下载分别展示状态；退出账户时可选择清除已保存的会话。')}
                 </div>
               </div>
-              <ContextNote>Steam 支持验证与 Steam Guard 流程；GOG 使用网页授权流程。</ContextNote>
+              <ContextNote>
+                {t('Steam 支持验证与 Steam Guard 流程；GOG 使用网页授权流程。')}
+              </ContextNote>
             </>
           ),
         },

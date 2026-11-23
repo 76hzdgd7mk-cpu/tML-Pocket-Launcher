@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n';
 import {
   Badge,
   Button,
@@ -16,17 +17,18 @@ function ModArt({ mod }: { mod: Mod }) {
   return <span className={`mod-art ${mod.side === 'client' ? 'blue' : ''}`}>{mod.art}</span>;
 }
 export function ModsPage() {
+  const { t } = useTranslation();
   const { state, update, installed } = useModActions();
   return (
     <WorkspaceTabs
       value={state.modTab}
       onChange={(modTab) => update((current) => ({ ...current, modTab }))}
-      label="模组工作区"
+      label={t('模组工作区')}
       className="mods-tabs"
       items={[
         {
           value: 'installed',
-          label: '已安装',
+          label: t('已安装'),
           count: installed.length,
           id: 'mod-tab-installed',
           data: { 'data-action': 'mw-tab-installed' },
@@ -34,14 +36,14 @@ export function ModsPage() {
         },
         {
           value: 'browse',
-          label: '下载模组',
+          label: t('下载模组'),
           id: 'mod-tab-browse',
           data: { 'data-action': 'mw-tab-browse' },
           content: <Catalog />,
         },
         {
           value: 'packs',
-          label: '模组包',
+          label: t('模组包'),
           id: 'mod-tab-packs',
           data: { 'data-action': 'mw-tab-packs' },
           content: <PacksPanel />,
@@ -51,6 +53,7 @@ export function ModsPage() {
   );
 }
 function LocalMods() {
+  const { t } = useTranslation();
   const {
     state,
     installed,
@@ -79,15 +82,15 @@ function LocalMods() {
     );
   const menu = () =>
     openDialog({
-      title: '本地模组操作',
-      description: '批量操作作用于当前已安装列表；不会启动或重新加载游戏。',
+      title: t('本地模组操作'),
+      description: t('批量操作作用于当前已安装列表；不会启动或重新加载游戏。'),
       body: (
         <div className="pack-options">
           <Button variant="soft" data-action="mw-enable-all" onClick={() => bulk(true)}>
-            全部启用
+            {t('全部启用')}
           </Button>
           <Button data-action="mw-disable-all" onClick={() => bulk(false)}>
-            全部停用
+            {t('全部停用')}
           </Button>
           {(
             [
@@ -104,11 +107,11 @@ function LocalMods() {
                 closeDialog();
               }}
             >
-              {label}
+              {t(label)}
             </Button>
           ))}
           <Button data-action="mod-folder" onClick={() => showInfo('mod-folder')}>
-            查看模组目录
+            {t('查看模组目录')}
           </Button>
           <Button
             data-action="mod-profiles"
@@ -117,7 +120,7 @@ function LocalMods() {
               closeDialog(false);
             }}
           >
-            管理模组包
+            {t('管理模组包')}
           </Button>
         </div>
       ),
@@ -131,8 +134,8 @@ function LocalMods() {
           <input
             type="search"
             id="mod-search"
-            aria-label="搜索本地模组"
-            placeholder="搜索名称或作者"
+            aria-label={t('搜索本地模组')}
+            placeholder={t('搜索名称或作者')}
             value={state.localQuery}
             onChange={(event) =>
               update((current) => ({ ...current, localQuery: event.target.value }))
@@ -141,13 +144,13 @@ function LocalMods() {
         </label>
         <IconButton
           symbol="sliders"
-          label="模组批量操作与排序"
+          label={t('模组批量操作与排序')}
           data-action="mw-local-menu"
           onClick={menu}
         />
       </div>
       <div className="mod-filter-line">
-        <div className="filter-group" aria-label="筛选模组">
+        <div className="filter-group" aria-label={t('筛选模组')}>
           {(
             [
               ['all', '全部'],
@@ -162,35 +165,35 @@ function LocalMods() {
               data-mod-filter={localFilter}
               onClick={() => update((current) => ({ ...current, localFilter }))}
             >
-              {label}
+              {t(label)}
             </Button>
           ))}
         </div>
         <Button className="mod-text-action" data-action="mw-update-all" onClick={updateAll}>
           <Icon name="download" />
-          检查更新
+          {t('检查更新')}
         </Button>
       </div>
       <section className="panel mod-list" id="mods-list">
         {!installed.length ? (
           <EmptyState
             symbol="mod"
-            title="添加你的第一个模组"
-            description="可以直接浏览和下载模组，也可以导入本地 .tmod 文件。"
+            title={t('添加你的第一个模组')}
+            description={t('可以直接浏览和下载模组，也可以导入本地 .tmod 文件。')}
           >
             <Button
               variant="soft"
               symbol="download"
               onClick={() => update((current) => ({ ...current, modTab: 'browse' }))}
             >
-              下载模组
+              {t('下载模组')}
             </Button>
           </EmptyState>
         ) : !filtered.length ? (
           <EmptyState
             symbol="search"
-            title="没有匹配的模组"
-            description="尝试其他关键词或筛选条件。"
+            title={t('没有匹配的模组')}
+            description={t('尝试其他关键词或筛选条件。')}
           >
             <Button
               variant="soft"
@@ -203,7 +206,7 @@ function LocalMods() {
                 }))
               }
             >
-              清除筛选
+              {t('清除筛选')}
             </Button>
           </EmptyState>
         ) : (
@@ -214,9 +217,9 @@ function LocalMods() {
                 <h3>
                   {mod.title}
                   {mod.channel !== state.profile ? (
-                    <Badge>版本不兼容</Badge>
+                    <Badge>{t('版本不兼容')}</Badge>
                   ) : needsUpdate(mod) ? (
-                    <Badge tone="blue">可更新</Badge>
+                    <Badge tone="blue">{t('可更新')}</Badge>
                   ) : null}
                 </h3>
                 <p>
@@ -224,18 +227,18 @@ function LocalMods() {
                 </p>
                 <small>
                   {mod.kind}
-                  {mod.deps.length ? ` · ${mod.deps.length} 项依赖` : ''}
+                  {mod.deps.length > 0 && t(' · {count} 项依赖', { count: mod.deps.length })}
                 </small>
               </div>
               <Switch
-                label={'启用' + mod.title}
+                label={t('启用{mod}', { mod: mod.title })}
                 checked={mod.enabled}
                 action={`mod-${mod.id}`}
                 onChange={() => toggle(mod)}
               />
               <IconButton
                 symbol="chevron"
-                label={'查看' + mod.title + '详情'}
+                label={t('查看{mod}详情', { mod: mod.title })}
                 data-action={`mod-detail-${mod.id}`}
                 onClick={() => details(mod)}
               />
@@ -247,6 +250,7 @@ function LocalMods() {
   );
 }
 function Catalog() {
+  const { t } = useTranslation();
   const { state, installed, update, openDialog, notice, details, plan, instances, updateAll } =
     useModActions();
   const filtered = filterCatalog(state.filters, installed, state.profile);
@@ -264,8 +268,8 @@ function Catalog() {
           <input
             type="search"
             id="catalog-search"
-            aria-label="搜索在线模组"
-            placeholder="搜索模组名称或作者"
+            aria-label={t('搜索在线模组')}
+            placeholder={t('搜索模组名称或作者')}
             value={filters.query}
             onChange={(event) =>
               update((current) => ({
@@ -277,12 +281,12 @@ function Catalog() {
         </label>
         <IconButton
           symbol="sliders"
-          label="模组下载筛选与排序"
+          label={t('模组下载筛选与排序')}
           data-action="mw-filters"
           onClick={() =>
             openDialog({
-              title: '筛选与排序',
-              description: '参考 tML 模组浏览器；这些选项筛选当前示例目录。',
+              title: t('筛选与排序'),
+              description: t('参考 tML 模组浏览器；这些选项筛选当前示例目录。'),
               body: <CatalogFilters />,
               drawer: true,
             })
@@ -292,11 +296,12 @@ function Catalog() {
       <div id="catalog-results">
         <div className="catalog-summary">
           <span>
-            创意工坊 · 示例 · {filtered.length} 项{hasFilter ? ' · 已筛选' : ''}
+            {t('创意工坊 · 示例 · {count} 项', { count: filtered.length })}
+            {hasFilter && t(' · 已筛选')}
           </span>
           <Button className="mod-text-action" data-action="mw-update-all" onClick={updateAll}>
             <Icon name="download" />
-            全部更新
+            {t('全部更新')}
           </Button>
         </div>
         {filtered.length ? (
@@ -319,28 +324,46 @@ function Catalog() {
                     </span>
                     <small>
                       {mod.kind} · {mod.size} MB
-                      {mod.deps.length ? ' · 含依赖' : ''} · 示例
+                      {mod.deps.length > 0 && t(' · 含依赖')}
+                      {t(' · 示例')}
                     </small>
                   </Button>
                   <Button
                     className={`catalog-install ${compatible ? '' : 'incompatible'}`}
                     data-action={`${compatible ? 'mw-plan-' : 'mw-incompatible-'}${mod.id}`}
-                    aria-label={`${!compatible ? '查看兼容要求：' : local ? (update ? '更新' : '查看') : '下载'}${mod.title}`}
+                    aria-label={t(
+                      !compatible
+                        ? '查看兼容要求：{mod}'
+                        : local
+                          ? update
+                            ? '更新{mod}'
+                            : '查看{mod}'
+                          : '下载{mod}',
+                      { mod: mod.title },
+                    )}
                     onClick={() =>
                       compatible
                         ? plan([mod.id])
                         : notice(
-                            '需要匹配的 tML 版本',
-                            mod.title + ' 需要预览配置。请先选择匹配版本，再检查其依赖。',
+                            t('需要匹配的 tML 版本'),
+                            t('{mod} 需要预览配置。请先选择匹配版本，再检查其依赖。', {
+                              mod: mod.title,
+                            }),
                             <Button variant="soft" onClick={instances}>
-                              选择游戏配置
+                              {t('选择游戏配置')}
                             </Button>,
                           )
                     }
                   >
                     <Icon name={!compatible ? 'info' : local && !update ? 'check' : 'download'} />
                     <span>
-                      {!compatible ? '版本要求' : local ? (update ? '更新' : '已安装') : '下载'}
+                      {!compatible
+                        ? t('版本要求')
+                        : local
+                          ? update
+                            ? t('更新')
+                            : t('已安装')
+                          : t('下载')}
                     </span>
                   </Button>
                 </div>
@@ -350,8 +373,8 @@ function Catalog() {
         ) : (
           <EmptyState
             symbol="search"
-            title="没有匹配的模组"
-            description="修改关键词或筛选条件后再试。"
+            title={t('没有匹配的模组')}
+            description={t('修改关键词或筛选条件后再试。')}
           >
             <Button
               variant="soft"
@@ -363,14 +386,14 @@ function Catalog() {
                 }))
               }
             >
-              重置搜索
+              {t('重置搜索')}
             </Button>
           </EmptyState>
         )}
       </div>
       <p className="list-caption">
         <Icon name="info" />
-        当前展示示例目录与下载流程；未连接真实创意工坊。
+        {t('当前展示示例目录与下载流程；未连接真实创意工坊。')}
       </p>
     </>
   );

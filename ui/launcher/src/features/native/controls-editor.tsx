@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { Button, Icon, Switch } from '../../components/ui';
+import { useTranslation } from '../../i18n';
 import { nativeRequest } from '../../native/bridge';
 import { useLauncher } from '../../state/launcher';
 import {
@@ -272,15 +273,17 @@ const enumIndex = (value: number | string | undefined, names: readonly string[])
   return index >= 0 && index < names.length ? index : 0;
 };
 const isStick = (control: Control) => control.Kind === 0 || control.Kind === 'Joystick';
-const controlLabel = (control: Control) =>
+const controlLabel = (control: Control, t: ReturnType<typeof useTranslation>['t']) =>
   control.Launcher?.Data?.name ||
-  (isStick(control)
-    ? ['移动', '瞄准', '钩爪摇杆', '未绑定摇杆'][
-        enumIndex(control.JoystickRole, ['Move', 'Aim', 'Grapple', 'Unbound'])
-      ]
-    : control.Kind === 2 || control.Kind === 'RadialMenu'
-      ? '轮盘'
-      : ACTION_LABELS[enumIndex(control.Action, ACTIONS)]);
+  t(
+    isStick(control)
+      ? ['移动', '瞄准', '钩爪摇杆', '未绑定摇杆'][
+          enumIndex(control.JoystickRole, ['Move', 'Aim', 'Grapple', 'Unbound'])
+        ]
+      : control.Kind === 2 || control.Kind === 'RadialMenu'
+        ? '轮盘'
+        : ACTION_LABELS[enumIndex(control.Action, ACTIONS)],
+  );
 
 const actionGlyphs = [
   '↑',
@@ -611,6 +614,7 @@ function controlBounds(entry: Control, profile: Profile, customMode: boolean, vi
 }
 
 export function ControlsEditor({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   const { notify } = useLauncher();
   const [category, setCategory] = useState<Category>('controls');
   const [profile, setProfile] = useState<Profile>();
@@ -723,7 +727,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
       });
       saved.current = profile;
       onClose();
-      notify('布局已保存，下次启动游戏时生效。');
+      notify(t('布局已保存，下次启动游戏时生效。'));
     } catch (error) {
       setFailure(error instanceof Error ? error.message : '布局保存失败');
     } finally {
@@ -951,7 +955,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
         <button
           key={entry.id}
           type="button"
-          aria-label={entry.label}
+          aria-label={t(entry.label)}
           aria-pressed={!previewOnly && entry.id === region.id}
           disabled={previewOnly || pending}
           className={`controls-preview-node controls-preview-region controls-region-${entry.id}`}
@@ -971,7 +975,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
           )}
         >
           <InterfaceArtwork id={entry.id} hotbar={hotbar} />
-          <span className="controls-region-label">{entry.label}</span>
+          <span className="controls-region-label">{t(entry.label)}</span>
           <span className="controls-resize-handle" aria-hidden="true" />
         </button>
       ) : (
@@ -1005,12 +1009,12 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
               ref={preview}
               aria-label={
                 scene === 'world'
-                  ? '游戏场景预览'
+                  ? t('游戏场景预览')
                   : scene === 'hotbar'
-                    ? '快捷栏预览'
+                    ? t('快捷栏预览')
                     : scene === 'crafting'
-                      ? '制作界面预览'
-                      : '背包界面预览'
+                      ? t('制作界面预览')
+                      : t('背包界面预览')
               }
               data-grid={grid && !previewOnly}
               data-scene={scene}
@@ -1026,7 +1030,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                     );
                     const data = entry.Launcher?.Data;
                     const image = data && texturePreview(data, entry.Launcher?.Assets);
-                    const label = controlLabel(entry);
+                    const label = controlLabel(entry, t);
                     const circle =
                       !data ||
                       data.shape === 'CIRCLE' ||
@@ -1142,11 +1146,11 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
           </div>
         </div>
         {panel === 'palette' && !previewOnly && (
-          <section className="controls-float-panel" aria-label="控件组件">
-            <Button onClick={() => setPanel('menu')}>返回菜单</Button>
+          <section className="controls-float-panel" aria-label={t('控件组件')}>
+            <Button onClick={() => setPanel('menu')}>{t('返回菜单')}</Button>
             <div className="controls-editor-actions">
-              <Button onClick={() => newControl(0)}>游戏摇杆</Button>
-              <Button onClick={() => newControl(1)}>游戏按键</Button>
+              <Button onClick={() => newControl(0)}>{t('游戏摇杆')}</Button>
+              <Button onClick={() => newControl(1)}>{t('游戏按键')}</Button>
               {componentTypes.map(([type, label], kind) => (
                 <Button
                   key={type}
@@ -1160,7 +1164,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                     })
                   }
                 >
-                  {label}
+                  {t(label)}
                 </Button>
               ))}
             </div>
@@ -1173,15 +1177,19 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
             data-selection-side={
               selectionOnly ? (selectionPanelRight ? 'right' : 'left') : undefined
             }
-            aria-label="属性"
+            aria-label={t('属性')}
           >
             <div className="controls-inspector-header">
               <h3>
-                {controlEditor ? (control ? controlLabel(control) : '控件属性') : region.label}
+                {controlEditor
+                  ? control
+                    ? controlLabel(control, t)
+                    : t('控件属性')
+                  : t(region.label)}
               </h3>
               <Button
-                aria-label="关闭属性"
-                title="关闭属性"
+                aria-label={t('关闭属性')}
+                title={t('关闭属性')}
                 symbol="close"
                 onClick={() => setPanel(undefined)}
               />
@@ -1192,18 +1200,18 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                   {!selectionOnly && (
                     <>
                       <label className="controls-field">
-                        布局模式
+                        {t('布局模式')}
                         <select
                           value={mode}
                           onChange={(event) => edit({ ControlLayout: Number(event.target.value) })}
                         >
-                          <option value={0}>简单</option>
-                          <option value={1}>高级</option>
-                          <option value={2}>自定义</option>
+                          <option value={0}>{t('简单')}</option>
+                          <option value={1}>{t('高级')}</option>
+                          <option value={2}>{t('自定义')}</option>
                         </select>
                       </label>
                       <label className="controls-field">
-                        控制预设
+                        {t('控制预设')}
                         <select
                           value={mode === 2 ? presetIndex : ''}
                           onChange={(event) => {
@@ -1215,35 +1223,36 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                           }}
                         >
                           <option value="" disabled>
-                            选择预设
+                            {t('选择预设')}
                           </option>
                           {[0, 1, 2, 3].map((index) => (
                             <option key={index} value={index}>
-                              {profile.CustomPresets?.[index]?.Name || `预设 ${index + 1}`}
+                              {profile.CustomPresets?.[index]?.Name ||
+                                t('预设 {number}', { number: index + 1 })}
                             </option>
                           ))}
                         </select>
                       </label>
                       {mode === 2 && (
                         <label className="controls-field">
-                          预设名称
+                          {t('预设名称')}
                           <input
-                            value={preset?.Name ?? `预设 ${presetIndex + 1}`}
+                            value={preset?.Name ?? t('预设 {number}', { number: presetIndex + 1 })}
                             maxLength={64}
                             onChange={(event) => editPreset(controls, true, event.target.value)}
                           />
                         </label>
                       )}
                       <label className="controls-field">
-                        选中控件
+                        {t('选中控件')}
                         <select
                           value={control?.Id ?? ''}
                           onChange={(event) => setSelected(event.target.value)}
                         >
-                          <option value="">选择控件</option>
+                          <option value="">{t('选择控件')}</option>
                           {controls.map((entry) => (
                             <option key={entry.Id} value={entry.Id}>
-                              {controlLabel(entry)}
+                              {controlLabel(entry, t)}
                             </option>
                           ))}
                         </select>
@@ -1254,7 +1263,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                     <>
                       <div className="controls-editor-actions">
                         <Button disabled={controls.length >= 256} onClick={duplicate}>
-                          复制控件
+                          {t('复制控件')}
                         </Button>
                         <Button
                           onClick={() => {
@@ -1263,7 +1272,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                             if (selectionOnly) setPanel(undefined);
                           }}
                         >
-                          删除控件
+                          {t('删除控件')}
                         </Button>
                       </div>
                       <Range
@@ -1298,7 +1307,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                             editControl(control.Id, { Multitouch: event.target.checked })
                           }
                         />
-                        允许多点触控
+                        {t('允许多点触控')}
                       </label>
                       {controlData && (
                         <ExtendedControlFields
@@ -1315,7 +1324,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                       )}
                       {!controlData && isStick(control) && (
                         <label className="controls-field">
-                          摇杆用途
+                          {t('摇杆用途')}
                           <select
                             value={enumIndex(control.JoystickRole, STICK_ROLES)}
                             onChange={(event) =>
@@ -1327,7 +1336,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                           >
                             {STICK_LABELS.map((label, index) => (
                               <option key={label} value={index}>
-                                {label}
+                                {t(label)}
                               </option>
                             ))}
                           </select>
@@ -1338,7 +1347,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                         (control.Kind === 2 || control.Kind === 'RadialMenu' ? (
                           Array.from({ length: 4 }, (_, slot) => (
                             <label className="controls-field" key={slot}>
-                              轮盘动作 {slot + 1}
+                              {t('轮盘动作 {number}', { number: slot + 1 })}
                               <select
                                 value={enumIndex(control.RadialActions?.[slot] ?? 22, ACTIONS)}
                                 onChange={(event) =>
@@ -1357,7 +1366,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                                     value={index}
                                     disabled={[19, 20, 21, 32].includes(index)}
                                   >
-                                    {label}
+                                    {t(label)}
                                   </option>
                                 ))}
                               </select>
@@ -1365,7 +1374,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                           ))
                         ) : (
                           <label className="controls-field">
-                            按键动作
+                            {t('按键动作')}
                             <select
                               value={enumIndex(control.Action ?? 22, ACTIONS)}
                               onChange={(event) =>
@@ -1381,7 +1390,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                                   value={index}
                                   disabled={[21, 32].includes(index)}
                                 >
-                                  {label}
+                                  {t(label)}
                                 </option>
                               ))}
                             </select>
@@ -1389,7 +1398,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                         ))}
                       {!controlData && enumIndex(control.Action, ACTIONS) === 31 && (
                         <label className="controls-field">
-                          模组按键标识
+                          {t('模组按键标识')}
                           <input
                             value={control.ModKeybind ?? ''}
                             onChange={(event) =>
@@ -1400,7 +1409,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                       )}
                       {!controlData && enumIndex(control.Action, ACTIONS) === 33 && (
                         <label className="controls-field">
-                          键盘按键
+                          {t('键盘按键')}
                           <input
                             value={control.KeyboardKey ?? ''}
                             onChange={(event) =>
@@ -1413,7 +1422,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                   )}
                   {!selectionOnly && (
                     <details className="controls-details" open={!control}>
-                      <summary>全局触控设置</summary>
+                      <summary>{t('全局触控设置')}</summary>
                       <Range
                         label="控件大小"
                         value={profile.ControlScale ?? defaultControlScale}
@@ -1448,9 +1457,9 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                         ] as const
                       ).map(([key, label, defaultValue]) => (
                         <label className="controls-toggle" key={key}>
-                          {label}
+                          {t(label)}
                           <Switch
-                            label={label}
+                            label={t(label)}
                             checked={profile[key] ?? defaultValue}
                             onChange={(value) => edit({ [key]: value })}
                           />
@@ -1465,14 +1474,14 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                         setSelected('');
                       }}
                     >
-                      恢复预设
+                      {t('恢复预设')}
                     </Button>
                   )}
                 </>
               ) : (
                 <>
                   <label className="controls-field">
-                    界面区域
+                    {t('界面区域')}
                     <select
                       value={region.id}
                       onChange={(event) => {
@@ -1485,19 +1494,19 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                     >
                       {regions.map((entry) => (
                         <option key={entry.id} value={entry.id}>
-                          {entry.label}
+                          {t(entry.label)}
                         </option>
                       ))}
                     </select>
                   </label>
                   <label className="controls-field">
-                    快捷栏方向
+                    {t('快捷栏方向')}
                     <select
                       value={enumIndex(profile.HotbarOrientation, ['Vertical', 'Horizontal'])}
                       onChange={(event) => edit({ HotbarOrientation: Number(event.target.value) })}
                     >
-                      <option value={0}>纵向</option>
-                      <option value={1}>横向</option>
+                      <option value={0}>{t('纵向')}</option>
+                      <option value={1}>{t('横向')}</option>
                     </select>
                   </label>
                   <Range
@@ -1541,7 +1550,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                     onChange={(EdgePadding) => edit({ EdgePadding })}
                   />
                   <div className="controls-editor-actions">
-                    <Button onClick={() => editRegion(region.id)}>重置区域</Button>
+                    <Button onClick={() => editRegion(region.id)}>{t('重置区域')}</Button>
                     <Button
                       onClick={() =>
                         edit({
@@ -1552,7 +1561,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                         })
                       }
                     >
-                      重置界面
+                      {t('重置界面')}
                     </Button>
                   </div>
                 </>
@@ -1561,16 +1570,16 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
           </aside>
         )}
         {panel === 'menu' && (
-          <section className="controls-float-panel" aria-label="编辑菜单">
-            <div className="controls-menu-group" role="group" aria-label="编辑模式">
+          <section className="controls-float-panel" aria-label={t('编辑菜单')}>
+            <div className="controls-menu-group" role="group" aria-label={t('编辑模式')}>
               <Button aria-pressed={controlEditor} onClick={() => changeCategory('controls')}>
-                游戏控制
+                {t('游戏控制')}
               </Button>
               <Button aria-pressed={!controlEditor} onClick={() => changeCategory('interface')}>
-                游戏界面
+                {t('游戏界面')}
               </Button>
             </div>
-            <div className="controls-menu-group" role="group" aria-label="预览场景">
+            <div className="controls-menu-group" role="group" aria-label={t('预览场景')}>
               {(
                 [
                   ['world', '游戏'],
@@ -1582,28 +1591,28 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                 ([id, label]) =>
                   (controlEditor || id !== 'world') && (
                     <Button key={id} aria-pressed={scene === id} onClick={() => selectScene(id)}>
-                      {label}
+                      {t(label)}
                     </Button>
                   ),
               )}
             </div>
-            <div className="controls-menu-group" role="group" aria-label="编辑工具">
+            <div className="controls-menu-group" role="group" aria-label={t('编辑工具')}>
               {controlEditor && (
                 <Button
                   disabled={pending || previewOnly || controls.length >= 256}
                   onClick={() => setPanel('palette')}
                 >
-                  添加控件
+                  {t('添加控件')}
                 </Button>
               )}
               <Button disabled={previewOnly} onClick={() => setPanel('inspector')}>
-                属性
+                {t('属性')}
               </Button>
               <Button aria-pressed={grid} disabled={previewOnly} onClick={() => setGrid(!grid)}>
-                网格
+                {t('网格')}
               </Button>
               <Button aria-pressed={snap} disabled={previewOnly} onClick={() => setSnap(!snap)}>
-                网格吸附
+                {t('网格吸附')}
               </Button>
               <Button
                 aria-pressed={previewOnly}
@@ -1612,32 +1621,32 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                   setPreviewOnly(!previewOnly);
                 }}
               >
-                纯预览
+                {t('纯预览')}
               </Button>
               <Button
-                aria-label="缩小画布"
-                title="缩小画布"
+                aria-label={t('缩小画布')}
+                title={t('缩小画布')}
                 symbol="minus"
                 disabled={zoom === 100}
                 onClick={() => setZoom(zoom - 25)}
               />
               <Button
-                aria-label="放大画布"
-                title="放大画布"
+                aria-label={t('放大画布')}
+                title={t('放大画布')}
                 symbol="plus"
                 disabled={zoom === 200}
                 onClick={() => setZoom(zoom + 25)}
               />
               <Button
-                aria-label="撤销"
-                title="撤销"
+                aria-label={t('撤销')}
+                title={t('撤销')}
                 symbol="reset"
                 disabled={pending || !history.current.past.length || previewOnly}
                 onClick={() => traverse(false)}
               />
               <Button
-                aria-label="重做"
-                title="重做"
+                aria-label={t('重做')}
+                title={t('重做')}
                 disabled={pending || !history.current.future.length || previewOnly}
                 onClick={() => traverse(true)}
               >
@@ -1661,14 +1670,14 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                     setPanel(undefined);
                   }}
                 >
-                  使用默认控件
+                  {t('使用默认控件')}
                 </Button>
               )}
               <Button disabled={pending} onClick={requestClose}>
-                退出编辑
+                {t('退出编辑')}
               </Button>
               <Button variant="primary" disabled={pending} onClick={() => void save()}>
-                保存布局
+                {t('保存布局')}
               </Button>
             </div>
           </section>
@@ -1682,7 +1691,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
       id="game-layout-editor"
       className="controls-editor-screen"
       ref={dialog}
-      aria-label="游戏布局编辑"
+      aria-label={t('游戏布局编辑')}
       onCancel={(event) => {
         event.preventDefault();
         if (confirmExit) setConfirmExit(false);
@@ -1692,12 +1701,12 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
     >
       {profile && viewport?.width && viewport.height
         ? renderEditor(profile, viewport)
-        : !failure && <p role="status">正在读取布局…</p>}
+        : !failure && <p role="status">{t('正在读取布局…')}</p>}
       <div className="controls-dock-track">
         <button
           type="button"
           className="controls-dock"
-          aria-label="悬浮菜单"
+          aria-label={t('悬浮菜单')}
           aria-expanded={!!panel}
           style={{ left: `${dock.x * 100}%`, top: `${dock.y * 100}%` }}
           onPointerDown={(event) => {
@@ -1741,16 +1750,16 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
       </div>
       {failure && (
         <p className="controls-editor-error" role="alert">
-          {failure}
+          {t(failure)}
         </p>
       )}
       {confirmExit && (
         <div className="controls-exit">
-          <section aria-label="退出编辑">
-            <h3>布局有未保存的修改</h3>
+          <section aria-label={t('退出编辑')}>
+            <h3>{t('布局有未保存的修改')}</h3>
             <div className="controls-editor-actions">
-              <Button onClick={() => setConfirmExit(false)}>继续编辑</Button>
-              <Button onClick={onClose}>放弃修改</Button>
+              <Button onClick={() => setConfirmExit(false)}>{t('继续编辑')}</Button>
+              <Button onClick={onClose}>{t('放弃修改')}</Button>
               <Button
                 variant="primary"
                 onClick={() => {
@@ -1758,7 +1767,7 @@ export function ControlsEditor({ onClose }: { onClose: () => void }) {
                   void save();
                 }}
               >
-                保存并退出
+                {t('保存并退出')}
               </Button>
             </div>
           </section>

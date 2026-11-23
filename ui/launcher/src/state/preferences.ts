@@ -1,6 +1,7 @@
 import type { Preferences, Tool } from '../domain/types';
 import { defaultBackgroundTint } from '../domain/background-tint';
 import { nativeMode } from '../native/bridge';
+import { isLanguagePreference } from '../i18n';
 
 export const preferenceKey = 'tml-launcher-ui-v1';
 export const toolIds: Tool[] = [
@@ -16,6 +17,7 @@ export const toolIds: Tool[] = [
   'activity',
 ];
 export const defaultPreferences: Preferences = {
+  language: 'system',
   theme: 'system',
   themeStyle: 'default',
   orientation: 'landscape',
@@ -32,6 +34,7 @@ export function readPreferences(): Preferences {
       unknown
     > | null;
     if (saved?.version !== 1) return result;
+    if (isLanguagePreference(saved.language)) result.language = saved.language;
     if (['dark', 'light', 'system', 'tml'].includes(String(saved.theme)))
       result.theme = saved.theme as Preferences['theme'];
     if (saved.theme === 'tml') {
@@ -69,9 +72,10 @@ export function readPreferences(): Preferences {
   return result;
 }
 export function normalizePreferences(patch: Partial<Preferences>): Partial<Preferences> {
-  return (patch.background as string | undefined) === 'soft'
-    ? { ...patch, background: 'diy' }
-    : patch;
+  const result = { ...patch };
+  if (!isLanguagePreference(result.language)) delete result.language;
+  if ((result.background as string | undefined) === 'soft') result.background = 'diy';
+  return result;
 }
 export function savePreferences(preferences: Preferences) {
   const { customImage, ...safe } = preferences;

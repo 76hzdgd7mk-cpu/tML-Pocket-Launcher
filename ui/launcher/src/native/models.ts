@@ -62,6 +62,7 @@ export interface NativeInstalledVersion {
 }
 export interface NativeSnapshot {
   protocol: 1;
+  systemLocale?: string;
   busy: boolean;
   message: string;
   progress: number;

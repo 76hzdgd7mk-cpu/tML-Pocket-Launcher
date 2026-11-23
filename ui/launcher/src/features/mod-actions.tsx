@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n';
 import { useState } from 'react';
 import { Badge, Button, Field } from '../components/ui';
 import { Select } from '../components/form-controls';
@@ -12,8 +13,25 @@ import {
 } from '../domain/mods';
 import type { Mod, ModFilters } from '../domain/types';
 
+export function describeModResolutionError(
+  error: unknown,
+  t: ReturnType<typeof useTranslation>['t'],
+) {
+  if (error instanceof Error) {
+    const cyclePrefix = '发现循环依赖：';
+    const unknownPrefix = '无法识别模组：';
+    if (error.message.startsWith(cyclePrefix))
+      return t('Error: 发现循环依赖：{mod}', { mod: error.message.slice(cyclePrefix.length) });
+    if (error.message.startsWith(unknownPrefix))
+      return t('Error: 无法识别模组：{id}', { id: error.message.slice(unknownPrefix.length) });
+  }
+  return String(error);
+}
+
 export function useModActions() {
+  const { t, locale } = useTranslation();
   const actions = useGameActions();
+  const joinMods = (names: string[]) => names.join(locale === 'en' ? ', ' : '、');
   const {
     state,
     installed,
@@ -31,10 +49,10 @@ export function useModActions() {
       if (state.task.kind === 'mods') tasks();
       else
         notice(
-          '已有下载任务',
-          '当前有其他示例任务。请先在下载与任务中取消该任务，再演示模组下载。',
+          t('已有下载任务'),
+          t('当前有其他示例任务。请先在下载与任务中取消该任务，再演示模组下载。'),
           <Button data-action="tasks" variant="soft" onClick={tasks}>
-            查看任务
+            {t('查看任务')}
           </Button>,
         );
       return;
@@ -43,15 +61,15 @@ export function useModActions() {
     try {
       closure = resolveMods(ids);
     } catch (error) {
-      notice('无法生成下载计划', String(error));
+      notice(t('无法生成下载计划'), describeModResolutionError(error, t));
       return;
     }
     if (closure.some((mod) => mod.channel !== state.profile)) {
       notice(
-        '版本不兼容',
-        '模组或依赖不适合当前启动配置。请先选择匹配的 tML 版本。',
+        t('版本不兼容'),
+        t('模组或依赖不适合当前启动配置。请先选择匹配的 tML 版本。'),
         <Button variant="soft" data-action="instances" onClick={instances}>
-          选择配置
+          {t('选择配置')}
         </Button>,
       );
       return;
@@ -61,12 +79,12 @@ export function useModActions() {
       return !local || needsUpdate(local);
     });
     if (!items.length) {
-      notice('已是最新版本', '当前示例目录中没有需要安装或更新的模组。');
+      notice(t('已是最新版本'), t('当前示例目录中没有需要安装或更新的模组。'));
       return;
     }
     openDialog({
-      title: '下载模组与依赖',
-      description: '先确认整个依赖计划。新下载的模组默认停用，更新保留原启用状态。',
+      title: t('下载模组与依赖'),
+      description: t('先确认整个依赖计划。新下载的模组默认停用，更新保留原启用状态。'),
       body: (
         <>
           <div className="mod-plan">
@@ -76,9 +94,9 @@ export function useModActions() {
                   <strong>{mod.title}</strong>
                   <small>
                     {installed.some((local) => local.id === mod.id)
-                      ? `更新 → v${mod.version}`
-                      : `新安装 · v${mod.version}`}
-                    {ids.includes(mod.id) ? '' : ' · 必需依赖'}
+                      ? t('更新 → v{version}', { version: mod.version })
+                      : t('新安装 · v{version}', { version: mod.version })}
+                    {ids.includes(mod.id) ? '' : t(' · 必需依赖')}
                   </small>
                 </span>
                 <span>{mod.size} MB</span>
@@ -86,14 +104,19 @@ export function useModActions() {
             ))}
           </div>
           <p>
-            共 {items.length} 项 · 示例大小 {items.reduce((sum, mod) => sum + mod.size, 0)}{' '}
-            MB。正式下载需接入 Steam Workshop 查询和文件传输服务。
+            {t(
+              '共 {count} 项 · 示例大小 {size} MB。正式下载需接入 Steam Workshop 查询和文件传输服务。',
+              {
+                count: items.length,
+                size: items.reduce((sum, mod) => sum + mod.size, 0),
+              },
+            )}
           </p>
         </>
       ),
       actions: (
         <>
-          <Button onClick={() => closeDialog()}>取消</Button>
+          <Button onClick={() => closeDialog()}>{t('取消')}</Button>
           <Button
             variant="primary"
             symbol="download"
@@ -105,7 +128,7 @@ export function useModActions() {
               )
             }
           >
-            演示下载
+            {t('演示下载')}
           </Button>
         </>
       ),
@@ -126,13 +149,13 @@ export function useModActions() {
       description,
       actions: (
         <>
-          <Button onClick={() => closeDialog()}>取消</Button>
+          <Button onClick={() => closeDialog()}>{t('取消')}</Button>
           <Button
             variant="primary"
             data-action="mw-apply-enable"
             onClick={() => applyEnable(ids, value)}
           >
-            {value ? '一并启用' : '一并停用'}
+            {value ? t('一并启用') : t('一并停用')}
           </Button>
         </>
       ),
@@ -144,8 +167,10 @@ export function useModActions() {
         confirmEnable(
           [mod.id, ...dependents],
           false,
-          '这个模组仍被依赖',
-          '停用此模组需要同时停用以下依赖者：' + dependents.map(modTitle).join('、'),
+          t('这个模组仍被依赖'),
+          t('停用此模组需要同时停用以下依赖者：{mods}', {
+            mods: joinMods(dependents.map(modTitle)),
+          }),
         );
       else applyEnable([mod.id], false);
       return;
@@ -154,23 +179,25 @@ export function useModActions() {
     try {
       closure = resolveMods([mod.id], installed, true);
     } catch (error) {
-      notice('缺少启用的依赖', String(error));
+      notice(t('缺少启用的依赖'), describeModResolutionError(error, t));
       return;
     }
     const missing = closure.filter((item) => !installed.some((local) => local.id === item.id));
     if (missing.length) {
       openDialog({
-        title: '缺少启用的依赖',
-        description: missing.map((mod) => mod.title).join('、') + ' 尚未安装。下载完成后再启用。',
+        title: t('缺少启用的依赖'),
+        description: t('{mods} 尚未安装。下载完成后再启用。', {
+          mods: joinMods(missing.map((mod) => mod.title)),
+        }),
         actions: (
           <>
-            <Button onClick={() => closeDialog()}>取消</Button>
+            <Button onClick={() => closeDialog()}>{t('取消')}</Button>
             <Button
               variant="primary"
               data-action={`mw-plan-${mod.id}`}
               onClick={() => plan([mod.id])}
             >
-              下载缺失依赖
+              {t('下载缺失依赖')}
             </Button>
           </>
         ),
@@ -178,30 +205,30 @@ export function useModActions() {
       return;
     }
     if (closure.some((item) => item.channel !== state.profile)) {
-      notice('版本不兼容', '模组或依赖不适合当前 tML 配置，请切换匹配版本。');
+      notice(t('版本不兼容'), t('模组或依赖不适合当前 tML 配置，请切换匹配版本。'));
       return;
     }
     const ids = closure
       .filter((item) => !installed.find((local) => local.id === item.id)?.enabled)
       .map((item) => item.id);
-    if (ids.length > 1) confirmEnable(ids, true, '同时启用依赖', ids.map(modTitle).join('、'));
+    if (ids.length > 1) confirmEnable(ids, true, t('同时启用依赖'), joinMods(ids.map(modTitle)));
     else applyEnable([mod.id], true);
   };
   const remove = (mod: Mod) => {
     const dependents = installed.filter((other) => other.deps.includes(mod.id));
     if (dependents.length) {
       notice(
-        '这个模组仍被依赖',
-        '请先处理以下模组再删除：' + dependents.map((mod) => mod.title).join('、'),
+        t('这个模组仍被依赖'),
+        t('请先处理以下模组再删除：{mods}', { mods: joinMods(dependents.map((mod) => mod.title)) }),
       );
       return;
     }
     openDialog({
-      title: '删除模组？',
-      description: mod.title + ' 将从示例安装列表移除，存档和配置保留。',
+      title: t('删除模组？'),
+      description: t('{mod} 将从示例安装列表移除，存档和配置保留。', { mod: mod.title }),
       actions: (
         <>
-          <Button onClick={() => closeDialog()}>取消</Button>
+          <Button onClick={() => closeDialog()}>{t('取消')}</Button>
           <Button
             variant="primary"
             data-action="mw-confirm-delete"
@@ -214,7 +241,7 @@ export function useModActions() {
               notify('已移除示例模组。', '配置');
             }}
           >
-            删除
+            {t('删除')}
           </Button>
         </>
       ),
@@ -222,43 +249,43 @@ export function useModActions() {
   };
   const config = (mod: Mod) =>
     openDialog({
-      title: '模组配置文件',
-      description:
+      title: t('模组配置文件'),
+      description: t(
         '启动器可管理已有 JSON 文件；游戏内通过模组程序集生成的设置界面仍需在游戏中使用。',
+      ),
       body: <ConfigEditor id={mod.id} />,
       drawer: true,
     });
   const details = (mod: Mod, online = false) =>
     openDialog({
       title: mod.title,
-      description: '模组详情 · 示例元信息',
+      description: t('模组详情 · 示例元信息'),
       body: (
         <>
           <dl className="detail-list">
-            <dt>版本</dt>
+            <dt>{t('版本')}</dt>
             <dd>{mod.version}</dd>
-            <dt>作者</dt>
+            <dt>{t('作者')}</dt>
             <dd>{mod.author}</dd>
-            <dt>内部名称</dt>
+            <dt>{t('内部名称')}</dt>
             <dd>{mod.id}</dd>
-            <dt>目标 tML</dt>
+            <dt>{t('目标 tML')}</dt>
             <dd>
-              {mod.channel === 'stable' ? '稳定配置' : '预览配置'}
-              {mod.channel !== state.profile ? ' · 与当前配置不匹配' : ''}
+              {mod.channel === 'stable' ? t('稳定配置') : t('预览配置')}
+              {mod.channel !== state.profile ? t(' · 与当前配置不匹配') : ''}
             </dd>
-            <dt>运行侧</dt>
-            <dd>{mod.side === 'client' ? '仅客户端' : '客户端与服务端'}</dd>
-            <dt>依赖</dt>
-            <dd>{mod.deps.map(modTitle).join('、') || '无必需依赖'}</dd>
-            <dt>被依赖</dt>
+            <dt>{t('运行侧')}</dt>
+            <dd>{mod.side === 'client' ? t('仅客户端') : t('客户端与服务端')}</dd>
+            <dt>{t('依赖')}</dt>
+            <dd>{joinMods(mod.deps.map(modTitle)) || t('无必需依赖')}</dd>
+            <dt>{t('被依赖')}</dt>
             <dd>
-              {installed
-                .filter((item) => item.deps.includes(mod.id))
-                .map((item) => item.title)
-                .join('、') || '无'}
+              {joinMods(
+                installed.filter((item) => item.deps.includes(mod.id)).map((item) => item.title),
+              ) || t('无')}
             </dd>
-            <dt>来源</dt>
-            <dd>{mod.installed ? '示例下载' : '示例本地导入'} · 非真实安装</dd>
+            <dt>{t('来源')}</dt>
+            <dd>{mod.installed ? t('示例下载 · 非真实安装') : t('示例本地导入 · 非真实安装')}</dd>
           </dl>
           <p>{mod.description}</p>
         </>
@@ -270,15 +297,15 @@ export function useModActions() {
           data-action={`mw-plan-${mod.id}`}
           onClick={() => plan([mod.id])}
         >
-          连同依赖下载
+          {t('连同依赖下载')}
         </Button>
       ) : (
         <>
           <Button data-action={`mw-config-${mod.id}`} onClick={() => config(mod)}>
-            配置文件
+            {t('配置文件')}
           </Button>
           <Button data-action={`mw-delete-${mod.id}`} onClick={() => remove(mod)}>
-            删除模组
+            {t('删除模组')}
           </Button>
           <Button
             variant="soft"
@@ -288,7 +315,7 @@ export function useModActions() {
               if (item) details(item, true);
             }}
           >
-            查看更新
+            {t('查看更新')}
           </Button>
         </>
       ),
@@ -302,7 +329,7 @@ export function useModActions() {
     );
   const bulk = (value: boolean) => {
     if (!installed.length) {
-      notice('没有已安装模组', '先下载或导入模组。');
+      notice(t('没有已安装模组'), t('先下载或导入模组。'));
       return;
     }
     if (value) {
@@ -318,22 +345,23 @@ export function useModActions() {
               !installed.some((local) => local.id === mod.id) || mod.channel !== state.profile,
           )
         )
-          throw new Error('存在缺失依赖或不兼容模组，请在详情中处理后再全部启用。');
+          throw new Error(t('存在缺失依赖或不兼容模组，请在详情中处理后再全部启用。'));
       } catch (error) {
-        notice('无法全部启用', String(error));
+        notice(t('无法全部启用'), describeModResolutionError(error, t));
         return;
       }
     }
     confirmEnable(
       installed.map((mod) => mod.id),
       value,
-      value ? '全部启用？' : '全部停用？',
-      `将更新 ${installed.length} 项模组的启用清单，下次启动时生效。`,
+      t(value ? '全部启用？' : '全部停用？'),
+      t('将更新 {count} 项模组的启用清单，下次启动时生效。', { count: installed.length }),
     );
   };
   return { ...actions, plan, toggle, details, updateAll, bulk };
 }
 export function CatalogFilters() {
+  const { t } = useTranslation();
   const { state, update, closeDialog } = useGameActions();
   const [draft, setDraft] = useState(state.filters);
   const options: { label: string; key: keyof ModFilters; items: [string, string][] }[] = [
@@ -398,12 +426,12 @@ export function CatalogFilters() {
     <>
       <div className="mod-select-list">
         {options.map((field) => (
-          <Field label={field.label} key={field.key}>
+          <Field label={t(field.label)} key={field.key}>
             <Select
-              label={field.label}
+              label={t(field.label)}
               value={draft[field.key]}
               onChange={(value) => setDraft({ ...draft, [field.key]: value })}
-              options={field.items}
+              options={field.items.map(([value, label]) => [value, t(label)])}
             />
           </Field>
         ))}
@@ -413,7 +441,7 @@ export function CatalogFilters() {
           data-action="mw-reset-filter-dialog"
           onClick={() => setDraft({ ...defaultFilters, query: draft.query })}
         >
-          重置
+          {t('重置')}
         </Button>
         <Button
           variant="primary"
@@ -423,31 +451,32 @@ export function CatalogFilters() {
             closeDialog();
           }}
         >
-          查看结果
+          {t('查看结果')}
         </Button>
       </div>
     </>
   );
 }
 function ConfigEditor({ id }: { id: string }) {
+  const { t } = useTranslation();
   const { state, update, closeDialog, notify } = useGameActions();
   const [text, setText] = useState(state.configs[id] || '{}');
   return (
     <>
       <label className="pack-name-field">
-        示例 JSON 草稿
+        {t('示例 JSON 草稿')}
         <textarea
           id="mod-config-json"
-          aria-label="模组配置 JSON"
+          aria-label={t('模组配置 JSON')}
           spellCheck={false}
           value={text}
           onChange={(event) => setText(event.target.value)}
         />
       </label>
-      <p>此处只验证 JSON 格式，不执行模组配置校验，也不写入真实文件。</p>
-      <Badge>不加载模组程序集</Badge>
+      <p>{t('此处只验证 JSON 格式，不执行模组配置校验，也不写入真实文件。')}</p>
+      <Badge>{t('不加载模组程序集')}</Badge>
       <div className="dialog-actions feature-actions">
-        <Button onClick={() => closeDialog()}>取消</Button>
+        <Button onClick={() => closeDialog()}>{t('取消')}</Button>
         <Button
           variant="primary"
           data-action="mw-save-config"
@@ -465,7 +494,7 @@ function ConfigEditor({ id }: { id: string }) {
             }
           }}
         >
-          保存示例草稿
+          {t('保存示例草稿')}
         </Button>
       </div>
     </>

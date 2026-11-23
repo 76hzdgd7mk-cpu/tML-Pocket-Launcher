@@ -76,6 +76,7 @@ internal class LauncherController(private val context: Context) {
 
     fun snapshot(): JSONObject =
         JSONObject(data.toString())
+            .put("systemLocale", context.resources.configuration.locales[0].toLanguageTag())
             .put("busy", busy)
             .put("message", message)
             .put("progress", percent)

@@ -57,6 +57,7 @@ const run = (args, env = process.env) =>
     if (!ready) throw new Error('Preview server failed to start: ' + serverOutput);
     const env = { ...process.env, LAUNCHER_TEST_URL: base };
     for (const suite of [
+      'language',
       'regression',
       'mods',
       'animate-ui',

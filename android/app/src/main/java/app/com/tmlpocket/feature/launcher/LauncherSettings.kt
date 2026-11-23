@@ -1,24 +1,41 @@
 package app.com.tmlpocket.feature.launcher
 
 import android.content.Context
+import android.content.res.Configuration
 import app.com.tmlpocket.feature.mods.ModRepository.Companion.strings
 import app.com.tmlpocket.feature.patches.PatchRepository
 import app.com.tmlpocket.feature.renderers.RendererSelection
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.Locale
 
-class LauncherSettings(context: Context) {
+class LauncherSettings(private val context: Context) {
     private val storage = context.getSharedPreferences("launcher-settings", Context.MODE_PRIVATE)
 
     fun read(): JSONObject =
         runCatching { JSONObject(storage.getString("preferences", "{}") ?: "{}") }
             .getOrDefault(JSONObject())
 
+    fun localizedContext(): Context {
+        val language = when (read().optString("language")) {
+            "zh-CN" -> Locale.SIMPLIFIED_CHINESE
+            "en" -> Locale.ENGLISH
+            else -> if (context.resources.configuration.locales[0].language == "zh") {
+                Locale.SIMPLIFIED_CHINESE
+            } else {
+                Locale.ENGLISH
+            }
+        }
+        val configuration = Configuration(context.resources.configuration).apply { setLocale(language) }
+        return context.createConfigurationContext(configuration)
+    }
+
     fun save(patch: JSONObject): JSONObject {
         val result = read()
         for (key in patch.keys()) {
             val value = patch.get(key)
             when (key) {
+                "language" -> require(value in listOf("system", "zh-CN", "en"))
                 "theme" -> require(value in listOf("dark", "light", "system", "tml"))
                 "themeStyle" -> require(value in listOf("default", "tml"))
                 "orientation" -> require(value in listOf("landscape", "portrait"))

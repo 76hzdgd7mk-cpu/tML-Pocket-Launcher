@@ -13,6 +13,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
   const errors = [];
   try {
     const page = await browser.newPage({
+      locale: 'zh-CN',
       viewport: { width: 932, height: 430 },
       reducedMotion: 'no-preference',
     });
@@ -295,6 +296,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     assert.equal(await page.locator('html').getAttribute('data-theme'), 'light');
     assert.equal(await action('extra-tool-storage').count(), 1);
     const touch = await browser.newPage({
+      locale: 'zh-CN',
       viewport: { width: 390, height: 844 },
       isMobile: true,
       hasTouch: true,

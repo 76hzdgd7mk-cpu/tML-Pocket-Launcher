@@ -11,6 +11,7 @@ const assert = require('assert/strict');
     channel: process.env.PLAYWRIGHT_CHANNEL || 'msedge',
   });
   const page = await browser.newPage({
+    locale: 'zh-CN',
     viewport: { width: 1360, height: 840 },
     deviceScaleFactor: 1,
   });

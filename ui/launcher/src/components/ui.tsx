@@ -9,6 +9,7 @@ import { Tooltip } from './tooltip';
 import { Menu } from './icons/menu';
 import { LayoutTemplate } from './icons/layout-template';
 import { Settings } from './icons/settings';
+import { useTranslation } from '../i18n';
 
 export function Icon({ name, className = '' }: { name: string; className?: string }) {
   if (name === 'home') return <Menu aria-hidden="true" focusable="false" className={className} />;
@@ -204,8 +205,9 @@ export function WorkspaceTabs<T extends string>({
   );
 }
 export function TaskProgress({ value = 38 }: { value?: number | null }) {
+  const { t } = useTranslation();
   return (
-    <ProgressPrimitive.Root className="meter" value={value} aria-label="下载进度">
+    <ProgressPrimitive.Root className="meter" value={value} aria-label={t('下载进度')}>
       <ProgressPrimitive.Indicator
         style={{ transform: `translateX(-${value === null ? 0 : 100 - value}%)` }}
       />

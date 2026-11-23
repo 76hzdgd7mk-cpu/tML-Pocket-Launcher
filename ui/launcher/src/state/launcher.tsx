@@ -23,6 +23,7 @@ import { tintGradient } from '../domain/background-tint';
 import { useLauncherOrientation } from './use-launcher-orientation';
 import { nativeMode, nativeRequest, onNativeSnapshot } from '../native/bridge';
 import type { NativeSnapshot } from '../native/models';
+import { resolveLocale, TranslationProvider } from '../i18n';
 
 export interface DialogSpec {
   title: string;
@@ -120,12 +121,23 @@ function initialState(): LauncherState {
 }
 export function LauncherProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState(initialState);
+  const [browserLanguages, setBrowserLanguages] = useState(() => navigator.languages);
   const [nativeWorkspace, setNativeWorkspace] = useState<NativeWorkspace | null>(() => {
     const route = location.hash.split('/')[1] as NativeWorkspace;
     return nativeMode && Object.hasOwn(workspaceNames, route) ? route : null;
   });
   const workspaceReturn = useRef<NativeWorkspace | null>(null);
   const [nativeState, setNativeState] = useState<NativeSnapshot | null>(null);
+  const [androidLocale, setAndroidLocale] = useState('');
+  const locale = resolveLocale(
+    state.preferences.language,
+    androidLocale ? [androidLocale] : browserLanguages,
+  );
+  useEffect(() => {
+    const updateLanguages = () => setBrowserLanguages(navigator.languages);
+    window.addEventListener('languagechange', updateLanguages);
+    return () => window.removeEventListener('languagechange', updateLanguages);
+  }, []);
   const nativeHydrated = useRef(false);
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [toast, setToast] = useState('');
@@ -224,6 +236,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     if (!nativeMode) return;
     const receive = (snapshot: NativeSnapshot) => {
       setNativeState(snapshot);
+      if (snapshot.systemLocale) setAndroidLocale(snapshot.systemLocale);
       if (!nativeHydrated.current && snapshot.preferences) {
         nativeHydrated.current = true;
         setState((current) => ({
@@ -354,8 +367,9 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       if (!nativeMode) setSystemDark(media.matches);
     };
     const nativeChange = (event: Event) => {
-      const detail = (event as CustomEvent<{ dark?: boolean }>).detail;
+      const detail = (event as CustomEvent<{ dark?: boolean; locale?: string }>).detail;
       if (typeof detail?.dark === 'boolean') setSystemDark(detail.dark);
+      if (typeof detail?.locale === 'string') setAndroidLocale(detail.locale);
     };
     media.addEventListener('change', mediaChange);
     window.addEventListener('launcher:system-theme', nativeChange);
@@ -415,7 +429,9 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         tempo={motionEnabled ? 0.8 : 0}
         reducedMotion={motionEnabled ? 'never' : 'always'}
       >
-        <MotionConfig reducedMotion={motionEnabled ? 'never' : 'always'}>{children}</MotionConfig>
+        <MotionConfig reducedMotion={motionEnabled ? 'never' : 'always'}>
+          <TranslationProvider locale={locale}>{children}</TranslationProvider>
+        </MotionConfig>
       </AnimateUIProvider>
     </LauncherContext.Provider>
   );

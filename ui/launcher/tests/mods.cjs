@@ -10,7 +10,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
   });
   const errors = [];
   try {
-    const page = await browser.newPage({ viewport: { width: 932, height: 430 } });
+    const page = await browser.newPage({ locale: 'zh-CN', viewport: { width: 932, height: 430 } });
     page.on('pageerror', (e) => errors.push(e.message));
     const action = (name) => page.locator(`[data-action="${name}"]`);
     const tab = (name) => page.getByRole('tab', { name, exact: true });

@@ -30,6 +30,7 @@ import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import app.com.tmlpocket.BuildConfig
+import app.com.tmlpocket.R
 import app.com.tmlpocket.feature.files.FileBrowserAccess
 import app.com.tmlpocket.feature.game.GameActivity
 import app.com.tmlpocket.feature.game.GameCrashReports
@@ -94,11 +95,7 @@ class MainActivity : Activity() {
         }
         if (::web.isInitialized)
             web.evaluateJavascript("window.dispatchEvent(new Event('launcher:files-resume'))", null)
-        if (::web.isInitialized)
-            web.evaluateJavascript(
-                "window.dispatchEvent(new CustomEvent('launcher:system-theme',{detail:{dark:${systemDark()}}}))",
-                null,
-            )
+        publishSystemAppearance()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -138,13 +135,14 @@ class MainActivity : Activity() {
                     setPadding(inset, inset, inset, inset)
                 }
                 val scroll = android.widget.ScrollView(this).apply { addView(text) }
+                val strings = controller.settings.localizedContext()
                 crashDialog = AlertDialog.Builder(this)
-                    .setTitle("游戏异常退出")
+                    .setTitle(strings.getString(R.string.game_crashed))
                     .setView(scroll)
-                    .setPositiveButton("关闭", null)
-                    .setNeutralButton("复制报告") { _, _ ->
+                    .setPositiveButton(strings.getString(R.string.close), null)
+                    .setNeutralButton(strings.getString(R.string.copy_report)) { _, _ ->
                         (getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager)
-                            .setPrimaryClip(android.content.ClipData.newPlainText("游戏崩溃报告", report.text))
+                            .setPrimaryClip(android.content.ClipData.newPlainText(strings.getString(R.string.game_crash_report), report.text))
                     }
                     .create().apply {
                         setOnDismissListener { crashDialog = null }
@@ -162,12 +160,16 @@ class MainActivity : Activity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        publishSystemAppearance()
+    }
+
+    private fun publishSystemAppearance() {
         if (!::web.isInitialized) return
-        val dark =
-            (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                Configuration.UI_MODE_NIGHT_YES
+        val detail = JSONObject()
+            .put("dark", systemDark())
+            .put("locale", resources.configuration.locales[0].toLanguageTag())
         web.evaluateJavascript(
-            "window.dispatchEvent(new CustomEvent('launcher:system-theme',{detail:{dark:$dark}}))",
+            "window.dispatchEvent(new CustomEvent('launcher:system-theme',{detail:$detail}))",
             null,
         )
     }
@@ -235,10 +237,11 @@ class MainActivity : Activity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun buildUi() {
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            val strings = controller.settings.localizedContext()
             AlertDialog.Builder(this)
-                .setTitle("请更新 Android System WebView")
-                .setMessage("启动器需要支持安全消息接口的系统 WebView。请更新后重新打开。")
-                .setPositiveButton("关闭") { _, _ -> finish() }
+                .setTitle(strings.getString(R.string.webview_update_title))
+                .setMessage(strings.getString(R.string.webview_update_detail))
+                .setPositiveButton(strings.getString(R.string.close)) { _, _ -> finish() }
                 .show()
             return
         }
@@ -485,7 +488,7 @@ class MainActivity : Activity() {
                         Intent(Intent.ACTION_SEND)
                             .setType("text/plain")
                             .putExtra(Intent.EXTRA_TEXT, text),
-                        "分享",
+                        controller.settings.localizedContext().getString(R.string.share),
                     )
                 )
                 respond(id, Result.success(true))

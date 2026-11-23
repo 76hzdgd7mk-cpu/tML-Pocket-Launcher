@@ -1,3 +1,4 @@
+import { useTranslation } from './i18n';
 import { useLayoutEffect, useRef } from 'react';
 import { RippleButton, RippleButtonRipples } from '@animate-ui/react/primitives/buttons/ripple';
 import {
@@ -55,6 +56,7 @@ const help: Record<Page, string> = {
   settings: '更改启动器外观主题、界面UI、自定义背景、运行选项、触控和存储。',
 };
 export function App() {
+  const { t } = useTranslation();
   const { toast, motionEnabled, nativeWorkspace } = useLauncher();
   return (
     <>
@@ -80,12 +82,13 @@ export function App() {
         animate={{ opacity: toast ? 1 : 0, y: toast ? 0 : 8 }}
         transition={{ duration: motionEnabled ? 0.18 : 0 }}
       >
-        {toast}
+        {t(toast)}
       </motion.div>
     </>
   );
 }
 function Navigation() {
+  const { t } = useTranslation();
   const { state, navigate, tasks, nativeMode, nativeState, nativeWorkspace, openWorkspace } =
     useGameActions();
   const resource = isResourceWorkspace(nativeWorkspace);
@@ -101,7 +104,7 @@ function Navigation() {
       <a
         className="brand"
         href="#home"
-        aria-label="tML Pocket Launcher 首页"
+        aria-label={t('tML Pocket Launcher 首页')}
         onClick={(event) => {
           event.preventDefault();
           navigate('home');
@@ -117,7 +120,7 @@ function Navigation() {
             : navigate(page as Page)
         }
         className="launcher-navigation"
-        aria-label={resource ? '下载分类' : '主导航'}
+        aria-label={resource ? t('下载分类') : t('主导航')}
       >
         <div className="nav-highlight-container">
           <BottomNavigationHighlight
@@ -138,7 +141,7 @@ function Navigation() {
                       >
                         <Icon name={symbol} />
                         <BottomNavigationLabel show="always" className="navigation-label">
-                          {label}
+                          {t(label)}
                         </BottomNavigationLabel>
                       </button>
                     </BottomNavigationItem>
@@ -153,29 +156,30 @@ function Navigation() {
         <Button className="sidebar-task" data-action="tasks" onClick={tasks}>
           <Icon name="download" />
           <span>
-            <strong>下载与任务</strong>
+            <strong>{t('下载与任务')}</strong>
             <small id="task-summary">
               {nativeMode
                 ? nativeState?.busy
-                  ? nativeState.message
-                  : '没有正在进行的任务'
+                  ? t(nativeState.message)
+                  : t('没有正在进行的任务')
                 : state.task
                   ? state.task.paused
-                    ? '1 项任务已暂停'
-                    : '1 项下载任务（示例）'
-                  : '没有正在进行的任务'}
+                    ? t('1 项任务已暂停')
+                    : t('1 项下载任务（示例）')
+                  : t('没有正在进行的任务')}
             </small>
           </span>
           <span className="tiny-dot" />
         </Button>
         <div className="sidebar-foot">
-          <span className="online-dot" /> 本地工作空间 <span>v0.1</span>
+          <span className="online-dot" /> {t('本地工作空间')} <span>v0.1</span>
         </div>
       </div>
     </aside>
   );
 }
 function Header() {
+  const { t } = useTranslation();
   const {
     state,
     notice,
@@ -191,6 +195,8 @@ function Header() {
     closeWorkspace,
   } = useGameActions();
   const resource = isResourceWorkspace(nativeWorkspace);
+  const pageTitle = t(nativeWorkspace ? workspaceNames[nativeWorkspace] : pageNames[state.page]);
+  const helpTitle = t('{page}使用说明', { page: t(pageNames[state.page]) });
   const primary = nativeWorkspace
     ? null
     : state.page === 'games' && !nativeMode
@@ -207,13 +213,15 @@ function Header() {
   return (
     <header className="topbar">
       {nativeWorkspace && (
-        <Button className="workspace-back" aria-label="返回上一页" onClick={closeWorkspace}>
+        <Button className="workspace-back" aria-label={t('返回上一页')} onClick={closeWorkspace}>
           <Icon name="arrow" />
         </Button>
       )}
-      {resource && <IconButton symbol="house" label="返回首页" onClick={() => navigate('home')} />}
+      {resource && (
+        <IconButton symbol="house" label={t('返回首页')} onClick={() => navigate('home')} />
+      )}
       <h1 className="screen-title" id="screen-title">
-        {nativeWorkspace ? workspaceNames[nativeWorkspace] : pageNames[state.page]}
+        {pageTitle}
       </h1>
       {!nativeWorkspace && state.page === 'home' && state.preferences.themeStyle === 'tml' && (
         <img
@@ -230,30 +238,34 @@ function Header() {
             <Button
               className="screen-primary"
               data-action={primary.action}
-              aria-label={primary.label}
-              title={primary.label}
+              aria-label={t(primary.label)}
+              title={t(primary.label)}
               onClick={primary.run}
             >
               <Icon name="plus" />
-              <span>{primary.label}</span>
+              <span>{t(primary.label)}</span>
             </Button>
           )}
         </span>
         {!nativeWorkspace && (
           <IconButton
             symbol="info"
-            label={pageNames[state.page] + '使用说明'}
+            label={helpTitle}
             data-action="page-help"
             onClick={() =>
               notice(
-                pageNames[state.page] + '使用说明',
+                helpTitle,
                 nativeMode
                   ? state.page === 'mods'
-                    ? '导入和管理 .tmod 元信息、启用清单与模组包。创意工坊部分文件需要 Steam 客户端获取后导入。'
+                    ? t(
+                        '导入和管理 .tmod 元信息、启用清单与模组包。创意工坊部分文件需要 Steam 客户端获取后导入。',
+                      )
                     : state.page === 'games'
-                      ? '从 Steam / GOG 下载已购 Terraria 资源，导入本地资源包，或选择官方 tModLoader 发行版本。'
-                      : help[state.page]
-                  : help[state.page],
+                      ? t(
+                          '从 Steam / GOG 下载已购 Terraria 资源，导入本地资源包，或选择官方 tModLoader 发行版本。',
+                        )
+                      : t(help[state.page])
+                  : t(help[state.page]),
                 <DemoControl />,
               )
             }
@@ -262,7 +274,7 @@ function Header() {
         {((!nativeWorkspace && (!nativeMode || state.page !== 'games')) || resource) && (
           <Button
             className="icon-button portrait-account"
-            aria-label="管理 Steam 和 GOG 账户"
+            aria-label={t('管理 Steam 和 GOG 账户')}
             data-action="accounts"
             onClick={() => {
               update((current) => ({ ...current, gameTab: nativeMode ? 'sources' : 'accounts' }));
@@ -274,18 +286,22 @@ function Header() {
         )}
         <Button
           className={resource ? 'resource-download-action' : 'icon-button'}
-          aria-label="打开下载任务"
+          aria-label={t('打开下载任务')}
           data-action="tasks"
           onClick={tasks}
         >
           <Icon name="download" />
-          {resource && <span>下载</span>}
+          {resource && <span>{t('下载')}</span>}
           <span id="task-badge" hidden={nativeMode ? !nativeState?.busy : !state.task}>
             1
           </span>
         </Button>
         {resource && (
-          <IconButton symbol="settings" label="打开设置" onClick={() => navigate('settings')} />
+          <IconButton
+            symbol="settings"
+            label={t('打开设置')}
+            onClick={() => navigate('settings')}
+          />
         )}
       </div>
     </header>
@@ -373,6 +389,7 @@ function PageContent() {
   );
 }
 function LaunchDock() {
+  const { t } = useTranslation();
   const launchTransition = useLaunchTransition();
   const { state, navigate, update, instances, notice, showInfo, nativeMode, nativeState } =
     useGameActions();
@@ -385,7 +402,7 @@ function LaunchDock() {
   return (
     <aside
       className={`game-dock ${compact ? 'game-library-dock' : ''}`}
-      aria-label="当前游戏与启动操作"
+      aria-label={t('当前游戏与启动操作')}
     >
       {!compact && (
         <Button className="dock-account" data-action="accounts" onClick={accounts}>
@@ -393,18 +410,18 @@ function LaunchDock() {
             <Icon name="user" />
           </span>
           <span>
-            <strong>{nativeMode ? '正版资源来源' : '未连接账户'}</strong>
+            <strong>{nativeMode ? t('正版资源来源') : t('未连接账户')}</strong>
             <small>Steam / GOG</small>
           </span>
           <Icon name="chevron" />
         </Button>
       )}
-      <footer className="launch-bar" id="launch-bar" aria-label="游戏启动控制">
+      <footer className="launch-bar" id="launch-bar" aria-label={t('游戏启动控制')}>
         <Button
           className="instance-picker"
           data-action="instances"
-          aria-label="选择游戏版本与配置"
-          title={state.demo ? profileTitle(state.profile) : '选择游戏版本与配置'}
+          aria-label={t('选择游戏版本与配置')}
+          title={state.demo ? t(profileTitle(state.profile)) : t('选择游戏版本与配置')}
           onClick={instances}
         >
           <span className="instance-icon">
@@ -414,18 +431,18 @@ function LaunchDock() {
             <small>
               {nativeMode
                 ? nativeState?.tml
-                  ? '已安装'
-                  : '尚未安装'
+                  ? t('已安装')
+                  : t('尚未安装')
                 : state.demo
-                  ? '已安装 · 示例配置'
-                  : '尚未安装'}
+                  ? t('已安装 · 示例配置')
+                  : t('尚未安装')}
             </small>
             <strong>
               {nativeMode
-                ? nativeState?.tml || '选择版本'
+                ? nativeState?.tml || t('选择版本')
                 : state.demo
-                  ? profileTitle(state.profile)
-                  : '选择版本'}
+                  ? t(profileTitle(state.profile))
+                  : t('选择版本')}
             </strong>
           </span>
           <Icon name="chevron" />
@@ -441,23 +458,23 @@ function LaunchDock() {
                 ? launchTransition.start(event.currentTarget)
                 : state.demo
                   ? notice(
-                      '游戏启动流程',
-                      '准备运行环境 → 应用兼容配置 → 加载游戏 → 显示游戏画面。',
+                      t('游戏启动流程'),
+                      t('准备运行环境 → 应用兼容配置 → 加载游戏 → 显示游戏画面。'),
                       <div className="info-strip dialog-spaced">
-                        当前是框架原型；这里展示启动入口，未启动真实游戏。
+                        {t('当前是框架原型；这里展示启动入口，未启动真实游戏。')}
                       </div>,
                     )
                   : navigate('games')
             }
           >
             <Icon name="play" />
-            <span>{ready ? '启动游戏' : '准备游戏'}</span>
+            <span>{ready ? t('启动游戏') : t('准备游戏')}</span>
             <RippleButtonRipples className="launch-ripple" scale={16} aria-hidden="true" />
           </RippleButton>
         </div>
         <Button className="launch-utility" data-action="logs" onClick={() => showInfo('logs')}>
           <Icon name="file" />
-          <span>启动日志</span>
+          <span>{t('启动日志')}</span>
         </Button>
       </footer>
     </aside>

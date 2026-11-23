@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Dialog } from 'radix-ui';
 import { Button, Icon } from '../../components/ui';
@@ -20,6 +21,7 @@ const LaunchContext = createContext<{
 const stageIndex = { resources: 0, ownership: 0, mods: 1, handoff: 2 };
 
 export function LaunchTransitionProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const launcher = useLauncher();
   const [launch, setLaunch] = useState<LaunchState | null>(null);
   const [logs, setLogs] = useState<string | null>(null);
@@ -136,7 +138,7 @@ export function LaunchTransitionProvider({ children }: { children: ReactNode }) 
       : root.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120 });
   };
   const readLogs = async () => {
-    setLogs(history.current.join('\n') || '正在读取启动日志…');
+    setLogs(history.current.join('\n') || t('正在读取启动日志…'));
     try {
       const result = await nativeRequest<{ text: string }>('logs');
       if (locked.current) setLogs([...history.current, '', result.text].join('\n'));
@@ -197,12 +199,12 @@ export function LaunchTransitionProvider({ children }: { children: ReactNode }) 
                   <i className="game-launch-pixel two" />
                 </div>
                 <Dialog.Title>
-                  {launch.phase === 'failed' ? '暂时无法启动' : '准备出发'}
+                  {launch.phase === 'failed' ? t('暂时无法启动') : t('准备出发')}
                 </Dialog.Title>
                 <Dialog.Description id="game-launch-description">
                   {launch.phase === 'failed'
-                    ? '检查问题后，可以再次尝试。'
-                    : '你的世界，即将继续。'}
+                    ? t('检查问题后，可以再次尝试。')
+                    : t('你的世界，即将继续。')}
                 </Dialog.Description>
               </div>
               <div
@@ -227,13 +229,13 @@ export function LaunchTransitionProvider({ children }: { children: ReactNode }) 
                     ))}
                   </div>
                 )}
-                <span>{launch.error || launch.message}</span>
+                <span>{t(launch.error || launch.message)}</span>
                 <small>
                   {launch.phase === 'failed'
-                    ? '可查看日志了解原因'
+                    ? t('可查看日志了解原因')
                     : launch.phase === 'handoff'
-                      ? '首次启动可能需要更长时间'
-                      : '保留你的模组、角色与世界'}
+                      ? t('首次启动可能需要更长时间')
+                      : t('保留你的模组、角色与世界')}
                 </small>
               </div>
               {launch.phase === 'failed' && (
@@ -246,7 +248,7 @@ export function LaunchTransitionProvider({ children }: { children: ReactNode }) 
                         launcher.openWorkspace('steam-login');
                       }}
                     >
-                      前往 Steam
+                      {t('前往 Steam')}
                     </Button>
                   ) : (
                     <Button
@@ -256,24 +258,24 @@ export function LaunchTransitionProvider({ children }: { children: ReactNode }) 
                         start(trigger.current?.isConnected ? trigger.current : surface.current!);
                       }}
                     >
-                      重新尝试
+                      {t('重新尝试')}
                     </Button>
                   )}
-                  <Button onClick={close}>返回启动器</Button>
+                  <Button onClick={close}>{t('返回启动器')}</Button>
                 </div>
               )}
               <footer className="game-launch-bottom">
                 <span>
                   <i />
                   {launch.source === 'android'
-                    ? 'Android 版资源'
+                    ? t('Android 版资源')
                     : launch.source === 'steam'
-                      ? 'Steam 资源'
-                      : '本地启动'}
+                      ? t('Steam 资源')
+                      : t('本地启动')}
                 </span>
                 <button ref={logButton} onClick={() => void readLogs()}>
                   <Icon name="file" />
-                  查看日志
+                  {t('查看日志')}
                 </button>
               </footer>
               {logs !== null && (
@@ -281,7 +283,7 @@ export function LaunchTransitionProvider({ children }: { children: ReactNode }) 
                   <div>
                     <strong>启动日志</strong>
                     <button
-                      aria-label="关闭日志"
+                      aria-label={t('关闭日志')}
                       onClick={() => {
                         setLogs(null);
                         logButton.current?.focus();

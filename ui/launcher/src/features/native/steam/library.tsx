@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Badge, Button, Icon } from '../../../components/ui';
+import { useTranslation } from '../../../i18n';
 import { nativeRequest } from '../../../native/bridge';
 import { useLauncher } from '../../../state/launcher';
 import { SteamBrand } from './brand';
-import { useSteam } from './state';
+import { translateSteamAccountMessage, useSteam } from './state';
 import { useDownloads } from '../download-state';
 
 export function SteamLibraryPage() {
+  const { t, locale } = useTranslation();
   const downloads = useDownloads();
   const { nativeState, openWorkspace } = useLauncher();
   const {
@@ -25,6 +27,7 @@ export function SteamLibraryPage() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const ready = account?.phase === 'ready';
+  const listSeparator = locale === 'en' ? ', ' : '、';
   const logout = async () => {
     setPending(true);
     try {
@@ -44,15 +47,15 @@ export function SteamLibraryPage() {
         <div className="steam-account-chip">
           <Icon name="user" />
           <span>
-            {account?.account || 'Steam 账户'}
-            <small>{ready ? '已连接' : '连接中断'}</small>
+            {account?.account || t('Steam 账户')}
+            <small>{ready ? t('已连接') : t('连接中断')}</small>
           </span>
           <Button
             className="steam-text-button"
             disabled={pending || nativeState?.busy}
             onClick={() => void logout()}
           >
-            退出登录
+            {t('退出登录')}
           </Button>
         </div>
       </div>
@@ -63,8 +66,8 @@ export function SteamLibraryPage() {
       )}
       {!ready && (
         <div className="steam-offline">
-          <p role="status">{account?.message || '正在读取账户状态…'}</p>
-          <Button onClick={() => openWorkspace('steam-login')}>管理 Steam 连接</Button>
+          <p role="status">{translateSteamAccountMessage(account, t) || t('正在读取账户状态…')}</p>
+          <Button onClick={() => openWorkspace('steam-login')}>{t('管理 Steam 连接')}</Button>
         </div>
       )}
       <div className="steam-game-card">
@@ -74,23 +77,23 @@ export function SteamLibraryPage() {
           {details?.headerImage && !imageFailed ? (
             <img
               src={details.headerImage}
-              alt={`${details.name} · Steam 官方封面`}
+              alt={t('{name} · Steam 官方封面', { name: details.name })}
               onError={() => setImageFailed(true)}
             />
           ) : (
             <>
               <Icon name="game" />
               <span>{details?.name || 'Terraria'}</span>
-              <small>{detailsLoading ? '正在获取 Steam 封面…' : 'Steam 游戏资源'}</small>
+              <small>{detailsLoading ? t('正在获取 Steam 封面…') : t('Steam 游戏资源')}</small>
             </>
           )}
         </div>
         <div className="steam-game-details">
           <div className="steam-game-label">
-            <span className="steam-eyebrow">你的游戏库</span>
+            <span className="steam-eyebrow">{t('你的游戏库')}</span>
             {ready && (
               <Badge tone={account?.owned ? 'green' : ''}>
-                {account?.owned ? '拥有 Terraria' : '未拥有游戏'}
+                {account?.owned ? t('拥有 Terraria') : t('未拥有游戏')}
               </Badge>
             )}
           </div>
@@ -98,13 +101,13 @@ export function SteamLibraryPage() {
           <p>
             {details?.description ||
               (detailsLoading
-                ? '正在从 Steam 获取游戏简介…'
-                : '从 Steam 下载已购 Terraria 的游戏资源。')}
+                ? t('正在从 Steam 获取游戏简介…')
+                : t('从 Steam 下载已购 Terraria 的游戏资源。'))}
           </p>
           {details && (
             <>
               {details.genres.length > 0 && (
-                <div className="steam-game-genres" aria-label="Steam 游戏类型">
+                <div className="steam-game-genres" aria-label={t('Steam 游戏类型')}>
                   {details.genres.map((genre) => (
                     <span key={genre}>{genre}</span>
                   ))}
@@ -113,19 +116,19 @@ export function SteamLibraryPage() {
               <dl className="steam-store-facts">
                 {details.developers.length > 0 && (
                   <div>
-                    <dt>开发商</dt>
-                    <dd>{details.developers.join('、')}</dd>
+                    <dt>{t('开发商')}</dt>
+                    <dd>{details.developers.join(listSeparator)}</dd>
                   </div>
                 )}
                 {details.publishers.length > 0 && (
                   <div>
-                    <dt>发行商</dt>
-                    <dd>{details.publishers.join('、')}</dd>
+                    <dt>{t('发行商')}</dt>
+                    <dd>{details.publishers.join(listSeparator)}</dd>
                   </div>
                 )}
                 {details.releaseDate && (
                   <div>
-                    <dt>发行日期</dt>
+                    <dt>{t('发行日期')}</dt>
                     <dd>{details.releaseDate}</dd>
                   </div>
                 )}
@@ -134,22 +137,22 @@ export function SteamLibraryPage() {
           )}
           <dl className="steam-facts">
             <div>
-              <dt>分支</dt>
+              <dt>{t('分支')}</dt>
               <dd>Linux · public</dd>
             </div>
             <div>
-              <dt>内容</dt>
-              <dd>游戏资源 Content</dd>
+              <dt>{t('内容')}</dt>
+              <dd>{t('游戏资源 Content')}</dd>
             </div>
             <div>
-              <dt>安装</dt>
-              <dd>下载后自动校验</dd>
+              <dt>{t('安装')}</dt>
+              <dd>{t('下载后自动校验')}</dd>
             </div>
           </dl>
           {download?.status === 'running' ? (
             <Button className="steam-primary" onClick={() => downloads.show(download.id)}>
               <Icon name="download" />
-              查看下载进度
+              {t('查看下载进度')}
             </Button>
           ) : (
             <Button
@@ -158,43 +161,42 @@ export function SteamLibraryPage() {
               onClick={startDownload}
             >
               <Icon name="download" />
-              下载 Terraria 资源
+              {t('下载 Terraria 资源')}
             </Button>
           )}
           <small className="steam-install-note">
             {nativeState?.terraria
-              ? '本机已有资源，重新下载将更新资源文件。'
-              : '下载完成后会自动安装到启动器。'}
-            模组与存档保留。
+              ? t('本机已有资源，重新下载将更新资源文件。模组与存档保留。')
+              : t('下载完成后会自动安装到启动器。模组与存档保留。')}
           </small>
         </div>
       </div>
       <div className="steam-details-source">
         <span role="status">
           {detailsLoading
-            ? '正在读取 Steam 商店资料…'
+            ? t('正在读取 Steam 商店资料…')
             : detailsError ||
               (details?.stale
-                ? 'Steam 暂时不可用，显示已缓存的详情。'
+                ? t('Steam 暂时不可用，显示已缓存的详情。')
                 : details
-                  ? '游戏详情来自 Steam 商店'
-                  : '尚未读取游戏详情')}
+                  ? t('游戏详情来自 Steam 商店')
+                  : t('尚未读取游戏详情'))}
         </span>
         <Button
           className="steam-text-button"
           disabled={detailsLoading}
           onClick={() => void loadDetails(true)}
         >
-          刷新详情
+          {t('刷新详情')}
         </Button>
       </div>
       <div className="steam-library-bottom">
         <span>
           <Icon name="folder" />
-          {nativeState?.terraria ? '本机已安装 Terraria 资源' : '本机尚未安装 Terraria 资源'}
+          {nativeState?.terraria ? t('本机已安装 Terraria 资源') : t('本机尚未安装 Terraria 资源')}
         </span>
         <Button className="steam-text-button" onClick={() => openWorkspace('downloads')}>
-          查看下载
+          {t('查看下载')}
           <Icon name="arrow" />
         </Button>
       </div>

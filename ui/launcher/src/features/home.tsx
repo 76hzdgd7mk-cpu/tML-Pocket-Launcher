@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n';
 import { useState } from 'react';
 import { Button, Icon, Badge } from '../components/ui';
 import { useGameActions } from './game-actions';
@@ -18,19 +19,20 @@ export const tools: { id: Tool; title: string; detail: string; symbol: string }[
   { id: 'activity', title: '操作记录', detail: '本次使用记录', symbol: 'reset' },
 ];
 export function useWorkspaceActions() {
+  const { t } = useTranslation();
   const actions = useGameActions();
   const { openDialog, navigate, update, tasks, showInfo, nativeMode } = actions;
   const customize = () =>
     openDialog({
-      title: '自定义常用工具',
-      description: '选择四项放在首页；显示顺序按选择顺序排列。',
+      title: t('自定义常用工具'),
+      description: t('选择四项放在首页；显示顺序按选择顺序排列。'),
       body: <ShortcutPicker />,
       drawer: true,
     });
   const activity = () =>
     openDialog({
-      title: '操作记录',
-      description: '本次会话的最近 50 条记录；配置、下载和提示分开查看。',
+      title: t('操作记录'),
+      description: t('本次会话的最近 50 条记录；配置、下载和提示分开查看。'),
       body: <ActivityPanel />,
       drawer: true,
     });
@@ -55,6 +57,7 @@ export function useWorkspaceActions() {
   return { ...actions, customize, activity, openTool };
 }
 export function HomePage() {
+  const { t, locale } = useTranslation();
   const {
     state,
     installed,
@@ -74,36 +77,36 @@ export function HomePage() {
   const setup = [
     {
       symbol: 'folder',
-      title: 'Terraria 资源',
-      detail: ready ? '资源完整性校验通过' : 'Steam / GOG 下载，或导入本地 ZIP',
+      title: t('Terraria 资源'),
+      detail: ready ? t('资源完整性校验通过') : t('Steam / GOG 下载，或导入本地 ZIP'),
       action: getTerraria,
-      label: '获取',
+      label: t('获取'),
       id: 'get-terraria',
     },
     {
       symbol: 'game',
       title: 'tModLoader',
-      detail: ready ? profileTitle(state.profile) : '下载官方发行版，或导入发行 ZIP',
+      detail: ready ? profileTitle(state.profile) : t('下载官方发行版，或导入发行 ZIP'),
       action: versions,
-      label: '添加',
+      label: t('添加'),
       id: 'versions',
     },
     {
       symbol: 'patch',
-      title: '运行环境',
-      detail: ready ? 'Android 内置适配已就绪' : '资源安装后检查兼容性',
+      title: t('运行环境'),
+      detail: ready ? t('Android 内置适配已就绪') : t('资源安装后检查兼容性'),
       action: environment,
-      label: '检查',
+      label: t('检查'),
       id: 'environment',
     },
   ];
   return (
     <>
       <div className="home-workspace">
-        <section className="panel game-overview setup-panel" aria-label="tModLoader 游戏状态">
+        <section className="panel game-overview setup-panel" aria-label={t('tModLoader 游戏状态')}>
           <div className="workspace-section">
-            <h2>游戏准备</h2>
-            <span>{ready ? '3 / 3 已就绪' : '0 / 3 已完成'}</span>
+            <h2>{t('游戏准备')}</h2>
+            <span>{ready ? t('3 / 3 已就绪') : t('0 / 3 已完成')}</span>
           </div>
           {setup.map((item) => (
             <Button
@@ -116,11 +119,11 @@ export function HomePage() {
                 <Icon name={item.symbol} />
               </span>
               <span className="setup-copy">
-                <strong>{item.title}</strong>
-                <small>{item.detail}</small>
+                <strong>{t(item.title)}</strong>
+                <small>{t(item.detail)}</small>
               </span>
               <span className={`setup-state ${ready ? 'complete' : ''}`}>
-                {ready ? <Icon name="check" /> : <span>{item.label}</span>}
+                {ready ? <Icon name="check" /> : <span>{t(item.label)}</span>}
                 <Icon name="chevron" />
               </span>
             </Button>
@@ -128,9 +131,9 @@ export function HomePage() {
         </section>
         <section className="home-tools">
           <div className="workspace-section tools-heading">
-            <h2>常用工具</h2>
+            <h2>{t('常用工具')}</h2>
             <Button className="quiet-action" data-action="extra-shortcuts" onClick={customize}>
-              自定义 <Icon name="sliders" />
+              {t('自定义')} <Icon name="sliders" />
             </Button>
           </div>
           <div className="workspace-tools">
@@ -140,8 +143,8 @@ export function HomePage() {
                 <Button key={id} data-action={`extra-tool-${id}`} onClick={() => openTool(id)}>
                   <Icon name={tool.symbol} />
                   <span>
-                    <strong>{tool.title}</strong>
-                    <small>{tool.detail}</small>
+                    <strong>{t(tool.title)}</strong>
+                    <small>{t(tool.detail)}</small>
                   </span>
                   <Icon name="chevron" />
                 </Button>
@@ -150,14 +153,16 @@ export function HomePage() {
           </div>
         </section>
       </div>
-      <section className="panel workspace-overview" aria-label="配置概览">
+      <section className="panel workspace-overview" aria-label={t('配置概览')}>
         <div className="workspace-section">
           <div>
-            <h2>配置概览</h2>
-            <p>{ready ? profileTitle(state.profile) + ' · 示例数据' : '尚未选择游戏版本'}</p>
+            <h2>{t('配置概览')}</h2>
+            <p>
+              {ready ? t(profileTitle(state.profile)) + t(' · 示例数据') : t('尚未选择游戏版本')}
+            </p>
           </div>
           <Button className="quiet-action" data-action="instances" onClick={instances}>
-            切换 <Icon name="chevron" />
+            {t('切换')} <Icon name="chevron" />
           </Button>
         </div>
         <div className="overview-stats">
@@ -177,7 +182,7 @@ export function HomePage() {
               {installed.filter((mod) => mod.enabled).length}
               <small> / {installed.length}</small>
             </strong>
-            <span>启用模组</span>
+            <span>{t('启用模组')}</span>
           </Button>
           <Button
             data-action="extra-updates"
@@ -191,15 +196,15 @@ export function HomePage() {
             }}
           >
             <strong>{installed.filter(needsUpdate).length}</strong>
-            <span>可更新模组</span>
+            <span>{t('可更新模组')}</span>
           </Button>
           <Button data-action="extra-tool-patches" onClick={() => openTool('patches')}>
             <strong>{ready && state.patchEnabled ? 1 : 0}</strong>
-            <span>可选补丁</span>
+            <span>{t('可选补丁')}</span>
           </Button>
           <Button data-action="tasks" onClick={tasks}>
             <strong>{state.task ? 1 : 0}</strong>
-            <span>下载任务</span>
+            <span>{t('下载任务')}</span>
           </Button>
         </div>
         <Button className="home-activity" data-action="extra-activity" onClick={activity}>
@@ -208,32 +213,35 @@ export function HomePage() {
               <Icon name="reset" />
             </span>
             <span>
-              <strong>{last?.text || '从这里继续你的冒险'}</strong>
+              <strong>{t(last?.text || '从这里继续你的冒险')}</strong>
               <small>
-                {last ? `${last.kind} · ${time(last.time)}` : '本次操作记录会保留到关闭预览。'}
+                {last
+                  ? `${t(last.kind)} · ${time(last.time, locale)}`
+                  : t('本次操作记录会保留到关闭预览。')}
               </small>
             </span>
           </span>
           <span className="activity-more">
-            全部记录 <Icon name="chevron" />
+            {t('全部记录')} <Icon name="chevron" />
           </span>
         </Button>
       </section>
       <p className="workspace-footnote">
         <Icon name="lock" />
-        存档与模组独立保存，更新游戏时保留。
+        {t('存档与模组独立保存，更新游戏时保留。')}
       </p>
     </>
   );
 }
 function ShortcutPicker() {
+  const { t } = useTranslation();
   const { state, setPreferences, closeDialog, notify } = useWorkspaceActions();
   const [draft, setDraft] = useState([...state.preferences.quickTools]);
   const [full, setFull] = useState(false);
   return (
     <>
       <div className="shortcut-count" id="shortcut-count" role="status">
-        {full ? '已满 4 项，请先取消一项' : `已选择 ${draft.length} / 4`}
+        {full ? t('已满 4 项，请先取消一项') : t('已选择 {count} / 4', { count: draft.length })}
       </div>
       <div className="shortcut-options">
         {tools.map((tool) => (
@@ -250,8 +258,8 @@ function ShortcutPicker() {
           >
             <Icon name={tool.symbol} />
             <span>
-              <strong>{tool.title}</strong>
-              <small>{tool.detail}</small>
+              <strong>{t(tool.title)}</strong>
+              <small>{t(tool.detail)}</small>
             </span>
             <span className="shortcut-check">
               <Icon name="check" />
@@ -259,10 +267,10 @@ function ShortcutPicker() {
           </Button>
         ))}
       </div>
-      <p className="shortcut-hint">先取消一项，即可替换。取消或关闭不会保存。</p>
+      <p className="shortcut-hint">{t('先取消一项，即可替换。取消或关闭不会保存。')}</p>
       <div className="dialog-actions feature-actions">
         <Button data-action="close" onClick={() => closeDialog()}>
-          取消
+          {t('取消')}
         </Button>
         <Button
           variant="primary"
@@ -274,15 +282,16 @@ function ShortcutPicker() {
             notify('已保存首页快捷入口。');
           }}
         >
-          保存布局
+          {t('保存布局')}
         </Button>
       </div>
     </>
   );
 }
-const time = (value: number) =>
-  new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+const time = (value: number, locale: string) =>
+  new Date(value).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 function ActivityPanel() {
+  const { t, locale } = useTranslation();
   const { state, update, openDialog, closeDialog } = useWorkspaceActions();
   const [filter, setFilter] = useState<ActivityKind | '全部'>('全部');
   const entries = state.activity
@@ -290,7 +299,7 @@ function ActivityPanel() {
     .toReversed();
   return (
     <>
-      <div className="activity-filters" role="group" aria-label="筛选操作记录">
+      <div className="activity-filters" role="group" aria-label={t('筛选操作记录')}>
         {(['全部', '配置', '任务', '提示'] as const).map((kind) => (
           <Button
             key={kind}
@@ -298,7 +307,7 @@ function ActivityPanel() {
             aria-pressed={filter === kind}
             onClick={() => setFilter(kind)}
           >
-            {kind}
+            {t(kind)}
           </Button>
         ))}
       </div>
@@ -315,9 +324,9 @@ function ActivityPanel() {
                   />
                 </span>
                 <span>
-                  <strong>{item.text}</strong>
+                  <strong>{t(item.text)}</strong>
                   <small>
-                    {item.kind} · {time(item.time)}
+                    {t(item.kind)} · {time(item.time, locale)}
                   </small>
                 </span>
               </li>
@@ -326,8 +335,8 @@ function ActivityPanel() {
         ) : (
           <div className="activity-empty">
             <Icon name="reset" />
-            <strong>暂无{filter === '全部' ? '' : filter}记录</strong>
-            <p>操作后会显示在这里，不会在刷新后保留。</p>
+            <strong>{t(filter === '全部' ? '暂无记录' : `暂无${filter}记录`)}</strong>
+            <p>{t('操作后会显示在这里，不会在刷新后保留。')}</p>
           </div>
         )}
       </div>
@@ -337,34 +346,34 @@ function ActivityPanel() {
           data-action="extra-clear-activity"
           onClick={() =>
             openDialog({
-              title: '清空本次操作记录？',
-              description: '只清除当前会话的记录，游戏数据与设置不受影响。',
+              title: t('清空本次操作记录？'),
+              description: t('只清除当前会话的记录，游戏数据与设置不受影响。'),
               actions: (
                 <>
-                  <Button onClick={() => closeDialog()}>取消</Button>
+                  <Button onClick={() => closeDialog()}>{t('取消')}</Button>
                   <Button
                     variant="primary"
                     data-action="extra-confirm-clear"
                     onClick={() => {
                       update((current) => ({ ...current, activity: [] }));
                       openDialog({
-                        title: '操作记录',
-                        description: '本次会话的最近 50 条记录；配置、下载和提示分开查看。',
+                        title: t('操作记录'),
+                        description: t('本次会话的最近 50 条记录；配置、下载和提示分开查看。'),
                         body: <ActivityPanel />,
                         drawer: true,
                       });
                     }}
                   >
-                    确认清空
+                    {t('确认清空')}
                   </Button>
                 </>
               ),
             })
           }
         >
-          清空记录
+          {t('清空记录')}
         </Button>
-        <Badge>仅本次会话</Badge>
+        <Badge>{t('仅本次会话')}</Badge>
       </div>
     </>
   );

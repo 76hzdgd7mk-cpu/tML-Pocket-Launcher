@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n';
 import { useState } from 'react';
 import type { Task } from '../domain/types';
 import { useLauncher, profileTitle } from '../state/launcher';
@@ -7,6 +8,7 @@ import { Select } from '../components/form-controls';
 import { useNativeActions } from './native/actions';
 
 export function useGameActions() {
+  const { t } = useTranslation();
   const launcher = useLauncher();
   const nativeActions = useNativeActions(launcher);
   const { state, update, openDialog, closeDialog, navigate, record } = launcher;
@@ -17,24 +19,24 @@ export function useGameActions() {
       body,
       actions: (
         <Button variant="primary" data-action="close" onClick={() => closeDialog()}>
-          知道了
+          {t('知道了')}
         </Button>
       ),
     });
   const tasks = () =>
     openDialog({
-      title: '下载与任务',
-      description: '下载时可以切换页面；任务状态始终可查看。',
+      title: t('下载与任务'),
+      description: t('下载时可以切换页面；任务状态始终可查看。'),
       body: <TaskPanel />,
       drawer: true,
     });
   const startTask = (kind: Task['kind'], ids: string[] = []) => {
     if (state.task) {
       notice(
-        '已有下载任务',
-        '先完成或取消当前示例任务，再开始另一项下载。',
+        t('已有下载任务'),
+        t('先完成或取消当前示例任务，再开始另一项下载。'),
         <Button variant="soft" onClick={tasks}>
-          查看当前任务
+          {t('查看当前任务')}
         </Button>,
       );
       return;
@@ -45,11 +47,11 @@ export function useGameActions() {
   };
   const accounts = (platform: 'steam' | 'gog') =>
     openDialog({
-      title: `连接 ${platform === 'steam' ? 'Steam' : 'GOG'} 账户`,
+      title: t('连接 {platform} 账户', { platform: platform === 'steam' ? 'Steam' : 'GOG' }),
       description:
         platform === 'steam'
-          ? '通过 Steam 登录并验证已购 Terraria。'
-          : '通过 GOG 官方授权页面连接账户，验证已购 Terraria。',
+          ? t('通过 Steam 登录并验证已购 Terraria。')
+          : t('通过 GOG 官方授权页面连接账户，验证已购 Terraria。'),
       body: (
         <>
           <div className="steps-list">
@@ -63,37 +65,39 @@ export function useGameActions() {
               <div className="step" key={title}>
                 <span className="step-index">{index + 1}</span>
                 <div className="step-copy">
-                  <strong>{title}</strong>
-                  <p>{description}</p>
+                  <strong>{t(title)}</strong>
+                  <p>{t(description)}</p>
                 </div>
               </div>
             ))}
           </div>
           <div className="info-strip">
             <Icon name="info" />
-            此处用于查看登录流程设计，不会收集账户信息。
+            {t('此处用于查看登录流程设计，不会收集账户信息。')}
           </div>
         </>
       ),
       actions: (
         <>
           <Button data-action="close" onClick={() => closeDialog()}>
-            取消
+            {t('取消')}
           </Button>
           <Button
             variant="primary"
             data-action={`account-library-${platform}`}
             onClick={() => library(platform)}
           >
-            预览授权后流程
+            {t('预览授权后流程')}
           </Button>
         </>
       ),
     });
   const library = (platform: 'steam' | 'gog') =>
     openDialog({
-      title: '选择已购资源',
-      description: `${platform === 'steam' ? 'Steam' : 'GOG'} 游戏库 · 示例状态`,
+      title: t('选择已购资源'),
+      description: t('{platform} 游戏库 · 示例状态', {
+        platform: platform === 'steam' ? 'Steam' : 'GOG',
+      }),
       body: (
         <>
           <div className="panel dialog-spaced">
@@ -103,51 +107,51 @@ export function useGameActions() {
               </span>
               <div className="resource-copy">
                 <h3>Terraria</h3>
-                <p>原版游戏资源</p>
-                <Badge tone="green">所有权已验证（示例）</Badge>
+                <p>{t('原版游戏资源')}</p>
+                <Badge tone="green">{t('所有权已验证（示例）')}</Badge>
               </div>
             </div>
           </div>
           <div className="setting-row">
-            <strong>资源版本</strong>
+            <strong>{t('资源版本')}</strong>
             <Select
-              label="选择资源版本"
+              label={t('选择资源版本')}
               defaultValue="compatible"
-              options={[['compatible', '与当前 tML 兼容的版本']]}
+              options={[['compatible', t('与当前 tML 兼容的版本')]]}
             />
           </div>
-          <p>正式流程应展示版本、下载大小、可用空间与来源。</p>
+          <p>{t('正式流程应展示版本、下载大小、可用空间与来源。')}</p>
         </>
       ),
       actions: (
         <>
-          <Button onClick={() => accounts(platform)}>返回</Button>
+          <Button onClick={() => accounts(platform)}>{t('返回')}</Button>
           <Button
             variant="primary"
             symbol="download"
             data-action="start-task-terraria"
             onClick={() => startTask('terraria')}
           >
-            演示下载任务
+            {t('演示下载任务')}
           </Button>
         </>
       ),
     });
   const versions = () =>
     openDialog({
-      title: '选择 tModLoader 版本',
-      description: '稳定版适合日常游玩；预览版请先确认模组兼容性。',
+      title: t('选择 tModLoader 版本'),
+      description: t('稳定版适合日常游玩；预览版请先确认模组兼容性。'),
       body: <ReleaseList />,
       drawer: true,
     });
   const instances = () =>
     openDialog({
-      title: '版本与启动配置',
-      description: '选择用于启动的已安装版本；下载新版本后会出现在这里。',
+      title: t('版本与启动配置'),
+      description: t('选择用于启动的已安装版本；下载新版本后会出现在这里。'),
       body: <InstanceList />,
       actions: state.demo ? (
         <Button variant="soft" symbol="plus" onClick={versions}>
-          添加版本
+          {t('添加版本')}
         </Button>
       ) : undefined,
       drawer: true,
@@ -181,23 +185,23 @@ export function useGameActions() {
       ],
     }[kind];
     notice(
-      title,
-      description,
+      t(title),
+      t(description),
       <>
         <div className="info-strip dialog-spaced">
           <Icon name="file" />
-          {steps}
+          {t(steps)}
         </div>
         <p className="dialog-spaced">
-          框架原型展示导入确认的位置与流程；文件操作将在 Android 界面实现时接入。
+          {t('框架原型展示导入确认的位置与流程；文件操作将在 Android 界面实现时接入。')}
         </p>
       </>,
     );
   };
   const environment = () =>
     notice(
-      '运行环境检查',
-      '启动前验证游戏资源、运行时、模组依赖与补丁目标。',
+      t('运行环境检查'),
+      t('启动前验证游戏资源、运行时、模组依赖与补丁目标。'),
       <div className="steps-list">
         {[
           ['游戏资源完整性', 'Terraria Content 与 tML 发行包'],
@@ -207,8 +211,8 @@ export function useGameActions() {
           <div className="step" key={title}>
             <span className="step-index">{index + 1}</span>
             <div className="step-copy">
-              <strong>{title}</strong>
-              <p>{description}</p>
+              <strong>{t(title)}</strong>
+              <p>{t(description)}</p>
             </div>
           </div>
         ))}
@@ -239,13 +243,17 @@ export function useGameActions() {
         '模组与存档独立于游戏发行包，规划位置为 userdata/Mods；enabled.json 保存启用列表。',
       ],
     };
+    const info = infos[id];
+    if (!info) return;
+    const [title, description] = info;
     if (id === 'licenses')
       notice(
-        ...infos[id],
+        t(title),
+        t(description),
         <div>
           <p>
             <a href="/animate-ui-license.txt" target="_blank" rel="noreferrer">
-              Animate UI 许可与版权
+              {t('Animate UI 许可与版权')}
             </a>
           </p>
           <p>
@@ -254,12 +262,12 @@ export function useGameActions() {
               target="_blank"
               rel="noreferrer"
             >
-              液态玻璃 WebGL 参考实现
+              {t('液态玻璃 WebGL 参考实现')}
             </a>
           </p>
         </div>,
       );
-    else if (infos[id]) notice(...infos[id]);
+    else notice(t(title), t(description));
   };
   return {
     ...launcher,
@@ -282,19 +290,20 @@ export function useGameActions() {
   };
 }
 function InstanceList() {
+  const { t } = useTranslation();
   const { state, update, closeDialog, navigate, record, versions, importInfo } = useGameActions();
   if (!state.demo)
     return (
       <EmptyState
         symbol="game"
-        title="还没有可用版本"
-        description="先下载或导入 tModLoader，再选择用于启动的版本与配置。"
+        title={t('还没有可用版本')}
+        description={t('先下载或导入 tModLoader，再选择用于启动的版本与配置。')}
       >
         <Button variant="primary" symbol="download" onClick={versions}>
-          下载 tML
+          {t('下载 tML')}
         </Button>
         <Button symbol="folder" onClick={() => importInfo('tml')}>
-          导入 ZIP
+          {t('导入 ZIP')}
         </Button>
       </EmptyState>
     );
@@ -319,8 +328,8 @@ function InstanceList() {
             <Icon name="game" />
           </span>
           <span>
-            <strong>{profile === 'stable' ? '默认配置' : '测试配置'}</strong>
-            <small>{profileTitle(profile)} · 示例安装</small>
+            <strong>{profile === 'stable' ? t('默认配置') : t('测试配置')}</strong>
+            <small>{t('{profile} · 示例安装', { profile: t(profileTitle(profile)) })}</small>
           </span>
           <Icon name={state.profile === profile ? 'check' : 'chevron'} />
         </Button>
@@ -329,6 +338,7 @@ function InstanceList() {
   );
 }
 function ReleaseList() {
+  const { t } = useTranslation();
   const [channel, setChannel] = useState('all');
   const { openDialog, versions, startTask } = useGameActions();
   return (
@@ -345,7 +355,7 @@ function ReleaseList() {
             data-version-filter={id}
             onClick={() => setChannel(id)}
           >
-            {label}
+            {t(label)}
           </Button>
         ))}
       </div>
@@ -358,62 +368,63 @@ function ReleaseList() {
             hidden={channel !== 'all' && channel !== profile}
           >
             <div className="row-main">
-              <h3>{profileTitle(profile)}</h3>
-              <p>正式接入后展示官方版本号、日期和大小</p>
+              <h3>{t(profileTitle(profile))}</h3>
+              <p>{t('正式接入后展示官方版本号、日期和大小')}</p>
             </div>
             <Badge tone={profile === 'stable' ? 'green' : 'blue'}>
-              {profile === 'stable' ? '稳定版' : '预览版'}
+              {profile === 'stable' ? t('稳定版') : t('预览版')}
             </Badge>
             <Button
               variant="soft"
               data-action={`select-release-${profile}`}
               onClick={() =>
                 openDialog({
-                  title: '确认安装版本',
-                  description: '当前选择：' + profileTitle(profile),
+                  title: t('确认安装版本'),
+                  description: t('当前选择：{profile}', { profile: t(profileTitle(profile)) }),
                   body: (
                     <div className="info-strip dialog-spaced">
                       <Icon name="info" />
-                      安装前检查所需空间与模组兼容性，替换游戏时保留存档和模组。
+                      {t('安装前检查所需空间与模组兼容性，替换游戏时保留存档和模组。')}
                     </div>
                   ),
                   actions: (
                     <>
-                      <Button onClick={versions}>返回版本列表</Button>
+                      <Button onClick={versions}>{t('返回版本列表')}</Button>
                       <Button
                         variant="primary"
                         symbol="download"
                         data-action="start-task-tml"
                         onClick={() => startTask('tml')}
                       >
-                        演示下载任务
+                        {t('演示下载任务')}
                       </Button>
                     </>
                   ),
                 })
               }
             >
-              选择
+              {t('选择')}
             </Button>
           </div>
         ))}
       </div>
       <div className="info-strip dialog-spaced">
         <Icon name="info" />
-        数据来源设计：GitHub Releases · tModLoader/tModLoader
+        {t('数据来源设计：GitHub Releases · tModLoader/tModLoader')}
       </div>
     </>
   );
 }
 export function TaskPanel() {
+  const { t } = useTranslation();
   const { state, update, closeDialog, navigate, record, notify } = useGameActions();
   const task = state.task;
   if (!task)
     return (
       <EmptyState
         symbol="download"
-        title="暂时没有下载任务"
-        description="游戏资源、版本与补丁的下载进度统一出现在这里。"
+        title={t('暂时没有下载任务')}
+        description={t('游戏资源、版本与补丁的下载进度统一出现在这里。')}
       >
         <Button
           variant="soft"
@@ -424,7 +435,7 @@ export function TaskPanel() {
             navigate('games');
           }}
         >
-          获取资源
+          {t('获取资源')}
         </Button>
       </EmptyState>
     );
@@ -462,25 +473,25 @@ export function TaskPanel() {
       <div className="row-main">
         <h3>
           {task.kind === 'mods'
-            ? `${task.ids.length} 项模组与依赖`
+            ? t('{count} 项模组与依赖', { count: task.ids.length })
             : task.kind === 'terraria'
-              ? 'Terraria 资源'
-              : 'tModLoader 发行包'}
+              ? t('Terraria 资源')
+              : t('tModLoader 发行包')}
         </h3>
-        <Badge tone="green">{task.paused ? '已暂停' : '下载中'}</Badge>
+        <Badge tone="green">{task.paused ? t('已暂停') : t('下载中')}</Badge>
       </div>
-      <p className="tiny muted dialog-spaced">示例下载任务</p>
+      <p className="tiny muted dialog-spaced">{t('示例下载任务')}</p>
       <TaskProgress />
       <div className="task-meta">
-        <span>38% · 示例进度</span>
-        <span>{task.paused ? '等待继续' : '下载 → 校验 → 安装'}</span>
+        <span>{t('38% · 示例进度')}</span>
+        <span>{task.paused ? t('等待继续') : t('下载 → 校验 → 安装')}</span>
       </div>
       {task.kind === 'mods' && (
         <div className="mod-plan mod-transfer-items">
           {task.ids.map((id) => (
             <div key={id}>
               <strong>{catalog.find((mod) => mod.id === id)?.title}</strong>
-              <span>示例文件</span>
+              <span>{t('示例文件')}</span>
             </div>
           ))}
         </div>
@@ -497,7 +508,7 @@ export function TaskPanel() {
             record(task.paused ? '示例任务已继续' : '示例任务已暂停', '任务');
           }}
         >
-          {task.paused ? '继续' : '暂停'}
+          {task.paused ? t('继续') : t('暂停')}
         </Button>
         <Button
           variant="ghost"
@@ -505,7 +516,7 @@ export function TaskPanel() {
           data-action={task.kind === 'mods' ? 'mw-cancel-download' : 'cancel-task'}
           onClick={cancel}
         >
-          取消任务
+          {t('取消任务')}
         </Button>
       </div>
       {task.kind === 'mods' && (
@@ -515,7 +526,7 @@ export function TaskPanel() {
           data-action="mw-finish-download"
           onClick={finish}
         >
-          模拟下载完成
+          {t('模拟下载完成')}
         </Button>
       )}
     </div>

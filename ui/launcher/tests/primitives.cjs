@@ -11,6 +11,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     channel: process.env.PLAYWRIGHT_CHANNEL || 'msedge',
   });
   const page = await browser.newPage({
+    locale: 'zh-CN',
     viewport: { width: 932, height: 430 },
     reducedMotion: 'no-preference',
   });

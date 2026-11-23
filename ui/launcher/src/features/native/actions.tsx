@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui';
+import { useTranslation } from '../../i18n';
 import { useLauncher, type LauncherContextValue } from '../../state/launcher';
 import { nativeRequest } from '../../native/bridge';
 import { NativeGogPanel } from './gog';
@@ -9,6 +10,7 @@ import { NativeVersionManager } from './versions';
 import { NativeAcquireAction } from './controls';
 
 export function useNativeActions(launcher: LauncherContextValue) {
+  const { t } = useTranslation();
   const { openDialog, closeDialog, navigate, notify, openWorkspace } = launcher;
   const { openSteam } = useSteam();
   const { browse } = useNativeFileBrowser();
@@ -16,7 +18,9 @@ export function useNativeActions(launcher: LauncherContextValue) {
     openDialog({ title, description, body });
   const run = (method: string, params: object = {}) => {
     closeDialog(false);
-    void nativeRequest(method, params).catch((error: Error) => notice('操作未完成', error.message));
+    void nativeRequest(method, params).catch((error: Error) =>
+      notice(t('操作未完成'), error.message),
+    );
   };
   const tasks = () => openWorkspace('downloads');
   const versions = () => openWorkspace('resource-versions');
@@ -28,19 +32,19 @@ export function useNativeActions(launcher: LauncherContextValue) {
       choose: (files) => nativeRequest('import', { kind, files }),
       failed: (failure) =>
         openDialog({
-          title: '导入失败',
-          description: '无法导入所选文件，请查看具体原因后重新选择。',
+          title: t('导入失败'),
+          description: t('无法导入所选文件，请查看具体原因后重新选择。'),
           body: (
             <pre className="native-log" role="alert" tabIndex={0}>
               {failure instanceof Error && failure.message.trim()
                 ? failure.message
-                : '操作失败，未提供错误详情。'}
+                : t('操作失败，未提供错误详情。')}
             </pre>
           ),
           actions: (
             <>
-              <Button onClick={() => closeDialog()}>关闭</Button>
-              <Button onClick={() => importFile(kind)}>重新选择</Button>
+              <Button onClick={() => closeDialog()}>{t('关闭')}</Button>
+              <Button onClick={() => importFile(kind)}>{t('重新选择')}</Button>
             </>
           ),
         }),
@@ -48,9 +52,10 @@ export function useNativeActions(launcher: LauncherContextValue) {
         if (!imported) return;
         if (kind === 'terraria-steam') {
           openDialog({
-            title: 'Steam 资源已导入',
-            description:
+            title: t('Steam 资源已导入'),
+            description: t(
               '启动前需要登录拥有 Terraria 的 Steam 账户。每次启动都会在线验证游戏所有权。',
+            ),
             actions: (
               <Button
                 onClick={() => {
@@ -58,15 +63,15 @@ export function useNativeActions(launcher: LauncherContextValue) {
                   openSteam();
                 }}
               >
-                前往 Steam
+                {t('前往 Steam')}
               </Button>
             ),
           });
         } else
           notify(
             kind === 'terraria-gog'
-              ? 'GOG 资源已导入并校验，无需登录即可启动。'
-              : '文件已导入并校验。',
+              ? t('GOG 资源已导入并校验，无需登录即可启动。')
+              : t('文件已导入并校验。'),
             '配置',
           );
       },
@@ -78,23 +83,23 @@ export function useNativeActions(launcher: LauncherContextValue) {
       return;
     }
     openDialog({
-      title: '导入 Terraria 资源',
-      description: '选择资源来源。安装时保留模组与存档。',
+      title: t('导入 Terraria 资源'),
+      description: t('选择资源来源。安装时保留模组与存档。'),
       body: (
         <div className="native-stack">
           <div className="resource-row">
             <div className="resource-copy">
               <h3>Steam · ZIP</h3>
-              <p>启动前登录 Steam，并在线验证账户拥有 Terraria。</p>
+              <p>{t('启动前登录 Steam，并在线验证账户拥有 Terraria。')}</p>
             </div>
-            <Button onClick={() => importFile('terraria-steam')}>选择 ZIP</Button>
+            <Button onClick={() => importFile('terraria-steam')}>{t('选择 ZIP')}</Button>
           </div>
           <div className="resource-row">
             <div className="resource-copy">
               <h3>GOG · Linux .sh</h3>
-              <p>导入离线安装包，无需登录或验证游戏所有权。</p>
+              <p>{t('导入离线安装包，无需登录或验证游戏所有权。')}</p>
             </div>
-            <Button onClick={() => importFile('terraria-gog')}>选择 .sh</Button>
+            <Button onClick={() => importFile('terraria-gog')}>{t('选择 .sh')}</Button>
           </div>
         </div>
       ),
@@ -104,26 +109,28 @@ export function useNativeActions(launcher: LauncherContextValue) {
     platform === 'steam'
       ? openSteam()
       : openDialog({
-          title: 'GOG 登录与下载',
-          description: '登录拥有 Terraria 的账户，下载并校验游戏资源。安装时保留现有模组与存档。',
+          title: t('GOG 登录与下载'),
+          description: t(
+            '登录拥有 Terraria 的账户，下载并校验游戏资源。安装时保留现有模组与存档。',
+          ),
           body: <NativeGogPanel />,
           drawer: true,
         });
   const addMods = () =>
     openDialog({
-      title: '添加模组',
-      description: '选择获取方式。安装后可在「已安装」中管理启用状态。',
+      title: t('添加模组'),
+      description: t('选择获取方式。安装后可在「已安装」中管理启用状态。'),
       body: (
         <div className="native-acquire-options">
           <NativeAcquireAction
-            title="下载模组"
-            description="进入 Steam 创意工坊下载中心"
+            title={t('下载模组')}
+            description={t('进入 Steam 创意工坊下载中心')}
             symbol="download"
             onClick={() => openWorkspace('resource-mods')}
           />
           <NativeAcquireAction
-            title="导入 .tmod"
-            description="选择本地模组文件，支持多选"
+            title={t('导入 .tmod')}
+            description={t('选择本地模组文件，支持多选')}
             symbol="folder"
             onClick={() => importInfo('mod')}
           />
@@ -132,14 +139,15 @@ export function useNativeActions(launcher: LauncherContextValue) {
     });
   const instances = () =>
     openDialog({
-      title: '已安装版本',
-      description:
+      title: t('已安装版本'),
+      description: t(
         '不同 tML 版本独立安装。选择下次启动版本，或卸载指定版本。存档、模组与 Terraria 资源共用并保留。',
+      ),
       body: <NativeVersionManager />,
       actions: (
         <>
-          <Button onClick={versions}>下载版本</Button>
-          <Button onClick={() => importInfo('tml')}>导入 ZIP</Button>
+          <Button onClick={versions}>{t('下载版本')}</Button>
+          <Button onClick={() => importInfo('tml')}>{t('导入 ZIP')}</Button>
         </>
       ),
       drawer: true,
@@ -148,60 +156,61 @@ export function useNativeActions(launcher: LauncherContextValue) {
     void nativeRequest('refresh')
       .then(() => {
         openDialog({
-          title: '运行环境检查',
-          description: '根据设备中实际安装的资源检查。',
+          title: t('运行环境检查'),
+          description: t('根据设备中实际安装的资源检查。'),
           body: <NativeEnvironment />,
         });
       })
-      .catch((error: Error) => notice('检查失败', error.message));
+      .catch((error: Error) => notice(t('检查失败'), error.message));
   };
   const showInfo = (id: string) => {
     if (id === 'logs')
       openDialog({
-        title: '诊断日志',
-        description: '读取本机最近的运行日志。',
+        title: t('诊断日志'),
+        description: t('读取本机最近的运行日志。'),
         body: <NativeLogs />,
         drawer: true,
       });
     else if (['storage-paths', 'mod-folder', 'cache'].includes(id))
       openDialog({
-        title: id === 'cache' ? '缓存管理' : '数据目录',
-        description: '数据保存在应用专用目录，重新安装游戏发行包不会删除模组和存档。',
+        title: id === 'cache' ? t('缓存管理') : t('数据目录'),
+        description: t('数据保存在应用专用目录，重新安装游戏发行包不会删除模组和存档。'),
         body: <NativeStorage clear={id === 'cache'} />,
         drawer: true,
       });
     else if (id === 'launch-args')
       openDialog({
-        title: '启动参数',
-        description: '每行一个参数，下一次启动生效。数据目录由启动器管理。',
+        title: t('启动参数'),
+        description: t('每行一个参数，下一次启动生效。数据目录由启动器管理。'),
         body: <NativeArguments />,
         drawer: true,
       });
     else if (id === 'controls-layout')
       notice(
-        '触控布局',
-        '在启动器的「设置 → 触控与输入」编辑控制和界面布局。游戏内也可以继续调整。',
+        t('触控布局'),
+        t('在启动器的「设置 → 触控与输入」编辑控制和界面布局。游戏内也可以继续调整。'),
       );
     else if (id === 'licenses')
       openDialog({
-        title: '开源与许可',
-        description:
+        title: t('开源与许可'),
+        description: t(
           'React、Motion、Radix、Animate UI、Inspira UI、AndroidX WebKit、SteamKit2 与游戏运行依赖。',
+        ),
         body: (
           <>
-            <p>Animate UI: MIT + Commons Clause。</p>
-            <p>Inspira UI: MIT。</p>
-            <p>SteamKit2: LGPL-2.1-only。未修改的独立程序集，源码来自 SteamRE/SteamKit。</p>
+            <p>{t('Animate UI: MIT + Commons Clause。')}</p>
+            <p>{t('Inspira UI: MIT。')}</p>
+            <p>{t('SteamKit2: LGPL-2.1-only。未修改的独立程序集，源码来自 SteamRE/SteamKit。')}</p>
             <p>
-              RotatingartLauncher 触摸、显示、帧率、控制台与联机适配：GPL-3.0，源码位于
-              external/tML-Pocket-Patches。MobileJoystick 作者为 yu，游戏补丁源码和素材来源见
-              managed/MobileLauncher.Controls。
+              {t(
+                'RotatingartLauncher 触摸、显示、帧率、控制台与联机适配：GPL-3.0，源码位于 external/tML-Pocket-Patches。MobileJoystick 作者为 yu，游戏补丁源码和素材来源见 managed/MobileLauncher.Controls。',
+              )}
             </p>
-            <p>完整许可文件随 APK 提供。</p>
+            <p>{t('完整许可文件随 APK 提供。')}</p>
           </>
         ),
       });
-    else notice('启动器', '请从相应页面执行操作。');
+    else notice(t('启动器'), t('请从相应页面执行操作。'));
   };
   return {
     notice,
@@ -222,23 +231,25 @@ export function useNativeActions(launcher: LauncherContextValue) {
 }
 
 function NativeEnvironment() {
+  const { t } = useTranslation();
   const { nativeState: state } = useLauncher();
   return (
     <dl className="detail-list">
       <dt>Terraria</dt>
-      <dd>{state?.terraria || '未安装或校验未通过'}</dd>
+      <dd>{state?.terraria || t('未安装或校验未通过')}</dd>
       <dt>tModLoader</dt>
-      <dd>{state?.tml || '未安装或校验未通过'}</dd>
-      <dt>Android 运行时</dt>
-      <dd>{state?.runtime ? '已随 APK 提供' : '运行时资产缺失'}</dd>
-      <dt>启动</dt>
-      <dd>{state?.ready ? '资源已就绪，启动时再次检查依赖' : '请先完成资源准备'}</dd>
+      <dd>{state?.tml || t('未安装或校验未通过')}</dd>
+      <dt>{t('Android 运行时')}</dt>
+      <dd>{state?.runtime ? t('已随 APK 提供') : t('运行时资产缺失')}</dd>
+      <dt>{t('启动')}</dt>
+      <dd>{state?.ready ? t('资源已就绪，启动时再次检查依赖') : t('请先完成资源准备')}</dd>
     </dl>
   );
 }
 function NativeLogs() {
+  const { t } = useTranslation();
   const { notify } = useLauncher();
-  const [text, setText] = useState('正在读取…');
+  const [text, setText] = useState<string | null>(null);
   useEffect(() => {
     void nativeRequest<{ text: string }>('logs')
       .then((data) => setText(data.text))
@@ -246,18 +257,30 @@ function NativeLogs() {
   }, []);
   return (
     <>
-      <pre className="native-log">{text}</pre>
+      <pre className="native-log">{text ?? t('正在读取…')}</pre>
       <Button
         onClick={() =>
-          void nativeRequest('share', { text }).catch((error: Error) => notify(error.message))
+          void nativeRequest('share', { text: text ?? '正在读取…' }).catch((error: Error) =>
+            notify(error.message),
+          )
         }
       >
-        分享日志
+        {t('分享日志')}
       </Button>
     </>
   );
 }
+const STORAGE_LABELS: Readonly<Record<string, string>> = {
+  games: '发行包',
+  userdata: '用户数据',
+  mods: '模组',
+  cache: '下载缓存',
+  availableBytes: '可用空间',
+  cacheBytes: '可清理缓存',
+};
+
 function NativeStorage({ clear }: { clear: boolean }) {
+  const { t } = useTranslation();
   const [data, setData] = useState<Record<string, string | number>>({});
   const [error, setError] = useState('');
   const read = (method = 'storage') =>
@@ -272,34 +295,24 @@ function NativeStorage({ clear }: { clear: boolean }) {
       <dl className="detail-list">
         {Object.entries(data).map(([key, value]) => (
           <div key={key}>
-            <dt>
-              {(
-                {
-                  games: '发行包',
-                  userdata: '用户数据',
-                  mods: '模组',
-                  cache: '下载缓存',
-                  availableBytes: '可用空间',
-                  cacheBytes: '可清理缓存',
-                } as Record<string, string>
-              )[key] || key}
-            </dt>
+            <dt>{Object.hasOwn(STORAGE_LABELS, key) ? t(STORAGE_LABELS[key]) : key}</dt>
             <dd>{typeof value === 'number' ? `${(value / 1048576).toFixed(1)} MB` : value}</dd>
           </div>
         ))}
       </dl>
       {error && <p role="alert">{error}</p>}
-      {clear && <Button onClick={() => read('cache.clear')}>清理下载临时文件</Button>}
+      {clear && <Button onClick={() => read('cache.clear')}>{t('清理下载临时文件')}</Button>}
     </>
   );
 }
 function NativeArguments() {
+  const { t } = useTranslation();
   const { nativeState, notify, closeDialog } = useLauncher();
   const [value, setValue] = useState(nativeState?.preferences.launchArguments?.join('\n') || '');
   return (
     <>
       <textarea
-        aria-label="启动参数"
+        aria-label={t('启动参数')}
         className="native-textarea"
         value={value}
         onChange={(event) => setValue(event.target.value)}
@@ -316,13 +329,13 @@ function NativeArguments() {
             },
           })
             .then(() => {
-              notify('启动参数已保存。');
+              notify(t('启动参数已保存。'));
               closeDialog();
             })
             .catch((error: Error) => notify(error.message))
         }
       >
-        保存
+        {t('保存')}
       </Button>
     </>
   );

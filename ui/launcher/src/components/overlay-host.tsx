@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as Dialog from '@animate-ui/react/primitives/radix-ui/dialog';
 import { IconButton } from './ui';
@@ -5,6 +6,7 @@ import { useLauncher } from '../state/launcher';
 import { NativeDownloadsPage } from '../features/native/steam/downloads';
 
 export function OverlayHost() {
+  const { t } = useTranslation();
   const { dialog, closeDialog, returnFocus, motionEnabled, nativeMode } = useLauncher();
   const [portrait, setPortrait] = useState(() => matchMedia('(max-width:480px)').matches);
   const isOpen = useRef(Boolean(dialog?.open));
@@ -85,7 +87,7 @@ export function OverlayHost() {
             )}
             <IconButton
               symbol={dialog.surface === 'download' ? 'minus' : 'close'}
-              label={dialog.surface === 'download' ? '最小化' : '关闭'}
+              label={dialog.surface === 'download' ? t('最小化') : t('关闭')}
               data-action="close"
               onClick={() => closeDialog()}
             />
@@ -98,7 +100,9 @@ export function OverlayHost() {
           </div>
           {dialog.actions && <div className="dialog-actions">{dialog.actions}</div>}
           {!nativeMode && dialog.drawer && dialog.prototype !== false && (
-            <div className="drawer-footer">交互原型 · 示例流程，不会发起实际登录或下载。</div>
+            <div className="drawer-footer">
+              {t('交互原型 · 示例流程，不会发起实际登录或下载。')}
+            </div>
           )}
         </Dialog.Content>
       </Dialog.Portal>

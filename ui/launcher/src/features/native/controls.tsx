@@ -1,4 +1,5 @@
 import { Button, Icon } from '../../components/ui';
+import { useTranslation } from '../../i18n';
 
 export function NativeAcquireAction({
   title,
@@ -15,17 +16,18 @@ export function NativeAcquireAction({
   label?: string;
   action?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <Button
       className="native-acquire-action"
-      aria-label={label}
+      aria-label={t(label)}
       data-action={action}
       onClick={onClick}
     >
       <Icon name={symbol} />
       <span>
-        <strong>{title}</strong>
-        <small>{description}</small>
+        <strong>{t(title)}</strong>
+        <small>{t(description)}</small>
       </span>
       <Icon name="chevron" />
     </Button>
@@ -43,13 +45,14 @@ export function NativeField({
   onChange: (value: string) => void;
   placeholder?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <label className="native-field">
-      <span>{label}</span>
+      <span>{t(label)}</span>
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
+        placeholder={placeholder === undefined ? undefined : t(placeholder)}
       />
     </label>
   );

@@ -11,6 +11,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
   });
   try {
     const page = await browser.newPage({
+      locale: 'zh-CN',
       viewport: { width: 740, height: 430 },
       reducedMotion: 'reduce',
     });
@@ -62,7 +63,11 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
       window.resourceFixture = state;
       const send = (message) =>
         window.LauncherNative.onmessage?.({ data: JSON.stringify(message) });
-      const workshopItem = (appId, id = '12345', title = appId === 1281930 ? '真实协议测试模组' : '测试世界资源') => ({
+      const workshopItem = (
+        appId,
+        id = '12345',
+        title = appId === 1281930 ? '真实协议测试模组' : '测试世界资源',
+      ) => ({
         appId,
         id,
         title,
@@ -95,12 +100,20 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
             else
               data = {
                 total: params.appId === 1281930 ? 21 : 1,
-                items: params.appId !== 1281930
-                  ? [workshopItem(params.appId)]
-                  : params.page === 1
-                    ? [workshopItem(params.appId), ...Array.from({ length: 19 }, (_, index) =>
-                        workshopItem(params.appId, String(20000 + index), `模组 ${index + 1}`))]
-                    : [workshopItem(params.appId), workshopItem(params.appId, '30000', '第二页模组')],
+                items:
+                  params.appId !== 1281930
+                    ? [workshopItem(params.appId)]
+                    : params.page === 1
+                      ? [
+                          workshopItem(params.appId),
+                          ...Array.from({ length: 19 }, (_, index) =>
+                            workshopItem(params.appId, String(20000 + index), `模组 ${index + 1}`),
+                          ),
+                        ]
+                      : [
+                          workshopItem(params.appId),
+                          workshopItem(params.appId, '30000', '第二页模组'),
+                        ],
               };
             if (params.page > 1) {
               window.finishWorkshopPage = () => send({ id, ok: !error, data, error });
@@ -108,8 +121,7 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
             }
           } else if (method === 'workshop.details') {
             if (window.failWorkshop) error = '该工坊项目不可用';
-            else
-              data = workshopItem(params.appId, params.id);
+            else data = workshopItem(params.appId, params.id);
           } else if (method === 'workshop.download' || method === 'download') {
             Object.assign(state, {
               busy: true,
@@ -122,14 +134,27 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
             window.finishResourceDownload = () => {
               Object.assign(state, { busy: false, message: '安装完成', progress: 100 });
               if (method === 'workshop.download' && params.appId === 1281930) {
-                state.mods = [{
-                  id: 'WorkshopMod', title: '已下载模组', version: '1.0', author: 'Workshop Author',
-                  size: 1048576, enabled: false, deps: ['MissingLibrary@2.0'],
-                  dependencies: [{
-                    name: 'MissingLibrary', title: 'MissingLibrary', status: 'missing',
-                    requiredVersion: '2.0', installedVersion: '', optional: false,
-                  }],
-                }];
+                state.mods = [
+                  {
+                    id: 'WorkshopMod',
+                    title: '已下载模组',
+                    version: '1.0',
+                    author: 'Workshop Author',
+                    size: 1048576,
+                    enabled: false,
+                    deps: ['MissingLibrary@2.0'],
+                    dependencies: [
+                      {
+                        name: 'MissingLibrary',
+                        title: 'MissingLibrary',
+                        status: 'missing',
+                        requiredVersion: '2.0',
+                        installedVersion: '',
+                        optional: false,
+                      },
+                    ],
+                  },
+                ];
                 data = { modId: 'WorkshopMod' };
               }
               send({ event: 'snapshot', data: state });
@@ -306,7 +331,9 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
       .getByRole('combobox', { name: 'tModLoader 版本', exact: true })
       .selectOption('1.4.4');
     await page.getByRole('combobox', { name: '模组语言', exact: true }).selectOption('Chinese');
-    await page.getByRole('combobox', { name: '排序顺序', exact: true }).selectOption('highestRated');
+    await page
+      .getByRole('combobox', { name: '排序顺序', exact: true })
+      .selectOption('highestRated');
     await page.getByRole('combobox', { name: '时间范围', exact: true }).selectOption('7');
     await page.getByRole('button', { name: '搜索工坊', exact: true }).click();
     await page.waitForFunction(
@@ -329,11 +356,16 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
     await page.getByRole('button', { name: '加载更多', exact: true }).click();
     await page.waitForFunction(() => typeof window.finishWorkshopPage === 'function');
     assert.equal(await workshopItems.count(), 20, 'previous results remain while loading');
-    const scrollBeforeAppend = await page.locator('.page-scroll').evaluate((element) => element.scrollTop);
+    const scrollBeforeAppend = await page
+      .locator('.page-scroll')
+      .evaluate((element) => element.scrollTop);
     await page.evaluate(() => window.finishWorkshopPage());
     await page.getByRole('button', { name: /第二页模组/ }).waitFor();
     assert.equal(await workshopItems.count(), 21, 'more results append without duplicates');
-    assert.equal(await page.locator('.page-scroll').evaluate((element) => element.scrollTop), scrollBeforeAppend);
+    assert.equal(
+      await page.locator('.page-scroll').evaluate((element) => element.scrollTop),
+      scrollBeforeAppend,
+    );
     const appendedQuery = await page.evaluate(() =>
       window.resourceCalls.filter((call) => call.method === 'workshop.query').at(-1),
     );
@@ -359,11 +391,10 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
     });
     await page.getByRole('button', { name: '按编号查看', exact: true }).click();
     await page.getByRole('heading', { name: '真实协议测试模组', exact: true }).waitFor();
-    await page.waitForFunction(
-      () =>
-        [...document.querySelectorAll('.resource-workshop-card button')].some(
-          (button) => button.textContent.trim() === '下载并安装' && !button.disabled,
-        ),
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll('.resource-workshop-card button')].some(
+        (button) => button.textContent.trim() === '下载并安装' && !button.disabled,
+      ),
     );
     await project.fill('99999');
     await capture('resource-mods-dark-landscape');
@@ -470,9 +501,19 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8771';
     await page.getByRole('combobox', { name: '资源类型', exact: true }).selectOption('packs');
     await page.getByRole('combobox', { name: '资源包分类', exact: true }).selectOption('Music');
     await page.getByRole('button', { name: '加载热门项目', exact: true }).click();
-    await page.waitForFunction(() => window.resourceCalls.some((call) => call.method === 'workshop.query' && call.params.appId === 105600));
-    const terrariaQuery = await page.evaluate(() => window.resourceCalls.filter((call) => call.method === 'workshop.query').at(-1));
-    assert.equal(terrariaQuery.params.appId, 105600, 'Terraria resources use Terraria Workshop app ID');
+    await page.waitForFunction(() =>
+      window.resourceCalls.some(
+        (call) => call.method === 'workshop.query' && call.params.appId === 105600,
+      ),
+    );
+    const terrariaQuery = await page.evaluate(() =>
+      window.resourceCalls.filter((call) => call.method === 'workshop.query').at(-1),
+    );
+    assert.equal(
+      terrariaQuery.params.appId,
+      105600,
+      'Terraria resources use Terraria Workshop app ID',
+    );
     assert.equal(terrariaQuery.params.category, 'Music');
     await page.getByRole('button', { name: '返回上一页', exact: true }).click();
     await page.waitForURL((url) => url.hash === '#mods');
