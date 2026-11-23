@@ -6,7 +6,7 @@
 
 **把 tModLoader 装进口袋。**
 
-面向 Android 的 tModLoader 启动与管理工具：导入正版 Terraria 资源，选择 tML 版本，管理模组，然后在手机上启动游戏。
+面向 Android 的 tModLoader 启动与管理工具：导入 Terraria PC 版资源，或从已安装的 Terraria PE 转换兼容资源，选择 tML 版本、管理模组并启动游戏。
 
 [English](README.en.md) · [安装使用](docs/getting-started.md) · [构建开发](docs/development.md) · [文档目录](docs/README.md) · [反馈问题](https://github.com/FireworkSky/tML-Pocket-Launcher/issues)
 
@@ -14,10 +14,11 @@
 ![Status](https://img.shields.io/badge/status-experimental-orange)
 ![Runtime](https://img.shields.io/badge/runtime-.NET%2010-512BD4?logo=dotnet&logoColor=white)
 ![UI](https://img.shields.io/badge/UI-React%20%2B%20TypeScript-3178C6?logo=typescript&logoColor=white)
+[![License](https://img.shields.io/badge/license-GPL--3.0--only-blue)](LICENSE)
 
 </div>
 
-> **项目处于开发阶段。** 已在 arm64 Android 真机上使用 tML `2026.09.3.1` 和 Terraria `1.4.4.9` 资源进入主菜单并加载内置触控模组。其他版本、设备 GPU、完整世界游玩与多人联机仍需要单独验证。该项目为社区工具，与 Re-Logic、tModLoader、Valve、GOG 无官方隶属关系。
+> **项目处于开发阶段。** 已在 arm64 Android 真机上使用 tML `2026.09.3.1` 和 Terraria `1.4.4.9` 资源进入主菜单并加载内嵌触控补丁。其他版本、设备 GPU、完整世界游玩与多人联机仍需要单独验证。该项目为独立社区工具。
 
 ## 项目定位
 
@@ -29,14 +30,15 @@ APK 内置官方预编译的 tModLoader `2026.09.3.1` 发行 ZIP，首次打开�
 
 | 模块     | 当前能力                                                                   |
 | -------- | -------------------------------------------------------------------------- |
-| 游戏资源 | 自定义文件浏览器；导入 Steam ZIP、GOG Linux `.sh`；安装校验与事务回滚      |
-| tML 版本 | 浏览官方 GitHub Releases、选择下载版本、导入本地发行 ZIP、读取真实安装版本 |
+| 游戏资源 | 自定义文件浏览器；导入 Steam ZIP、GOG Linux `.sh` 或转换 Terraria PE；安装校验与事务回滚 |
+| tML 版本 | 下载官方发行版或导入本地发行 ZIP，支持安装多个版本并选择启动版本 |
 | Steam    | 使用 SteamKit2 登录、Steam Guard 验证、Terraria 所有权检查与资源下载       |
 | GOG      | 官方网页登录授权、资源版本选择与 Linux 安装包下载                          |
 | 模组管理 | 读取 `.tmod` 元信息、搜索、启停、依赖检查、删除和批量管理；无需加载游戏    |
 | 模组包   | 保存启用清单、导入／导出 JSON、应用预设与缺失依赖检查                      |
-| 模组获取 | 分开浏览 Terraria 与 tModLoader 创意工坊，筛选、查看详情并下载安装 |
-| 触控     | 内嵌 MobileJoystick 补丁，提供双摇杆、触摸菜单、物品栏和全屏布局编辑      |
+| 创意工坊 | 在“模组”浏览 tModLoader 模组，在“资源”浏览 Terraria 世界和资源包，可筛选、查看详情并下载安装 |
+| Terraria PE | 从设备上已安装的 Terraria PE 提取资源，转换为 PC 版尺寸和 XNB/XACT 格式；首次转换需预留约 2 GiB 空间 |
+| 触控     | 内嵌 MobileJoystick 补丁，提供双摇杆、触摸菜单、物品栏、全屏控制和界面编辑，默认使用从 Terraria PE 提取的控件纹理 |
 | 补丁     | 内置触摸、全屏、渲染缩放与兼容补丁；可选帧率显示、120 FPS 和实验性房间托管 |
 | 外观     | 默认横屏、可选竖屏；主题、玻璃效果、自定义背景、动效和减少动态效果         |
 | 启动诊断 | 分阶段启动动画、首帧反馈、启动日志与错误提示                               |
@@ -45,21 +47,21 @@ Steam 登录已获真机验证；**GOG 登录与完整付费资源传输尚未�
 
 ## 开始使用
 
-1. 准备 **Android 9 / API 28 及以上的 arm64-v8a 设备**，安装 APK。硬件和 GPU 兼容性仍取决于实际设备。
-2. 在“游戏”页导入 Steam Terraria ZIP 或 GOG Linux `.sh`，也可通过商店账号获取资源。请使用自己拥有的游戏。
-3. 从官方发行列表下载 tModLoader，或导入包含依赖及 Content 的完整发行 ZIP。GitHub 的源码 ZIP 不能作为游戏发行包。
+1. 在 **Android 9 / API 28 及以上的 arm64-v8a 设备**安装发布 APK，或使用下文的源码构建步骤。[Releases](https://github.com/FireworkSky/tML-Pocket-Launcher/releases)
+2. 在“游戏”页导入 Steam Terraria ZIP、GOG Linux `.sh`，或检测并转换本机安装的 Terraria PE。请使用自己拥有的游戏。
+3. 等待内置 tModLoader 自动安装。需要其他版本时，从官方发行列表下载，或导入包含依赖及 Content 的完整发行 ZIP。
 4. 检查资源和版本，按需导入 `.tmod` 模组。启动游戏时会加载内嵌触控补丁。
-5. 在“设置 → 控制管理”全屏编辑游戏布局，从悬浮菜单切换游戏控制和游戏界面。保存后点击“启动游戏”应用。
+5. 在“设置 → 控制管理”全屏编辑布局，从悬浮菜单切换游戏控制和界面。点击控件查看属性，拖动调整位置。保存后，布局在下次启动时生效。
 
 Steam 资源在**每次启动前需要联网登录并验证 Terraria 所有权**；GOG 资源导入后启动无需登录。更详细的步骤、包结构和数据保护建议见 [安装使用指南](docs/getting-started.md)。
 
-APK 构建产物位于 `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk`。仓库保存源码和必要运行依赖，APK 不随源码提交；可检查 [Releases](https://github.com/FireworkSky/tML-Pocket-Launcher/releases) 是否已有发布包，或按下文自行构建。
-
 ## 已知边界
 
-- 当前管理一个活动 tML 发行版；切换安装会事务性替换发行文件，并保留独立的用户数据。
+- 可同时安装多个 tML 发行版，启动时使用所选版本。各版本共用 Terraria 资源、存档、模组和配置。
 - 下载支持取消与重试，暂不支持跨进程的断点续传。
 - 创意工坊下载支持匿名公开访问或复用已登录 Steam 会话；受 Steam 项目权限限制，下载能力尚待真机验证。
+- Terraria PE 转换器仅包含在启用了转换配置的 arm64 APK 中，并要求选择配置指定的 tML 版本。实测 14,468 项资源转换结果约 704 MiB，实际用量随游戏版本而变化。
+- 默认触控纹理由带转换器的启动器从本机 Terraria PE 提取。使用 Steam 或 GOG 资源启动时，也可以从本机安装的 Terraria PE 提取纹理。缺失的默认纹理会跳过绘制并记入日志。
 - GOG 分卷安装包暂不支持。
 - 120 FPS 和实验性房间托管默认关闭；启用选项不保证设备持续达到目标帧率或实际联网兼容性。
 - 浏览器普通模式是交互预览，包含示例数据；Android 模式使用设备真实状态。
@@ -95,6 +97,8 @@ Set-Location tML-Pocket-Launcher
 
 首次构建需要下载 Gradle、Maven、NuGet 和 npm 依赖。详见 [开发指南](docs/development.md)，不要把本机 SDK 路径、账号凭据或游戏资源加入仓库。
 
+调试 APK 输出到 `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk`。
+
 ### 单独预览界面
 
 ```powershell
@@ -120,6 +124,8 @@ Pop-Location
 # APK 的必要文件与游戏本体排除检查
 .\scripts\checks\check-apk.ps1 -ApkPath android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
 ```
+
+普通 Android 构建不包含 Terraria PE 转换器。构建带转换器的版本需要先按 [开发指南](docs/development.md) 准备匹配的 tML 资源配置，再通过 `-PmobileTerrariaProfile=<profile ZIP 路径>` 启用 C++/JNI 转换模块。
 
 浏览器测试默认使用 Microsoft Edge，可通过 `PLAYWRIGHT_CHANNEL` 调整。真机启动、账号资源传输和触控游玩需另外验证。
 
@@ -157,10 +163,14 @@ Android、C# 与 Web UI 源码分别归位；`build/`、`bin/`、`obj/` 和缓�
 
 提交问题时请提供启动器版本、设备型号、Android 版本、GPU、tML 版本、Terraria 资源来源、复现步骤和脱敏日志。不要提交密码、验证码、令牌、完整资源包或个人存档。
 
-## 致谢与授权
+## 许可证
+
+启动器自有代码采用 GNU General Public License v3.0（`GPL-3.0-only`）。[完整许可证](LICENSE)
+
+第三方组件适用各自的授权条款。随附的 MobileJoystick 上游源码缺少独立许可证文件，相关来源见第三方声明。Terraria 资源和第三方标志归各自权利人所有。[第三方声明](THIRD_PARTY_NOTICES.md)
+
+## 致谢
 
 感谢 [tModLoader](https://github.com/tModLoader/tModLoader)、[FNA](https://github.com/FNA-XNA/FNA)、Re-Logic、[RotatingArtDev](https://github.com/RotatingArtDev)、SteamKit、SDL、FNA3D、FAudio、MonoMod、MobileJoystick 作者 **yu**，以及 React、Animate UI、Inspira UI、Lucide 等依赖的贡献者。
-
-各组件保留自己的授权；**不能将整个仓库视作统一 MIT 授权**。迁移补丁的 GPL-3.0、SteamKit2 的 LGPL-2.1、Animate UI 的 MIT + Commons Clause 等条款见 [第三方声明](THIRD_PARTY_NOTICES.md)。MobileJoystick 源码未附独立 LICENSE，不能由本项目替上游授予新的许可。Terraria 资源和官方标志归其权利人所有。
 
 启动器和 README 使用用户选定的像素齿轮与树木图标。当前图标原图、各尺寸导出和 Android 裁切预览见 [`docs/branding/tml-pocket-launcher/current`](docs/branding/tml-pocket-launcher/current)；其他方案保留为历史设计。
