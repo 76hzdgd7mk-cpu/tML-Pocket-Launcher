@@ -7,8 +7,6 @@ namespace MobileJoystick;
 
 public partial class MobileJoystickSystem
 {
-	private Texture2D radialSector;
-
 	private void DrawRadialControl(SpriteBatch spriteBatch, Color color)
 	{
 		MobileRadialControl radial = MobileJoystickInput.ActiveRadial;
@@ -28,13 +26,9 @@ public partial class MobileJoystickSystem
 					2 => potions ? MobileControlAction.Buff : null,
 					_ => potions ? null : MobileControlAction.ZoomOut
 				};
-			if (action.HasValue && radial.SelectedSlot == i) {
-				EnsureRadialSector();
-				Color highlight = ControlTexturePackSystem.UseRalDefaults ? Color.White * .28f : new Color(255, 224, 48) * .95f;
-				spriteBatch.Draw(radialSector, center, null, highlight, i * MathHelper.PiOver2,
-					new Vector2(64), radius / 64f, SpriteEffects.None, 0f);
-			}
 			Vector2 iconPosition = center + new Vector2((float)Math.Sin(i * MathHelper.PiOver2), -(float)Math.Cos(i * MathHelper.PiOver2)) * radius * 0.75f;
+			if (action.HasValue && radial.SelectedSlot == i)
+				ControlTexturePackSystem.TryDrawDefault(spriteBatch, "PhoneYellowCircle", iconPosition, radial.Button.Radius * 2f, Color.White);
 			if (custom) {
 				MobileControlAction bound = action ?? MobileControlAction.Unbound;
 				if (bound == MobileControlAction.KeyboardKey && radial.Button.RadialKeyboardKeys?.Count > i)
@@ -55,18 +49,4 @@ public partial class MobileJoystickSystem
 		}
 	}
 
-	private void EnsureRadialSector()
-	{
-		if (radialSector != null) return;
-		var pixels = new Color[128 * 128];
-		for (int y = 0; y < 128; y++) for (int x = 0; x < 128; x++) {
-			float dx = x - 63.5f, dy = y - 63.5f;
-			float distance = MathF.Sqrt(dx * dx + dy * dy);
-			float coverage = Math.Min(RalControlStyle.Coverage(distance - 64, 1),
-				Math.Min(RalControlStyle.Coverage(30 - distance, 1), RalControlStyle.Coverage((Math.Abs(dx) + dy) / MathF.Sqrt(2), 1)));
-			pixels[y * 128 + x] = Color.White * coverage;
-		}
-		radialSector = new Texture2D(Main.graphics.GraphicsDevice, 128, 128);
-		radialSector.SetData(pixels);
-	}
 }

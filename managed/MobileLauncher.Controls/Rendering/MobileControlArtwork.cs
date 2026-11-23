@@ -45,12 +45,6 @@ internal static class MobileControlArtwork
 	{
 		string defaultTexture = MobileJoystickLayout.GetDefaultTexture(action);
 		bool custom = !UsesDefaultTexture(textureName, defaultTexture) && textureName != "HeldItem";
-		if (ControlTexturePackSystem.UseRalDefaults && !custom) {
-			NativeControlTheme.Surface(batch, center, radius, color, highlighted);
-			string label = action == MobileControlAction.AimModeToggle ? MobileJoystickInput.AimModeLabel : MobileMenuSystem.ActionLabel(action);
-			LauncherControlArtwork.Label(batch, label, center, new Vector2(radius * 1.55f), color);
-			return true;
-		}
 		ControlTextureEntry entry = custom ? ControlTexturePackSystem.FindTexture(textureName) : null;
 		bool gamePotionArtwork = action is MobileControlAction.Heal or MobileControlAction.Mana
 			or MobileControlAction.Buff or MobileControlAction.QuickPotions;
@@ -152,6 +146,12 @@ internal static class MobileControlArtwork
 		MobileControlAction.ZoomIn => "PhoneZoomInGlyph",
 		MobileControlAction.ZoomOut => "PhoneZoomOutGlyph",
 		MobileControlAction.Inventory => "PhoneInventoryGlyph",
+		MobileControlAction.Loadout1 or MobileControlAction.Loadout2 or MobileControlAction.Loadout3
+			or MobileControlAction.SwitchLoadout => "PhoneLoadoutGlyph",
+		MobileControlAction.Zoom => "ZoomPair",
+		MobileControlAction.Chat => "Chat",
+		MobileControlAction.Map => "Map",
+		MobileControlAction.MapStyle or MobileControlAction.MapAlphaCycle => "MapStyle",
 		MobileControlAction.Settings or MobileControlAction.ToggleGameControls => "PhoneMenuGlyph",
 		_ => null
 	};
@@ -163,13 +163,6 @@ internal static class MobileControlArtwork
 			return true;
 		}
 		if (ControlTexturePackSystem.TryDrawDefault(batch, GetActionGlyph(action), center, size, color)) return true;
-		if (action is MobileControlAction.Loadout1 or MobileControlAction.Loadout2 or MobileControlAction.Loadout3 or MobileControlAction.SwitchLoadout) {
-			Color[] colors = { new(100,255,115), new(100,175,255), new(255,135,205) };
-			if (action == MobileControlAction.SwitchLoadout) {
-				for (int i=0;i<3;i++) NativeControlTheme.Glyph(batch,"Loadout",center+new Vector2((i-1)*size*.23f,(i-1)*size*.14f),size*.65f,color.MultiplyRGB(colors[i]));
-			} else NativeControlTheme.Glyph(batch,"Loadout",center,size,color.MultiplyRGB(colors[(int)action-(int)MobileControlAction.Loadout1]));
-			return true;
-		}
 		int item = action switch {
 			MobileControlAction.Heal => ItemID.LesserHealingPotion,
 			MobileControlAction.Mana => ItemID.LesserManaPotion,
@@ -189,30 +182,7 @@ internal static class MobileControlArtwork
 				size/Math.Max(frame.Width,frame.Height),SpriteEffects.None,0f);
 			return true;
 		}
-		string glyph = action switch {
-			MobileControlAction.Jump => "Jump",
-			MobileControlAction.AimModeToggle => MobileJoystickInput.AimRightClickMode ? "Hand"
-				: MobileJoystickInput.AimAndUseMode ? "AimUse" : "Plus",
-			MobileControlAction.TargetLockToggle => "Target",
-			MobileControlAction.SmartCursor => "Smart",
-			MobileControlAction.Interact or MobileControlAction.SmartInteract => "Hand",
-			MobileControlAction.SwapUseInteract => "Swap",
-			MobileControlAction.CycleUseProfile => "Profile",
-			MobileControlAction.RadialMenu => "Radial",
-			MobileControlAction.ZoomIn => "ZoomIn",
-			MobileControlAction.ZoomOut => "ZoomOut",
-			MobileControlAction.Zoom => "Zoom",
-			MobileControlAction.Chat => "Chat",
-			MobileControlAction.Map => "Map",
-			MobileControlAction.MapStyle => "Pin",
-			MobileControlAction.QuickPotions => "Potions",
-			MobileControlAction.Inventory => "Bag",
-			_ => "Unbound"
-		};
-		bool enabled = action == MobileControlAction.SmartCursor && MobileJoystickInput.SmartCursorEnabled
-			|| action == MobileControlAction.TargetLockToggle && MobileJoystickInput.TargetLockEnabled;
-		NativeControlTheme.Glyph(batch,glyph,center,size,enabled ? color.MultiplyRGB(new Color(244,218,106)) : color);
-		return true;
+		return false;
 	}
 
 	internal static void DrawRadialFrame(SpriteBatch batch, Vector2 center, float radius, Color color)

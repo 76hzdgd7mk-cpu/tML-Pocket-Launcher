@@ -44,8 +44,6 @@ public partial class MobileJoystickSystem : MobileSystem
 		if (!Main.dedServ) On_Main.HoverOverNPCs -= MobileWorldInteraction.HoverOverNpcs;
 		MobileWorldInteraction.Reset();
 		MobileJoystickInput.Reset();
-		radialSector?.Dispose();
-		radialSector = null;
 		NativeControlTheme.Unload();
 		UiTextureAssets.Unload();
 		ControlTexturePackSystem.Unload();
@@ -314,23 +312,7 @@ public partial class MobileJoystickSystem : MobileSystem
 
 	private void DrawTouchCrosshair(SpriteBatch spriteBatch, Vector2 center, float scale, Color color)
 	{
-		if (DrawTexture(spriteBatch, "AimReticle", center, 28f * scale, color)) {
-			return;
-		}
-
-		int length = (int)MathHelper.Clamp(13f * scale, 12f, 24f);
-		int thickness = Math.Max(2, (int)MathF.Round(3f * scale));
-		DrawCrosshairBars(spriteBatch, center + Vector2.One, length, thickness, Color.Black * 0.65f);
-		DrawCrosshairBars(spriteBatch, center, length, thickness, color);
-	}
-
-	private static void DrawCrosshairBars(SpriteBatch spriteBatch, Vector2 center, int length, int thickness, Color color)
-	{
-		Texture2D pixel = TextureAssets.MagicPixel.Value;
-		int x = (int)MathF.Round(center.X);
-		int y = (int)MathF.Round(center.Y);
-		spriteBatch.Draw(pixel, new Rectangle(x - length, y - thickness / 2, length * 2, thickness), color);
-		spriteBatch.Draw(pixel, new Rectangle(x - thickness / 2, y - length, thickness, length * 2), color);
+		DrawTexture(spriteBatch, "AimReticle", center, 28f * scale, color);
 	}
 
 	private static string GetButtonTexture(MobileControlButton button) => button.TextureName;

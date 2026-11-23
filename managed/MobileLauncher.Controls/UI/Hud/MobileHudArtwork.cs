@@ -14,9 +14,6 @@ internal static class MobileHudArtwork
 
 	internal static bool DrawToolbar(MobileControlButton button, bool pressed = false)
 	{
-		// Default toolbar controls share the same generated RAL appearance.
-		// A separately selected texture pack can still supply its own frame.
-		if (ControlTexturePackSystem.UseRalDefaults) return false;
 		string name = button.Action switch {
 			MobileControlAction.Chat => MobileChatSystem.IsOpen ? "ChatSelected" : "Chat",
 			MobileControlAction.MapStyle => Main.mapStyle == 1 && !Main.mapFullscreen ? "MinimapSelected" : "Minimap",

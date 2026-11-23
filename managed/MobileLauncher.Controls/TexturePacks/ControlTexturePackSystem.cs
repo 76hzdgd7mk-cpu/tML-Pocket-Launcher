@@ -18,6 +18,7 @@ internal static class ControlTexturePackSystem
 	private static readonly Dictionary<string, Texture2D> userTextures = new(StringComparer.Ordinal);
 	private static readonly Dictionary<string, Texture2D> builtInTextures = new(StringComparer.Ordinal);
 	private static readonly Dictionary<string, Texture2D> importedTextures = new(StringComparer.Ordinal);
+	private static readonly HashSet<string> warnedMissingDefaults = new(StringComparer.Ordinal);
 	internal static void ValidateImportedImage(byte[] bytes)
 	{
 		LauncherControlPack.ValidatePng(bytes);
@@ -51,7 +52,12 @@ internal static class ControlTexturePackSystem
 	internal static bool UseRalDefaults => ActivePackId == RalPackId;
 	private static bool UsesBundledTextures => UseRalDefaults || ActivePackId == BuiltInPackId;
 	internal static bool TryDrawDefault(SpriteBatch batch, string name, Vector2 center, float size, Color color)
-		=> !UseRalDefaults && TryDraw(batch, name, center, size, color);
+	{
+		if (TryDraw(batch, name, center, size, color)) return true;
+		if (!string.IsNullOrWhiteSpace(name) && warnedMissingDefaults.Add(name))
+			MobileControlsSession.Logger.Warn($"Default touch-control texture '{name}' is unavailable; skipping its artwork.");
+		return false;
+	}
 
 	internal static void Load()
 	{
@@ -117,6 +123,7 @@ internal static class ControlTexturePackSystem
 		builtInManifest = null;
 		activeManifest = null;
 		activePackId = null;
+		warnedMissingDefaults.Clear();
 		isInitialized = false;
 	}
 

@@ -9,7 +9,7 @@ using Terraria.ID;
 namespace MobileJoystick;
 
 // Screen-space artwork only. Layout, hit testing and gesture ownership belong
-// to the existing input system. Generated geometry is the fallback for pack layers.
+// to the existing input system. Default control artwork comes from texture packs.
 internal static class NativeControlTheme
 {
 	private static readonly Dictionary<string, Texture2D> geometry = new();
@@ -24,11 +24,8 @@ internal static class NativeControlTheme
 	internal static void Surface(SpriteBatch batch, Vector2 center, float radius, Color color, bool pressed = false)
 	{
 		if (radius <= 0f) return;
-		if (ControlTexturePackSystem.TryDrawDefault(batch, pressed ? "PhonePressedCircle" : "PhonePurpleCircle",
-			center, radius * 2f, color)) return;
-		float opacity = color.A / 255f;
-		DrawMask(batch, "Disc", center, radius * 2f, Color.Black * ((pressed ? .6f : .5f) * opacity));
-		Outline(batch, center, radius, 1.5f, Color.White * opacity);
+		ControlTexturePackSystem.TryDrawDefault(batch, pressed ? "PhonePressedCircle" : "PhonePurpleCircle",
+			center, radius * 2f, color);
 	}
 
 	internal static void Stick(SpriteBatch batch, MobileJoystickRole role, Vector2 center,
@@ -39,27 +36,20 @@ internal static class NativeControlTheme
 			&& MobileJoystickInput.AimRightClickMode;
 		Item rightClickItem = showRightClickItem ? MobileJoystickInput.GetHeldItem() : null;
 		bool hasRightClickItem = rightClickItem is { IsAir: false };
-		if (ControlTexturePackSystem.UseRalDefaults && defaultKnob) {
-			RalJoystick(batch, center, radius, offset, color, pressed || selected,
-				knobRatio: .5f, knobItem: rightClickItem, baseRatio: 1f);
-			return;
-		}
-		if (!ControlTexturePackSystem.TryDrawDefault(batch, "JoystickPad", center, radius * 2f, color))
-			Surface(batch, center, radius, color);
+		ControlTexturePackSystem.TryDrawDefault(batch, "JoystickPad", center, radius * 2f, color);
 		Vector2 knob = center + offset * radius * .46f;
 		string knobTexture = !defaultKnob ? textureName : role switch {
 			MobileJoystickRole.Move => "JoystickKnob",
+			MobileJoystickRole.Grapple => "PhoneEmptyGrappleGlyph",
 			MobileJoystickRole.Aim when !hasRightClickItem => MobileControlArtwork.AimKnobTexture,
 			_ => "ItemButtonFrame"
 		};
 		bool customKnob = ControlTexturePackSystem.TryDraw(batch, knobTexture, knob, radius,
 			pressed || selected ? Color.White : color);
-		if (!customKnob) Surface(batch, knob, radius * .5f, color, pressed || selected);
-		if (role == MobileJoystickRole.Move && !customKnob) Glyph(batch, "Move", knob, radius * .62f, color);
-		else if (role == MobileJoystickRole.Grapple && !customKnob) MobileControlArtwork.DrawActionIcon(batch, MobileControlAction.Grapple, knob, radius * .65f, color);
-		else if (role == MobileJoystickRole.Aim) {
+		if (!customKnob && defaultKnob) ControlTexturePackSystem.TryDrawDefault(batch, knobTexture, knob, radius,
+			pressed || selected ? Color.White : color);
+		if (role == MobileJoystickRole.Aim) {
 			if (hasRightClickItem) MobileJoystickSystem.DrawItemIcon(batch, rightClickItem, knob, radius * .65f, color);
-			else if (!customKnob) Glyph(batch, MobileJoystickInput.AimAndUseMode ? "AimUse" : "Plus", knob, radius * .66f, color);
 			if (MobileJoystickInput.AimAndUseMode && defaultKnob)
 				MobileJoystickSystem.DrawItemIcon(batch, itemOverride ?? MobileJoystickInput.GetHeldItem(), knob, radius * .65f, color);
 		}
@@ -115,7 +105,7 @@ internal static class NativeControlTheme
 	}
 
 	internal static void Reticle(SpriteBatch batch, Vector2 center, float size, Color color)
-		=> Glyph(batch, "Ring", center, size, color);
+		=> ControlTexturePackSystem.TryDrawDefault(batch, "AimReticle", center, size, color);
 
 	internal static string RadialCenterTexture => "PhoneTealCircle";
 	internal static string RadialBaseTexture => "PhonePurpleCircle";
@@ -124,12 +114,10 @@ internal static class NativeControlTheme
 	internal static void Radial(SpriteBatch batch, Vector2 center, float radius, Color color)
 	{
 		float diameter = radius * 5.6f;
-		if (!ControlTexturePackSystem.TryDrawDefault(batch, RadialBaseTexture, center, diameter, color))
-			Surface(batch, center, radius * 2.8f, color);
+		ControlTexturePackSystem.TryDrawDefault(batch, RadialBaseTexture, center, diameter, color);
 		Color ringColor = color.MultiplyRGB(new Color(142, 124, 220));
 		ControlTexturePackSystem.TryDrawDefault(batch, RadialRingTexture, center, diameter, ringColor);
-		if (!ControlTexturePackSystem.TryDrawDefault(batch, RadialCenterTexture, center, radius * 2f, color))
-			Surface(batch, center, radius, color);
+		ControlTexturePackSystem.TryDrawDefault(batch, RadialCenterTexture, center, radius * 2f, color);
 	}
 
 	internal static void DrawMask(SpriteBatch batch, string name, Vector2 center, float size, Color color)
@@ -159,26 +147,16 @@ internal static class NativeControlTheme
 
 	internal static bool Legacy(SpriteBatch batch, string name, Vector2 center, float size, Color color)
 	{
-		bool gamePotionArtwork = name is "Heal" or "Mana" or "Buff" or "RadialBuff" or "QuickPotions";
 		if (name == "QuickPotions") {
 			MobileControlArtwork.DrawQuickPotions(batch, center, size / 2f, color);
 			return true;
 		}
-		if (!gamePotionArtwork && ControlTexturePackSystem.TryDrawDefault(batch, name, center, size, color)) return true;
-		if (name is "JoystickPad" or "JoystickBase" or "PhoneGrapplePad" or "JoystickPadOriginal")
-			Surface(batch, center, size / 2f, color);
-		else if (name is "ItemButtonFrame" or "PhonePurpleCircle" or "PhoneTealCircle" or "PhoneGreenCircle" or "PhonePressedCircle")
-			Surface(batch, center, size / 2f, color, name == "PhonePressedCircle");
-		else if (name is "JoystickKnob" or "AttackAimOnly" or "AttackAimUse" or "AimOnlyMode" or "AimUseMode") {
-			Surface(batch, center, size / 2f, color);
-			Glyph(batch, name == "JoystickKnob" ? "Move" : name is "AttackAimUse" or "AimUseMode" ? "AimUse" : "Plus", center, size * .65f, color);
-		} else {
-			Texture2D texture = Texture(name);
-			if (geometry.ContainsValue(texture)) Glyph(batch, Symbol(name), center, size, color);
-			else batch.Draw(texture, center, null, color, 0f, texture.Size() * .5f,
-				size / Math.Max(texture.Width, texture.Height), SpriteEffects.None, 0f);
+		if (name is "Heal" or "Mana" or "Buff" or "RadialBuff") {
+			MobileControlArtwork.DrawPotionItemIcon(batch, name == "Heal" ? MobileControlAction.Heal
+				: name == "Mana" ? MobileControlAction.Mana : MobileControlAction.Buff, center, size, color);
+			return true;
 		}
-		return true;
+		return ControlTexturePackSystem.TryDrawDefault(batch, name, center, size, color);
 	}
 
 	private static string Symbol(string name) => name switch {
@@ -225,6 +203,7 @@ internal static class NativeControlTheme
 		"Profile" => "PhoneUseProfileGlyph",
 		"Loadout" => "PhoneLoadoutGlyph",
 		"Radial" => "PhoneRadialGlyph",
+		"Unbound" => "PhoneUnboundGlyph",
 		_ => name
 	};
 
