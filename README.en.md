@@ -30,7 +30,7 @@ Steam resources require an online login and fresh Terraria entitlement check bef
 ## Quick start
 
 1. Install an APK on an arm64 Android device. [Releases](https://github.com/FireworkSky/tML-Pocket-Launcher/releases)
-2. On the Games page, add Terraria from an owned Steam or GOG copy, or convert the Terraria PE package installed on the device if the APK includes the converter.
+2. On the Games page, add Terraria from an owned Steam or GOG copy, or use a converter-enabled APK to detect and convert the Terraria PE installation on the device. [Terraria PE support guide (Chinese)](docs/terraria-pe.md)
 3. Wait for the bundled tModLoader release to install. Select another installed release if needed, import any `.tmod` files, and launch the game.
 4. Open Settings → Control Management to edit the layout. Tap a control for its properties, drag it to move it, and save to apply the layout on the next launch.
 

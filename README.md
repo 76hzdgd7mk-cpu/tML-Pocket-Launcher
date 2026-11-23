@@ -8,7 +8,7 @@
 
 面向 Android 的 tModLoader 启动与管理工具：导入 Terraria PC 版资源，或从已安装的 Terraria PE 转换兼容资源，选择 tML 版本、管理模组并启动游戏。
 
-[English](README.en.md) · [安装使用](docs/getting-started.md) · [构建开发](docs/development.md) · [文档目录](docs/README.md) · [反馈问题](https://github.com/FireworkSky/tML-Pocket-Launcher/issues)
+[English](README.en.md) · [安装使用](docs/getting-started.md) · [Terraria PE 支持](docs/terraria-pe.md) · [构建开发](docs/development.md) · [文档目录](docs/README.md) · [反馈问题](https://github.com/FireworkSky/tML-Pocket-Launcher/issues)
 
 ![Platform](https://img.shields.io/badge/Android-9%2B%20%7C%20arm64-3DDC84?logo=android&logoColor=white)
 ![Status](https://img.shields.io/badge/status-experimental-orange)
