@@ -1,3 +1,5 @@
+import java.util.zip.ZipFile
+
 plugins {
     alias(libs.plugins.android.application)
 }
@@ -67,6 +69,12 @@ val prepareMobileTerrariaProfile by tasks.registering(Sync::class) {
     from(mobileTerrariaProfile.map { path ->
         val archive = file(path)
         require(archive.isFile) { "Mobile Terraria profile ZIP is missing: $archive" }
+        ZipFile(archive).use { zip ->
+            val metadata = zip.getEntry("profile.json")
+            require(metadata != null && !metadata.isDirectory && metadata.size > 0) {
+                "Mobile Terraria profile ZIP is missing profile.json: $archive"
+            }
+        }
         archive
     }) {
         into("mobile-terraria")

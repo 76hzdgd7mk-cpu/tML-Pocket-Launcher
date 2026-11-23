@@ -5,6 +5,7 @@
 #include <charconv>
 #include <list>
 #include <set>
+#include <unordered_set>
 #include <zlib.h>
 
 extern "C" int tml_decode_fsb5(const char *input, const char *output, int *channels, int *rate);
@@ -23,6 +24,32 @@ constexpr std::array<std::string_view, 8> fontReaders{
     "Microsoft.Xna.Framework.Content.CharReader",
     "Microsoft.Xna.Framework.Content.Vector3Reader",
 };
+std::unordered_set<uint32_t> audioSetupIds;
+
+bool setupId(View fsb, uint32_t &id)
+{
+    require(fsb.size() >= 68 && std::string_view(reinterpret_cast<const char *>(fsb.data()), 4) == "FSB5",
+        "Invalid FSB5 audio header");
+    Reader fileHeader{fsb, 0x18};
+    if (fileHeader.read<uint32_t>() != 0x0f) return false;
+    Reader reader{fsb, 60};
+    (void)reader.read<uint64_t>();
+    require(reader.bytes[60] & 1, "FSB5 Vorbis setup metadata is missing");
+    for (;;) {
+        const uint32_t header = reader.read<uint32_t>();
+        const uint32_t type = header >> 25;
+        const uint32_t size = (header >> 1) & 0xffffff;
+        require(size <= reader.bytes.size() - reader.pos, "Invalid FSB5 audio metadata");
+        if (type == 0x0b) {
+            require(size >= 4, "Empty FSB5 Vorbis setup ID");
+            id = reader.read<uint32_t>();
+            return true;
+        }
+        reader.take(size);
+        if (!(header & 1)) break;
+    }
+    throw std::runtime_error("FSB5 Vorbis setup ID is missing");
+}
 
 uint32_t key(std::string name)
 {
@@ -161,7 +188,10 @@ int music(const UnityResources &unity, const fs::path &workspace, const fs::path
     uint32_t offset = 0;
     for (size_t i = 0; i < tracks.size(); ++i) {
         progress("music", i, tracks.size());
-        const auto audio = decode(workspace, unity.audio(unity.get("content/music/music_" + std::to_string(tracks[i]))));
+        const auto source = unity.audio(unity.get("content/music/music_" + std::to_string(tracks[i])));
+        uint32_t id = 0;
+        if (setupId(source, id)) audioSetupIds.insert(id);
+        const auto audio = decode(workspace, source);
         require(audio.rate > 0 && audio.rate < (1 << 18), "Unsupported XACT sample rate");
         const auto encoded = encodeMsAdpcm(audio.samples, audio.channels);
         const uint32_t frames = encoded.size() / (adpcmBytesPerChannel * audio.channels) * adpcmFramesPerBlock;
@@ -335,6 +365,12 @@ std::string convert(const fs::path &workspace, const fs::path &output, const Pro
     for (size_t i = 0; i < fallbacks.size(); ++i) {
         if (i) report += ',';
         report += quote(fallbacks[i]);
+    }
+    report += "],\"vorbis_setup_ids\":[";
+    size_t setupIndex = 0;
+    for (uint32_t id : audioSetupIds) {
+        if (setupIndex++) report += ',';
+        report += std::to_string(id);
     }
     report += "]}\n";
     save(output / "conversion-report.json", View(reinterpret_cast<const uint8_t *>(report.data()), report.size()));

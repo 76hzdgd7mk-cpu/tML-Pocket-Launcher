@@ -55,7 +55,10 @@ add_library(terraria_converter SHARED
     "${mobile_lz4_SOURCE_DIR}/lib/lz4.c"
 )
 target_compile_features(terraria_converter PRIVATE cxx_std_20)
-target_compile_options(terraria_converter PRIVATE "$<$<CONFIG:Debug>:-O2>")
+# Debug APKs also transcode the full soundtrack on the device.
+foreach(target IN ITEMS terraria_converter libvgmstream vorbisfile vorbis ogg)
+    target_compile_options(${target} PRIVATE "$<$<CONFIG:Debug>:-O2>")
+endforeach()
 set_target_properties(terraria_converter PROPERTIES C_VISIBILITY_PRESET hidden CXX_VISIBILITY_PRESET hidden)
 target_include_directories(terraria_converter PRIVATE "${mobile_vgmstream_SOURCE_DIR}/src" "${mobile_lz4_SOURCE_DIR}/lib")
 target_link_libraries(terraria_converter PRIVATE libvgmstream vorbisfile vorbis ogg m z)

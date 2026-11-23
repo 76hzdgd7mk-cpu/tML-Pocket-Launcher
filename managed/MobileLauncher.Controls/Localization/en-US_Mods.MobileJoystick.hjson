@@ -824,6 +824,7 @@ UI: {
 	IPAddress: IP Address:
 	Interact: Interact
 	Interface: Interface
+	GameLanguage: Game language
 	InterfaceLayoutCouldNotBeSavedCheckFilePermissionsAndRetry: Interface layout could not be saved. Check file permissions and retry.
 	InterfaceLayoutEditor: Interface layout editor
 	InvasionProgress: Invasion progress

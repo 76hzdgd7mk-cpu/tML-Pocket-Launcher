@@ -824,6 +824,7 @@ UI: {
 	IPAddress: IP 地址：
 	Interact: 交互
 	Interface: 界面
+	GameLanguage: 游戏语言
 	InterfaceLayoutCouldNotBeSavedCheckFilePermissionsAndRetry: 界面布局保存失败，请检查文件权限后重试。
 	InterfaceLayoutEditor: 界面布局编辑器
 	InvasionProgress: 入侵进度条

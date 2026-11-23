@@ -47,6 +47,8 @@ internal static class MobileSettingsCatalog
 	// tModLoader resolves the current client language and falls back to en-US.
 	internal static string Text(string key, params object[] args) => MobileControlsText.Get(key, args);
 	internal static readonly int[] VisibleCategories = { 0, 1, 2, 3, 4, 5, 7 };
+	private static readonly GameCulture.CultureName[] GameLanguages = Enum.GetValues<GameCulture.CultureName>()
+		.Where(name => name != GameCulture.CultureName.Unknown).ToArray();
 	internal static string Heading(int category) => category switch {
 		0 => Text("Settings"), 3 => Text("AudioHeading"),
 		1 => Text("Interface"), 2 => Text("Video"), 4 => Text("Controls"), 5 => Text("Touch"),
@@ -88,6 +90,10 @@ internal static class MobileSettingsCatalog
 				if(SocialAPI.Network?.CanInvite()==true) Action("InviteFriends", () => SocialAPI.Network.OpenInviteInterface());
 				break;
 			case 1:
+				Choice("GameLanguage",
+					() => GameLanguages.Select(name => Language.GetTextValue("Language." + name)).ToArray(),
+					() => Array.FindIndex(GameLanguages, name => GameCulture.FromCultureName(name).IsActive),
+					v => displayChange(() => LanguageManager.Instance.SetLanguage(GameCulture.FromCultureName(GameLanguages[v]))));
 				if (includeInterfaceLayoutEditor) Action("InterfaceLayoutEditor", MobileMenuSystem.OpenInterfaceLayoutEditor);
 				Slider("UIScale", () => Main.UIScaleWanted, v => Main.UIScale = v, .5f, 2f);
 				Slider("UIFontSize", () => c.UIFontScale, v => c.UIFontScale = v, .9f, 1.4f, true);

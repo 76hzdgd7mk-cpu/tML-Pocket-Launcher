@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input.Touch;
 using MonoMod.RuntimeDetour;
 using Terraria;
 using Terraria.GameInput;
+using Terraria.Localization;
 using Terraria.ModLoader;
 using MobileJoystick;
 using TMain = Terraria.Main;
@@ -47,6 +48,37 @@ internal static class TouchRegression
                 var text = Product.GetType("MobileJoystick.MobileControlsText");
                 Equal(Call(text, null, "Load", culture) != null, $"failed to parse {culture} UI text");
             }
+        });
+        Check("Mobile interface settings can change the native game language", () =>
+        {
+            var previous = Language.ActiveCulture;
+            var english = GameCulture.FromCultureName(GameCulture.CultureName.English);
+            var chinese = GameCulture.FromCultureName(GameCulture.CultureName.Chinese);
+            var catalog = Product.GetType("MobileJoystick.MobileSettingsCatalog");
+            try
+            {
+                LanguageManager.Instance.SetLanguage(english);
+                foreach (bool inWorld in new[] { false, true })
+                {
+                    Action change = null;
+                    var settings = (System.Collections.IEnumerable)Call(catalog, null, "Create",
+                        1, null, null, null, (Action<Action>)(apply => change = apply), inWorld);
+                    var language = settings.Cast<object>().First();
+                    var type = language.GetType();
+                    Equal((string)type.GetProperty("Label", All).GetValue(language) == "Game language", "missing game language setting");
+                    var choices = (string[])type.GetProperty("Choices", All).GetValue(language);
+                    int chineseIndex = Array.IndexOf(choices, Language.GetTextValue("Language.Chinese"));
+                    Equal(choices.Length == 9 && chineseIndex >= 0, "native language choices were not listed");
+                    ((Action<float>)type.GetField("Write", All).GetValue(language))(chineseIndex);
+                    Equal(Language.ActiveCulture == english && change != null, "language change was not deferred");
+                    change();
+                    Equal(Language.ActiveCulture == chinese, "the native game language did not change");
+                    Equal((string)type.GetProperty("Label", All).GetValue(language) == "游戏语言", "mobile settings did not update");
+                    Equal(((Func<float>)type.GetField("Read", All).GetValue(language))() == chineseIndex, "selected language did not update");
+                    LanguageManager.Instance.SetLanguage(english);
+                }
+            }
+            finally { if (previous != null) LanguageManager.Instance.SetLanguage(previous); }
         });
         Check("Launcher profile configures both game controls and interface", () =>
         {

@@ -21,6 +21,10 @@ class MobileTerrariaConversionTest : Instrumentation() {
     override fun onStart() {
         val result = Bundle()
         try {
+            val targetTml = checkNotNull(MobileTerrariaPackage.targetTml(targetContext)) {
+                "The launcher cannot read the Terraria PE conversion profile's target tModLoader version"
+            }
+            result.putString("targetTml", targetTml)
             if (testDefaultTml) {
                 val root = Files.createTempDirectory(targetContext.cacheDir.toPath(), "default-tml-test-").toFile()
                 try {
@@ -59,6 +63,7 @@ class MobileTerrariaConversionTest : Instrumentation() {
             check(spriteCount > 0 && controls.walkTopDown().count { it.extension == "rawimg" } == spriteCount)
             check(MobileTerrariaConverter.prepareControlArt(targetContext, output) == controls)
             result.putInt("controlSprites", spriteCount)
+            result.putString("vorbisSetupIds", report.optJSONArray("vorbis_setup_ids")?.toString())
             for (name in listOf("Images", "Fonts", "Sounds")) {
                 val compressed = name != "Sounds"
                 File(content, name).walkTopDown().filter { it.extension == "xnb" }.forEach { xnb ->
